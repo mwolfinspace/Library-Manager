@@ -593,7 +593,9 @@ body[data-theme="light"] .image-controls:hover {
 
 .story-panel {
     width: var(--panel-width);
-    height: 100%;
+    height: auto !important;
+    max-height: 100% !important;
+    align-self: flex-start;
     background: var(--story-panel-bg);
     border-radius: 24px;
     padding: 20px 22px;
@@ -604,12 +606,89 @@ body[data-theme="light"] .image-controls:hover {
     gap: 12px;
     backdrop-filter: blur(12px);
     pointer-events: auto;
+    transition: all 0.4s ease;
 }
 
 .story-header {
+    cursor: pointer;
+    user-select: none; /* Prevent text highlighting when clicking */
+    transition: opacity 0.1s;
+    border-radius: 6px;
     padding-bottom: 6px;
     border-bottom: 1px solid var(--story-panel-border);
     position: relative;
+}
+
+.story-header:active {
+    opacity: 0.7;
+}
+
+/* 2. Container: The "Animation Engine" */
+.story-content {
+    display: grid;
+    grid-template-rows: 1fr; /* Default: Open */
+
+    /* EXPAND ANIMATION (Opening) */
+    transition:
+        grid-template-rows 0.8s cubic-bezier(0.25, 1, 0.5, 1) 0s,
+        padding 0.8s cubic-bezier(0.25, 1, 0.5, 1) 0s,
+        margin 0.8s cubic-bezier(0.25, 1, 0.5, 1) 0s,
+        opacity 0.4s ease 0.3s;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overflow: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: var(--button-border) transparent;
+}
+
+/* 3. Inner Wrapper: The "Opacity Engine" */
+.story-inner {
+    min-height: 0;
+    transition: opacity 0.3s ease;
+    opacity: 1;
+}
+
+/* --- COLLAPSED STATE --- */
+
+/* A. Panel Logic */
+.story-panel.collapsed {
+    align-self: flex-start !important;
+    flex: 0 0 auto !important;
+    height: auto !important;
+
+    /* THE FIX: Prevent long stories from exploding to full text height.
+       It forces the panel to stay within the screen even when 'height' is auto. */
+    max-height: 100% !important;
+}
+
+/* B. Content Logic: Disappear & Shrink */
+.story-panel.collapsed .story-content {
+    grid-template-rows: 0fr; /* Target: Closed */
+
+    /* Remove spacing immediately or animate it */
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+
+    /* Important: Hide scrollbars immediately so they don't linger */
+    overflow: hidden !important;
+
+    /* COLLAPSE ANIMATION (Closing)
+       1. Opacity fades out (0.3s) - No delay
+       2. Size shrinks (0.8s) - Waits 0.3s for text to fully vanish
+    */
+    transition:
+        opacity 0.3s ease 0s,
+        grid-template-rows 0.8s cubic-bezier(0.25, 1, 0.5, 1) 0.3s,
+        padding 0.8s cubic-bezier(0.25, 1, 0.5, 1) 0.3s,
+        margin 0.8s cubic-bezier(0.25, 1, 0.5, 1) 0.3s;
+}
+
+/* Fade out the text */
+.story-panel.collapsed .story-inner {
+    opacity: 0;
+    transition: opacity 0.3s ease 0s;
 }
 
 .story-header::after {

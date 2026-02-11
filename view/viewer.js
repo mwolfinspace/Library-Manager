@@ -111,6 +111,7 @@ document.addEventListener("DOMContentLoaded", () => {
     keybindList: document.getElementById("keybind-list"),
     backLink: document.getElementById("back-link"),
     storyPanel: document.querySelector(".story-panel"),
+    storyHeader: document.querySelector(".story-header"),
     blackout: document.getElementById("blackout"),
     codeField: document.querySelector(".code-field"),
     hudMarks: Array.from(document.querySelectorAll(".hud-mark")),
@@ -537,6 +538,15 @@ document.addEventListener("DOMContentLoaded", () => {
     translateX = 0;
     translateY = 0;
     updateTransform();
+  }
+  // --- Feature: Collapse Panel ---
+  if (els.storyHeader) {
+    els.storyHeader.addEventListener("click", (e) => {
+      // Prevent collapse if user clicks tags/buttons inside header
+      if (e.target.closest("button") || e.target.closest("a")) return;
+
+      els.storyPanel.classList.toggle("collapsed");
+    });
   }
 
   function updateTransform() {
@@ -1448,7 +1458,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       try {
         const markdown = await loadStoryMarkdown(storyEntry.story, storyEntry);
-        els.storyContent.innerHTML = marked(markdown);
+        els.storyContent.innerHTML = `<div class="story-inner">${marked(markdown)}</div>`;
       } catch (error) {
         showCorrupted("Story file missing.");
         return;
