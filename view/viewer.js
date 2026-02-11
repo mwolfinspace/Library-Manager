@@ -337,6 +337,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function loadDefaultSettings() {
+        if (window.VIEWER_SETTINGS) {
+            settings = { ...settings, ...window.VIEWER_SETTINGS };
+            return;
+        }
         try {
             const response = await fetch('../database/settings.json', { cache: 'no-store' });
             if (!response.ok) {
@@ -345,9 +349,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
             settings = { ...settings, ...data };
         } catch (error) {
-            if (window.VIEWER_SETTINGS) {
-                settings = { ...settings, ...window.VIEWER_SETTINGS };
-            }
+            // fallback to window
         }
     }
 
@@ -376,6 +378,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function loadCatalog() {
+        if (Array.isArray(window.REPORT_CATALOG)) {
+            return window.REPORT_CATALOG;
+        }
         try {
             const response = await fetch('../database/catalog.json', { cache: 'no-store' });
             if (!response.ok) {
@@ -393,9 +398,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 return cachedText ? { ...entry, storyText: cachedText } : entry;
             });
         } catch (error) {
-            if (Array.isArray(window.REPORT_CATALOG)) {
-                return window.REPORT_CATALOG;
-            }
             throw error;
         }
     }
