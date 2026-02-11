@@ -100,6 +100,27 @@ window.REPORT_CATALOG = [
     "createdAt": "2026-02-11T04:39:38.195Z",
     "updatedAt": "2026-02-11T04:39:38.195Z",
     "storyText": "You need a mask and a collar to go out, pup!"
+  },
+  {
+    "id": "r20260211-142057",
+    "reportNumber": 5,
+    "title": "A Friendly Dragon",
+    "description": "A greeting from my friend.",
+    "tags": [
+      "dragon",
+      "undies",
+      "rubber",
+      "pant"
+    ],
+    "cover": "img-scr/r20260211-142057_001.png",
+    "coverPosition": "50% 17%",
+    "images": [
+      "img-scr/r20260211-142057_001.png"
+    ],
+    "story": "story/r20260211-142057.md",
+    "createdAt": "2026-02-11T07:20:57.786Z",
+    "updatedAt": "2026-02-11T07:21:37.008Z",
+    "storyText": "Doodle for drakonika (https://twitter.com/drakonika123)"
   }
 ];
 window.VIEWER_SETTINGS = {
