@@ -77,6 +77,29 @@ window.REPORT_CATALOG = [
     "createdAt": "2026-02-10T17:14:05.747Z",
     "updatedAt": "2026-02-11T02:51:22.393Z",
     "storyText": "Summertime, join in the beach party now :D"
+  },
+  {
+    "id": "r20260211-113938",
+    "reportNumber": 4,
+    "title": "Ready to go out?",
+    "description": "You need a mask and a collar to go out, pup!",
+    "tags": [
+      "lion",
+      "rubber",
+      "suit",
+      "mask",
+      "gas_mask",
+      "collar"
+    ],
+    "cover": "img-scr/r20260211-113938_001.jpg",
+    "coverPosition": "45% 10%",
+    "images": [
+      "img-scr/r20260211-113938_001.jpg"
+    ],
+    "story": "story/r20260211-113938.md",
+    "createdAt": "2026-02-11T04:39:38.195Z",
+    "updatedAt": "2026-02-11T04:39:38.195Z",
+    "storyText": "You need a mask and a collar to go out, pup!"
   }
 ];
 window.VIEWER_SETTINGS = {
@@ -88,7 +111,7 @@ window.VIEWER_SETTINGS = {
   "keyboardMode": "left",
   "panKeys": true,
   "rememberZoom": true,
-  "fontFamily": "'orbitron', sans-serif",
+  "fontFamily": "'Quantico', sans-serif",
   "customFont": "",
   "rememberViewAll": false,
   "customBindings": {}

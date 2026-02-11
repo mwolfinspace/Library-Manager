@@ -74,5 +74,27 @@
     "story": "story/r20260211-001405.md",
     "createdAt": "2026-02-10T17:14:05.747Z",
     "updatedAt": "2026-02-11T02:51:22.393Z"
+  },
+  {
+    "id": "r20260211-113938",
+    "reportNumber": 4,
+    "title": "Ready to go out?",
+    "description": "You need a mask and a collar to go out, pup!",
+    "tags": [
+      "lion",
+      "rubber",
+      "suit",
+      "mask",
+      "gas_mask",
+      "collar"
+    ],
+    "cover": "img-scr/r20260211-113938_001.jpg",
+    "coverPosition": "45% 10%",
+    "images": [
+      "img-scr/r20260211-113938_001.jpg"
+    ],
+    "story": "story/r20260211-113938.md",
+    "createdAt": "2026-02-11T04:39:38.195Z",
+    "updatedAt": "2026-02-11T04:39:38.195Z"
   }
 ]
