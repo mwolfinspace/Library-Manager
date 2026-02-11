@@ -384,8 +384,10 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
     const safe = from.replace(/[^a-zA-Z0-9._-]/g, "");
-    els.backLink.href =
-      safe.startsWith("http") || safe.startsWith("/") ? safe : `../${safe}`;
+    // Add from=viewer parameter when returning to homepage so it knows to restore state
+    const backUrl = safe.startsWith("http") || safe.startsWith("/") ? safe : `../${safe}`;
+    const separator = backUrl.includes("?") ? "&" : "?";
+    els.backLink.href = `${backUrl}${separator}from=viewer`;
     els.backLink.hidden = false;
   }
 
@@ -1464,3 +1466,4 @@ function marked(text) {
   output = output.replace(/`(.*?)`/gim, "<code>$1</code>");
   output = output.replace(/\n$/gim, "<br>");
   return output;
+}

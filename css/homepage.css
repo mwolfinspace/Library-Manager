@@ -402,8 +402,8 @@ body {
 }
 
 .grid[data-layout="compact"] {
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 20px;
 }
 
 .grid[data-layout="spotlight"] {
@@ -443,12 +443,13 @@ body {
 }
 
 .grid[data-layout="compact"] .story-card {
-    min-height: 190px;
-    padding: 12px;
+    aspect-ratio: 210 / 297;
+    min-height: 320px;
+    padding: 16px;
 }
 
 .grid[data-layout="compact"] .card-title {
-    font-size: 16px;
+    font-size: 18px;
 }
 
 .grid[data-layout="spotlight"] .story-card {

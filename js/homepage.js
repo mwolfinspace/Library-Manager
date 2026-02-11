@@ -268,6 +268,25 @@ function isBookmarked(id) {
   return !!getBookmark(id);
 }
 
+// Pinned posts functionality (separate from reading progress bookmarks)
+function loadPins() {
+  try {
+    const raw = localStorage.getItem("pinned");
+    return new Set(raw ? JSON.parse(raw) : []);
+  } catch (error) {
+    return new Set();
+  }
+}
+
+function savePins(pins) {
+  localStorage.setItem("pinned", JSON.stringify(Array.from(pins)));
+}
+
+function isPinned(id) {
+  const pins = loadPins();
+  return pins.has(id);
+}
+
 function matchesSearch(story, query) {
   if (!query) {
     return true;
@@ -296,7 +315,7 @@ function filterStories(list, favorites, query) {
     }
 
     if (activeFilter === "bookmarks") {
-      return !!getBookmark(story.id);
+      return isPinned(story.id);
     }
 
     return true;
@@ -371,7 +390,7 @@ function sortStories(list) {
       return bTime - aTime; // Most recent first
     });
   } else if (activeSort === "priority") {
-    // Sort by priority: Favorite > Bookmark > Normal, then by recent activity
+    // Sort by priority: Favorite > Pinned > Normal, then by recent activity
     sorted.sort((a, b) => {
       const favorites = loadFavorites();
       const aBookmark = getBookmark(a.id);
@@ -379,23 +398,23 @@ function sortStories(list) {
 
       const aIsFavorite = favorites.has(a.id);
       const bIsFavorite = favorites.has(b.id);
-      // Only consider MANUAL bookmarks (not auto-created ones) for priority grouping
-      const aIsBookmarked = aBookmark ? aBookmark.source !== "auto" : false;
-      const bIsBookmarked = bBookmark ? bBookmark.source !== "auto" : false;
+      // Use pinned status for priority grouping (separate from reading progress bookmarks)
+      const aIsPinned = isPinned(a.id);
+      const bIsPinned = isPinned(b.id);
 
-      // Priority: Favorite > Bookmark > Normal
+      // Priority: Favorite > Pinned > Normal
       if (aIsFavorite !== bIsFavorite) {
         return aIsFavorite ? -1 : 1;
       }
-      if (aIsBookmarked !== bIsBookmarked) {
-        return aIsBookmarked ? -1 : 1;
+      if (aIsPinned !== bIsPinned) {
+        return aIsPinned ? -1 : 1;
       }
 
       // If same priority, sort by recent activity
       // For favorites, we want them to stay at the top regardless of normal story views
       // So we use a special timestamp logic:
       // - Favorites: use a very high timestamp to keep them at top of their group
-      // - Bookmarks: use bookmark timestamp or updatedAt
+      // - Pinned: use bookmark timestamp or updatedAt
       // - Normal: use bookmark timestamp or updatedAt
       let aTime, bTime;
 
@@ -615,25 +634,23 @@ function render() {
       card.style.backgroundPosition = story.coverPosition;
     }
 
-    const bookmarkBtn = document.createElement("button");
-    bookmarkBtn.className = "bookmark-btn";
-    bookmarkBtn.type = "button";
-    bookmarkBtn.textContent = "🔖";
-    if (isBookmarked(story.id)) {
-      bookmarkBtn.classList.add("active");
+    const pinBtn = document.createElement("button");
+    pinBtn.className = "bookmark-btn pin-btn";
+    pinBtn.type = "button";
+    pinBtn.textContent = "📌";
+    pinBtn.title = isPinned(story.id) ? "Unpin this report" : "Pin this report";
+    if (isPinned(story.id)) {
+      pinBtn.classList.add("active");
     }
-    bookmarkBtn.addEventListener("click", (event) => {
+    pinBtn.addEventListener("click", (event) => {
       event.preventDefault();
-      if (isBookmarked(story.id)) {
-        removeBookmark(story.id);
+      const pins = loadPins();
+      if (isPinned(story.id)) {
+        pins.delete(story.id);
       } else {
-        saveBookmark(story.id, {
-          photoIndex: 0,
-          scrollPosition: 0,
-          timestamp: new Date().toISOString(),
-          source: "homepage",
-        });
+        pins.add(story.id);
       }
+      savePins(pins);
       render();
     });
 
@@ -689,11 +706,60 @@ function render() {
       content.appendChild(tagRow);
     }
 
-    card.appendChild(bookmarkBtn);
+    card.appendChild(pinBtn);
     card.appendChild(favoriteBtn);
     card.appendChild(content);
     grid.appendChild(card);
   });
+}
+
+function saveFilterState() {
+  const state = {
+    filter: activeFilter,
+    search: searchInput.value.trim(),
+    layout: activeLayout,
+    sort: activeSort,
+    sortDirection: titleSortDirection,
+  };
+  localStorage.setItem("homepageState", JSON.stringify(state));
+}
+
+function loadFilterState() {
+  try {
+    const raw = localStorage.getItem("homepageState");
+    return raw ? JSON.parse(raw) : null;
+  } catch (error) {
+    return null;
+  }
+}
+
+function applyFilterState(state) {
+  if (!state) return;
+
+  // Apply filter
+  if (state.filter) {
+    activeFilter = state.filter;
+    filterButtons.forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.filter === activeFilter);
+    });
+  }
+
+  // Apply search
+  if (state.search) {
+    searchInput.value = state.search;
+  }
+
+  // Apply layout
+  if (state.layout) {
+    applyLayout(state.layout);
+  }
+
+  // Apply sort
+  if (state.sort) {
+    activeSort = state.sort;
+    titleSortDirection = state.sortDirection || "asc";
+    applySortPreference({ type: activeSort, direction: titleSortDirection });
+  }
 }
 
 filterButtons.forEach((button) => {
@@ -701,11 +767,15 @@ filterButtons.forEach((button) => {
     filterButtons.forEach((btn) => btn.classList.remove("active"));
     button.classList.add("active");
     activeFilter = button.dataset.filter;
+    saveFilterState();
     render();
   });
 });
 
-searchInput.addEventListener("input", render);
+searchInput.addEventListener("input", () => {
+  saveFilterState();
+  render();
+});
 
 function applyLayout(layout) {
   activeLayout = layout || "grid";
@@ -736,6 +806,7 @@ function applySortPreference(sortData) {
 layoutButtons.forEach((button) => {
   button.addEventListener("click", () => {
     applyLayout(button.dataset.layout);
+    saveFilterState();
   });
 });
 
@@ -770,7 +841,7 @@ window.addEventListener("storage", (event) => {
   if (!event.key) {
     return;
   }
-  if (event.key === "favorites" || event.key.startsWith("bookmark:")) {
+  if (event.key === "favorites" || event.key === "pinned" || event.key.startsWith("bookmark:")) {
     render();
   }
 });
@@ -864,12 +935,30 @@ async function init() {
 
     const urlParams = new URLSearchParams(window.location.search);
     const tagQuery = urlParams.get("tag");
+    const fromViewer = urlParams.get("from") === "viewer";
+
+    // Load saved state or use defaults
+    const savedState = loadFilterState();
+
     if (tagQuery) {
+      // If coming from a tag link, use that search
       searchInput.value = tagQuery;
+      saveFilterState();
+    } else if (fromViewer && savedState) {
+      // If returning from viewer, restore saved state
+      applyFilterState(savedState);
+    } else if (savedState) {
+      // Normal page load with saved state
+      applyFilterState(savedState);
     }
 
-    applyLayout(localStorage.getItem("homepageLayout") || "grid");
-    applySortPreference(loadSortPreference());
+    // Apply layout and sort (will use saved values or defaults)
+    const layoutToApply = savedState?.layout || localStorage.getItem("homepageLayout") || "grid";
+    const sortToApply = savedState?.sort || loadSortPreference()?.type || "default";
+    const sortDirection = savedState?.sortDirection || loadSortPreference()?.direction || "asc";
+
+    applyLayout(layoutToApply);
+    applySortPreference({ type: sortToApply, direction: sortDirection });
     initTheme();
     await loadFonts(); // Load fonts for the dropdown
     applyColors(); // Load and apply custom colors
