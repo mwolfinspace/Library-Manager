@@ -1,113 +1,583 @@
-﻿<!DOCTYPE html>
+﻿<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Xedryk Archive - Part 01</title>
-    <link rel="stylesheet" href="css/homepage.css">
-    <link rel="stylesheet" href="css/fonts.css">
-</head>
-<body data-theme="dark">
-    <div class="code-field" aria-hidden="true"></div>
-    <div class="page">
-        <header class="hero">
-            <div class="hero-left">
-                <p class="eyebrow">Xedryk's Archive</p>
-                <h1>Extracted Report: Part 01</h1>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Xedryk Archive - Part 01</title>
+        <link rel="stylesheet" href="css/homepage.css" />
+        <link rel="stylesheet" href="css/fonts.css" />
+    </head>
+    <body data-theme="dark">
+        <div id="loader-overlay">
+            <div class="loader-content">
+                <div class="loader-logo">XEDRYK ARCHIVE</div>
+                <div class="progress-bar-container">
+                    <div id="progress-bar" class="progress-bar"></div>
+                </div>
+                <div id="loading-status" class="loading-status">
+                    Initializing...
+                </div>
             </div>
-            <div class="hero-right">
-                <div class="search-panel">
-                    <div class="search-row">
-                        <label for="search-input">Search</label>
-                        <div class="search-box">
-                            <input id="search-input" type="search" placeholder="Title, tag, or description">
-                            <button id="clear-search" type="button" aria-label="Clear search">🧹</button>
+        </div>
+        <div class="code-field" aria-hidden="true"></div>
+        <div class="page">
+            <header class="hero">
+                <div class="hero-left">
+                    <p class="eyebrow">Xedryk's Archive</p>
+                    <h1>Extracted Report: Part 01</h1>
+                </div>
+                <div class="hero-right">
+                    <div class="search-panel">
+                        <div class="search-row">
+                            <label for="search-input">Search</label>
+                            <div class="search-box">
+                                <input
+                                    id="search-input"
+                                    type="search"
+                                    placeholder="Title, tag, or description"
+                                />
+                                <button
+                                    id="clear-search"
+                                    type="button"
+                                    aria-label="Clear search"
+                                >
+                                    🧹
+                                </button>
+                            </div>
+                            <button
+                                id="theme-toggle"
+                                type="button"
+                                class="theme-toggle"
+                                aria-label="Toggle theme"
+                            >
+                                🌙
+                            </button>
+                            <button
+                                id="settings-btn"
+                                type="button"
+                                class="help-btn"
+                                aria-label="Settings"
+                            >
+                                ⚙️
+                            </button>
+                            <button
+                                id="help-btn"
+                                type="button"
+                                class="help-btn"
+                                aria-label="About this archive"
+                            >
+                                ?
+                            </button>
                         </div>
-                        <button id="theme-toggle" type="button" class="theme-toggle" aria-label="Toggle theme">🌙</button>
-                        <button id="settings-btn" type="button" class="help-btn" aria-label="Settings">⚙️</button>
-                        <button id="help-btn" type="button" class="help-btn" aria-label="About this archive">?</button>
+                        <div class="controls-row">
+                            <div class="filters">
+                                <button
+                                    class="filter-btn active"
+                                    data-filter="all"
+                                    title="All"
+                                >
+                                    All
+                                </button>
+                                <button
+                                    class="filter-btn"
+                                    data-filter="favorites"
+                                    title="Favorites"
+                                >
+                                    ★
+                                </button>
+                                <button
+                                    class="filter-btn"
+                                    data-filter="bookmarks"
+                                    title="Bookmarks"
+                                >
+                                    🔖
+                                </button>
+                            </div>
+                            <div class="layout-toggle">
+                                <span class="layout-label">Layout</span>
+                                <button
+                                    class="layout-btn active"
+                                    data-layout="grid"
+                                    type="button"
+                                    title="Grid"
+                                    aria-label="Grid layout"
+                                >
+                                    ▦
+                                </button>
+                                <button
+                                    class="layout-btn"
+                                    data-layout="list"
+                                    type="button"
+                                    title="List"
+                                    aria-label="List layout"
+                                >
+                                    ☰
+                                </button>
+                                <button
+                                    class="layout-btn"
+                                    data-layout="compact"
+                                    type="button"
+                                    title="Compact"
+                                    aria-label="Compact layout"
+                                >
+                                    ▤
+                                </button>
+                                <button
+                                    class="layout-btn"
+                                    data-layout="spotlight"
+                                    type="button"
+                                    title="Spotlight"
+                                    aria-label="Spotlight layout"
+                                >
+                                    ⬚
+                                </button>
+                            </div>
+                            <div class="sort-toggle">
+                                <span class="sort-label">Sort by</span>
+                                <button
+                                    class="sort-btn active"
+                                    data-sort="default"
+                                    type="button"
+                                    title="Default"
+                                >
+                                    Default
+                                </button>
+                                <button
+                                    class="sort-btn"
+                                    data-sort="title"
+                                    type="button"
+                                    title="Title"
+                                >
+                                    Title
+                                </button>
+                                <button
+                                    class="sort-btn"
+                                    data-sort="createdAt"
+                                    type="button"
+                                    title="Date Created"
+                                >
+                                    Created
+                                </button>
+                                <button
+                                    class="sort-btn"
+                                    data-sort="updatedAt"
+                                    type="button"
+                                    title="Date Updated"
+                                >
+                                    Updated
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                    <div class="controls-row">
-                        <div class="filters">
-                            <button class="filter-btn active" data-filter="all" title="All">All</button>
-                            <button class="filter-btn" data-filter="favorites" title="Favorites">★</button>
-                            <button class="filter-btn" data-filter="bookmarks" title="Bookmarks">🔖</button>
+                </div>
+            </header>
+
+            <section class="grid" id="story-grid" data-layout="grid"></section>
+
+            <p class="empty-state" id="empty-state">
+                No reports found. Use the Data Manager to add reports.
+            </p>
+        </div>
+
+        <div id="blackout" class="blackout" hidden>
+            <div class="blackout-content" aria-live="polite">
+                <div class="blackout-binary" id="blackout-time">00:00:00</div>
+                <div class="blackout-text">Press spacebar again to resume</div>
+            </div>
+        </div>
+
+        <div class="draggable-panel" id="settings-panel" hidden>
+            <div class="settings-header">
+                <h2>Settings</h2>
+                <button
+                    class="settings-close"
+                    id="settings-close"
+                    type="button"
+                    aria-label="Close settings"
+                >
+                    ✕
+                </button>
+            </div>
+            <div class="settings-content">
+                <div class="settings-section font-section">
+                    <h3>Font Family</h3>
+                    <select id="font-select" class="font-select"></select>
+                </div>
+
+                <div class="settings-section color-section">
+                    <h3>Color Customization</h3>
+                    <div class="theme-tabs">
+                        <button class="theme-tab active" data-theme="dark">
+                            Dark Mode
+                        </button>
+                        <button class="theme-tab" data-theme="light">
+                            Light Mode
+                        </button>
+                    </div>
+                    <div class="color-grid" id="color-grid"></div>
+                </div>
+
+                <div class="settings-section">
+                    <button id="reset-colors" class="settings-reset-btn">
+                        Reset to Defaults
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-backdrop" id="help-modal" aria-hidden="true">
+            <div
+                class="modal-panel"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="help-title"
+            >
+                <div class="modal-header">
+                    <h2 id="help-title">🚀 NEURAL INTERFACE HELP</h2>
+                    <button
+                        class="modal-close"
+                        id="help-close"
+                        type="button"
+                        aria-label="Close"
+                    >
+                        ✕
+                    </button>
+                </div>
+
+                <div class="modal-tabs">
+                    <button
+                        class="modal-tab active"
+                        data-tab="help"
+                        type="button"
+                    >
+                        🎮 OPERATIONS
+                    </button>
+                    <button class="modal-tab" data-tab="about" type="button">
+                        🐉 CREATOR MATRIX
+                    </button>
+                </div>
+
+                <div class="modal-body" id="help-body">
+                    <div class="modal-tab-content active" data-content="help">
+                        <div class="help-section">
+                            <h3>🎮 System Controls</h3>
+                            <div class="control-grid">
+                                <div class="control-item">
+                                    <div class="control-icon">🔍</div>
+                                    <div class="control-desc">
+                                        <strong>Search Function:</strong> Input
+                                        keywords to filter reports by title,
+                                        description, or tags. The system uses
+                                        fuzzy matching for optimal results.
+                                    </div>
+                                </div>
+                                <div class="control-item">
+                                    <div class="control-icon">📊</div>
+                                    <div class="control-desc">
+                                        <strong>Filter Matrix:</strong> Toggle
+                                        between All (🌐), Favorites (★), or
+                                        Bookmarked (🔖) data streams.
+                                    </div>
+                                </div>
+                                <div class="control-item">
+                                    <div class="control-icon">🖥️</div>
+                                    <div class="control-desc">
+                                        <strong>Layout Engine:</strong> Switch
+                                        visual interfaces - Grid (▦), List (☰),
+                                        Compact (▤), or Spotlight (⬚) modes.
+                                    </div>
+                                </div>
+                                <div class="control-item">
+                                    <div class="control-icon">🔄</div>
+                                    <div class="control-desc">
+                                        <strong>Sorting Algorithm:</strong>
+                                        Reorganize data by Default, Title,
+                                        Creation Date, or Update Timestamp.
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="layout-toggle">
-                            <span class="layout-label">Layout</span>
-                            <button class="layout-btn active" data-layout="grid" type="button" title="Grid" aria-label="Grid layout">▦</button>
-                            <button class="layout-btn" data-layout="list" type="button" title="List" aria-label="List layout">☰</button>
-                            <button class="layout-btn" data-layout="compact" type="button" title="Compact" aria-label="Compact layout">▤</button>
-                            <button class="layout-btn" data-layout="spotlight" type="button" title="Spotlight" aria-label="Spotlight layout">⬚</button>
+
+                        <div class="help-section">
+                            <h3>🎨 Interface Customization</h3>
+                            <div class="customization-grid">
+                                <div class="custom-item">
+                                    <div class="custom-icon">⚙️</div>
+                                    <div class="custom-desc">
+                                        <strong>Settings Panel:</strong> Access
+                                        the draggable settings console (⚙️) to
+                                        modify font families and color schemes.
+                                        The panel supports multi-touch gestures
+                                        and can be resized dynamically.
+                                    </div>
+                                </div>
+                                <div class="custom-item">
+                                    <div class="custom-icon">🎨</div>
+                                    <div class="custom-desc">
+                                        <strong>Color Matrix:</strong> Customize
+                                        all UI elements including text (ink),
+                                        backgrounds, accents, and gradients.
+                                        Changes are saved to local storage for
+                                        persistence.
+                                    </div>
+                                </div>
+                                <div class="custom-item">
+                                    <div class="custom-icon">📱</div>
+                                    <div class="custom-desc">
+                                        <strong>Theme Toggle:</strong> Switch
+                                        between Dark Mode (🌙) and Light Mode
+                                        (☀️) with a single click. The system
+                                        remembers your preference.
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="sort-toggle">
-                            <span class="sort-label">Sort by</span>
-                            <button class="sort-btn active" data-sort="default" type="button" title="Default">Default</button>
-                            <button class="sort-btn" data-sort="title" type="button" title="Title">Title</button>
-                            <button class="sort-btn" data-sort="createdAt" type="button" title="Date Created">Created</button>
-                            <button class="sort-btn" data-sort="updatedAt" type="button" title="Date Updated">Updated</button>
+
+                        <div class="help-section">
+                            <h3>⚡ Quick Actions</h3>
+                            <div class="action-grid">
+                                <div class="action-item">
+                                    <div class="action-key">SPACEBAR</div>
+                                    <div class="action-desc">
+                                        <strong>Blackout Mode:</strong> Instant
+                                        minimal interface with binary clock
+                                        display. Press again to restore full UI.
+                                    </div>
+                                </div>
+                                <div class="action-item">
+                                    <div class="action-key">ESC</div>
+                                    <div class="action-desc">
+                                        <strong>Exit Modal:</strong> Close any
+                                        open dialog or return to previous
+                                        interface state.
+                                    </div>
+                                </div>
+                                <div class="action-item">
+                                    <div class="action-key">CLICK</div>
+                                    <div class="action-desc">
+                                        <strong>Data Access:</strong> Select any
+                                        report card to launch the viewer
+                                        interface with full navigation controls.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="help-section">
+                            <h3>🔧 Advanced Features</h3>
+                            <ul class="advanced-list">
+                                <li>
+                                    <strong>Bookmark System:</strong> Save your
+                                    reading position with automatic timestamp
+                                    tracking. Resume from where you left off.
+                                </li>
+                                <li>
+                                    <strong>Favorite Matrix:</strong> Star
+                                    important reports for quick access
+                                    filtering.
+                                </li>
+                                <li>
+                                    <strong>Real-time Search:</strong> Instant
+                                    filtering as you type with debounced input
+                                    handling.
+                                </li>
+                                <li>
+                                    <strong>Responsive Grid:</strong> Automatic
+                                    layout adjustment based on viewport
+                                    dimensions.
+                                </li>
+                                <li>
+                                    <strong>Persistent Settings:</strong> All
+                                    customizations are stored locally and
+                                    restored on return visits.
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="modal-tab-content" data-content="about">
+                        <div class="about-container">
+                            <div class="about-header">
+                                <h2 class="about-title">
+                                    🐉 Xedryk The Dragon
+                                </h2>
+                                <p class="about-subtitle">
+                                    Multidimensional Creator Matrix
+                                </p>
+                            </div>
+
+                            <div class="about-grid">
+                                <div class="about-avatar">
+                                    <a
+                                        href="https://xedryk.github.io/"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        title="Visit my digital lair"
+                                        class="avatar-link"
+                                    >
+                                        <img
+                                            src="img-scr/About_xedryk.png"
+                                            alt="Xedryk's Digital Avatar - The Dragon in Cyber Form"
+                                            class="avatar-image"
+                                        />
+                                    </a>
+                                </div>
+
+                                <div class="about-details">
+                                    <div class="bio-section">
+                                        <h3 class="bio-title">
+                                            📜 Core Identity Protocol
+                                        </h3>
+                                        <div class="bio-content">
+                                            <p>
+                                                <strong>Born:</strong> 1994 |
+                                                <strong>Type:</strong> INFJ-A
+                                            </p>
+                                            <p>
+                                                <strong>Location:</strong>
+                                                Bentre, Vietnam 🇻🇳
+                                            </p>
+                                            <p>
+                                                <strong>Status:</strong> Dragon
+                                                🐉 | Math Teacher 🧮 | Mature
+                                                Artist 🎨 | Hobbyist Programmer
+                                                💻
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div class="message-section">
+                                        <h3 class="message-title">
+                                            💖 Transmission Message
+                                        </h3>
+                                        <div class="message-content">
+                                            <p>Greetings, traveler! 🌟</p>
+                                            <p>
+                                                You've entered my digital
+                                                archive - a collection of
+                                                thoughts, creations, and
+                                                experiences from across the
+                                                multiverse. This Patreon portal
+                                                serves as a bridge between my
+                                                various dimensions of existence.
+                                            </p>
+                                            <p>
+                                                Thanks for visiting my Patreon
+                                                💖! Hope you enjoy exploring my
+                                                work here. Each piece contains a
+                                                fragment of my soul, encoded in
+                                                digital form.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="about-links">
+                                <div class="link-section">
+                                    <h3 class="link-title">
+                                        🔗 Neural Network Connections
+                                    </h3>
+                                    <div class="link-grid">
+                                        <a
+                                            href="https://trello.com/b/o2BYkbyh"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            class="link-btn commission"
+                                            title="Current commission availability and status"
+                                        >
+                                            <span class="link-icon">📋</span>
+                                            <span class="link-text"
+                                                >COMMISSION STATUS</span
+                                            >
+                                            <span class="link-badge"
+                                                >TRELLO</span
+                                            >
+                                        </a>
+
+                                        <a
+                                            href="https://www.furaffinity.net/user/1234hdpa"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            class="link-btn furaffinity"
+                                            title="My Fur Affinity profile and gallery"
+                                        >
+                                            <span class="link-icon">🐾</span>
+                                            <span class="link-text"
+                                                >FURAFFINITY</span
+                                            >
+                                            <span class="link-badge"
+                                                >1234hdpa</span
+                                            >
+                                        </a>
+
+                                        <a
+                                            href="https://xedryk.github.io/"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            class="link-btn website"
+                                            title="My main website and digital hub"
+                                        >
+                                            <span class="link-icon">🌐</span>
+                                            <span class="link-text"
+                                                >DIGITAL LAIR</span
+                                            >
+                                            <span class="link-badge">HQ</span>
+                                        </a>
+
+                                        <a
+                                            href="https://paypal.me/mwolfinspace?locale.x=en_US&country.x=VN"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            class="link-btn donate"
+                                            title="Support my work with a coffee donation"
+                                        >
+                                            <span class="link-icon">☕</span>
+                                            <span class="link-text"
+                                                >BUY ME COFFEE</span
+                                            >
+                                            <span class="link-badge">❤️</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="about-footer">
+                                <p class="footer-message">
+                                    All connections encrypted with dragon-scale
+                                    security protocols 🔐🐉
+                                </p>
+                                <div class="social-icons">
+                                    <span
+                                        class="social-icon"
+                                        title="Dragon Fire Certified"
+                                        >🔥</span
+                                    >
+                                    <span
+                                        class="social-icon"
+                                        title="Quantum Encrypted"
+                                        >🔐</span
+                                    >
+                                    <span
+                                        class="social-icon"
+                                        title="Neural Interface Ready"
+                                        >🧠</span
+                                    >
+                                    <span
+                                        class="social-icon"
+                                        title="Multidimensional"
+                                        >🌌</span
+                                    >
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </header>
-
-        <section class="grid" id="story-grid" data-layout="grid"></section>
-
-        <p class="empty-state" id="empty-state">No reports found. Use the Data Manager to add reports.</p>
-    </div>
-
-    <div id="blackout" class="blackout" hidden>
-        <div class="blackout-content" aria-live="polite">
-            <div class="blackout-binary" id="blackout-time">00:00:00</div>
-            <div class="blackout-text">Press spacebar again to resume</div>
         </div>
-    </div>
 
-    <div class="draggable-panel" id="settings-panel" hidden>
-        <div class="settings-header">
-            <h2>Settings</h2>
-            <button class="settings-close" id="settings-close" type="button" aria-label="Close settings">✕</button>
-        </div>
-        <div class="settings-content">
-            <div class="settings-section font-section">
-                <h3>Font Family</h3>
-                <select id="font-select" class="font-select"></select>
-            </div>
-
-            <div class="settings-section color-section">
-                <h3>Color Customization</h3>
-                <div class="theme-tabs">
-                    <button class="theme-tab active" data-theme="dark">Dark Mode</button>
-                    <button class="theme-tab" data-theme="light">Light Mode</button>
-                </div>
-                <div class="color-grid" id="color-grid"></div>
-            </div>
-
-            <div class="settings-section">
-                <button id="reset-colors" class="settings-reset-btn">Reset to Defaults</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal-backdrop" id="help-modal" aria-hidden="true">
-        <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="help-title">
-            <div class="modal-header">
-                <div>
-                    <p class="modal-eyebrow">Xedryk Archive</p>
-                    <h2 id="help-title">About This Archive</h2>
-                </div>
-                <button class="modal-close" id="help-close" type="button" aria-label="Close">✕</button>
-            </div>
-            <p class="modal-body" id="help-body"></p>
-            <div class="modal-actions">
-                <button class="modal-btn" id="help-ok" type="button">Got it</button>
-            </div>
-        </div>
-    </div>
-
-    <script src="database/fonts.js"></script>
-    <script src="database/catalog.js"></script>
-    <script src="js/homepage.js"></script>
-</body>
+        <script src="database/fonts.js"></script>
+        <script src="database/catalog.js"></script>
+        <script src="js/homepage.js"></script>
+    </body>
 </html>

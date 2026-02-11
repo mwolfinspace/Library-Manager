@@ -114,6 +114,7 @@ document.addEventListener("DOMContentLoaded", () => {
     blackout: document.getElementById("blackout"),
     codeField: document.querySelector(".code-field"),
     hudMarks: Array.from(document.querySelectorAll(".hud-mark")),
+    eyebrow: document.querySelector(".eyebrow"),
   };
 
   if (!els.photo || !els.storyContent) {
@@ -477,15 +478,25 @@ document.addEventListener("DOMContentLoaded", () => {
     els.storyTitle.textContent = title;
     document.title = title;
 
-    const metaParts = [];
-    if (entry.description) metaParts.push(entry.description);
+    if (els.eyebrow && entry.reportNumber) {
+      els.eyebrow.textContent = `Report #${entry.reportNumber}`;
+    } else if (els.eyebrow) {
+      els.eyebrow.textContent = "Report";
+    }
+
+    els.storyMeta.innerHTML = ""; // Clear it
     if (Array.isArray(entry.tags) && entry.tags.length > 0) {
-      metaParts.push(`Tags: ${entry.tags.join(", ")}`);
+      const tagsWrapper = document.createElement("div");
+      tagsWrapper.className = "tags-list";
+      entry.tags.forEach((tag) => {
+        const tagLink = document.createElement("a");
+        tagLink.className = "tag-link";
+        tagLink.textContent = tag;
+        tagLink.href = `../homepage.html?tag=${encodeURIComponent(tag)}`;
+        tagsWrapper.appendChild(tagLink);
+      });
+      els.storyMeta.appendChild(tagsWrapper);
     }
-    if (entry.reportNumber) {
-      metaParts.push(`Report #${entry.reportNumber}`);
-    }
-    els.storyMeta.textContent = metaParts.join(" · ");
 
     photos = Array.isArray(entry.images)
       ? sortPhotos(entry.images).map(resolvePath)
