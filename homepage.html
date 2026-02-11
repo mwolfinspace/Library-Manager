@@ -11,7 +11,7 @@
     <div class="page">
         <header class="hero">
             <div class="hero-left">
-                <p class="eyebrow">Xedryk Archive</p>
+                <p class="eyebrow">Xedryk's Archive</p>
                 <h1>Extracted Report: Part 01</h1>
             </div>
             <div class="hero-right">
@@ -23,6 +23,7 @@
                             <button id="clear-search" type="button" aria-label="Clear search">🧹</button>
                         </div>
                         <button id="theme-toggle" type="button" class="theme-toggle" aria-label="Toggle theme">🌙</button>
+                        <button id="settings-btn" type="button" class="help-btn" aria-label="Settings">⚙️</button>
                         <button id="help-btn" type="button" class="help-btn" aria-label="About this archive">?</button>
                     </div>
                     <div class="controls-row">
@@ -52,6 +53,39 @@
         <div class="blackout-content" aria-live="polite">
             <div class="blackout-binary">404</div>
             <div class="blackout-text">Press spacebar again to resume</div>
+        </div>
+    </div>
+
+    <div class="draggable-panel" id="settings-panel" hidden>
+        <div class="settings-header">
+            <h2>Settings</h2>
+            <button class="settings-close" id="settings-close" type="button" aria-label="Close settings">✕</button>
+        </div>
+        <div class="settings-content">
+            <div class="settings-section font-section">
+                <h3>Font Family</h3>
+                <div class="font-options">
+                    <button class="font-btn active" data-font="tech" title="Tech Mono">Tech Mono</button>
+                    <button class="font-btn" data-font="system" title="System">System</button>
+                    <button class="font-btn" data-font="serif" title="Serif">Serif</button>
+                    <button class="font-btn" data-font="sans" title="Sans Serif">Sans Serif</button>
+                    <button class="font-btn" data-font="monospace" title="Monospace">Monospace</button>
+                    <button class="font-btn" data-font="georgia" title="Georgia">Georgia</button>
+                </div>
+            </div>
+
+            <div class="settings-section color-section">
+                <h3>Color Customization</h3>
+                <div class="theme-tabs">
+                    <button class="theme-tab active" data-theme="dark">Dark Mode</button>
+                    <button class="theme-tab" data-theme="light">Light Mode</button>
+                </div>
+                <div class="color-grid" id="color-grid"></div>
+            </div>
+
+            <div class="settings-section">
+                <button id="reset-colors" class="settings-reset-btn">Reset to Defaults</button>
+            </div>
         </div>
     </div>
 

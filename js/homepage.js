@@ -12,6 +12,11 @@ const helpBody = document.getElementById('help-body');
 const blackout = document.getElementById('blackout');
 const filterButtons = Array.from(document.querySelectorAll('.filter-btn'));
 const layoutButtons = Array.from(document.querySelectorAll('.layout-btn'));
+const settingsBtn = document.getElementById('settings-btn');
+const settingsPanel = document.getElementById('settings-panel');
+const settingsClose = document.getElementById('settings-close');
+const colorGrid = document.getElementById('color-grid');
+const resetColorsBtn = document.getElementById('reset-colors');
 
 let stories = [];
 let activeFilter = 'all';
@@ -20,7 +25,133 @@ let codeRefreshTimer = null;
 let cursorRaf = null;
 let cursorX = 0.5;
 let cursorY = 0.45;
+let settingsCurrentTheme = 'dark';
 const HELP_TEXT = 'Recovered lab logs, breached files, and field notes. Search, filter, and resume the reports you want to revisit.';
+
+// Default color definitions for both themes
+const DEFAULT_COLORS = {
+    dark: {
+        ink: '#e8f1ff',
+        muted: 'rgba(232, 241, 255, 0.68)',
+        bg: '#03050b',
+        'bg-2': '#0a1220',
+        panel: 'rgba(12, 20, 34, 0.92)',
+        accent: '#62f7ff',
+        'accent-2': '#8dff7b',
+        card: 'rgba(12, 20, 34, 0.88)',
+        shadow: 'rgba(2, 6, 12, 0.75)',
+        grid: 'rgba(98, 247, 255, 0.12)',
+        code: 'rgba(98, 247, 200, 0.32)',
+        'code-glow': 'rgba(98, 247, 200, 0.7)',
+        btn: 'rgba(10, 16, 28, 0.86)',
+        'btn-border': 'rgba(98, 247, 255, 0.35)',
+        'card-overlay': 'linear-gradient(180deg, rgba(3, 5, 10, 0.08) 0%, rgba(3, 5, 10, 0.9) 100%)',
+        'card-overlay-list': 'linear-gradient(90deg, rgba(5, 7, 13, 0.88) 0%, rgba(5, 7, 13, 0.5) 55%, rgba(5, 7, 13, 0.12) 100%)',
+        'cursor-glow': 'rgba(98, 247, 255, 0.2)',
+    },
+    light: {
+        ink: '#0b1220',
+        muted: 'rgba(11, 18, 32, 0.65)',
+        bg: '#eef3f9',
+        'bg-2': '#f8fbff',
+        panel: 'rgba(255, 255, 255, 0.88)',
+        accent: '#0aa6c7',
+        'accent-2': '#3b5bff',
+        card: 'rgba(255, 255, 255, 0.92)',
+        shadow: 'rgba(12, 22, 38, 0.2)',
+        grid: 'rgba(10, 166, 199, 0.15)',
+        code: 'rgba(10, 166, 199, 0.24)',
+        'code-glow': 'rgba(59, 91, 255, 0.45)',
+        btn: 'rgba(255, 255, 255, 0.9)',
+        'btn-border': 'rgba(11, 18, 32, 0.2)',
+        'card-overlay': 'linear-gradient(180deg, rgba(239, 243, 249, 0.1) 0%, rgba(239, 243, 249, 0.4) 100%)',
+        'card-overlay-list': 'linear-gradient(90deg, rgba(238, 243, 249, 0.5) 0%, rgba(238, 243, 249, 0.25) 55%, rgba(238, 243, 249, 0.05) 100%)',
+        'cursor-glow': 'rgba(59, 91, 255, 0.18)',
+    }
+};
+
+const COLOR_DESCRIPTIONS = {
+    ink: { desc: 'Text color', icon: 'A' },
+    muted: { desc: 'Muted text', icon: 'a' },
+    bg: { desc: 'Main background', icon: 'bg' },
+    'bg-2': { desc: 'Secondary bg', icon: '2bg' },
+    panel: { desc: 'Panel bg', icon: 'p' },
+    accent: { desc: 'Primary accent', icon: 'ac1' },
+    'accent-2': { desc: 'Secondary accent', icon: 'ac2' },
+    card: { desc: 'Card background', icon: 'c' },
+    shadow: { desc: 'Shadow color', icon: 'shd' },
+    grid: { desc: 'Grid pattern', icon: 'gr' },
+    code: { desc: 'Code color', icon: 'cd' },
+    'code-glow': { desc: 'Code glow', icon: 'cg' },
+    btn: { desc: 'Button bg', icon: 'btn' },
+    'btn-border': { desc: 'Button border', icon: 'bb' },
+    'card-overlay': { desc: 'Card overlay gradient', icon: 'co' },
+    'card-overlay-list': { desc: 'Card overlay list gradient', icon: 'cl' },
+    'cursor-glow': { desc: 'Cursor glow', icon: 'cg2' },
+};
+
+function loadSettings() {
+    try {
+        const raw = localStorage.getItem('customColors');
+        return raw ? JSON.parse(raw) : { dark: {}, light: {} };
+    } catch (error) {
+        return { dark: {}, light: {} };
+    }
+}
+
+function saveSettings(settings) {
+    localStorage.setItem('customColors', JSON.stringify(settings));
+}
+
+function getColor(colorName, theme) {
+    const customColors = loadSettings();
+    const themeCustom = customColors[theme] || {};
+    
+    if (themeCustom[colorName]) {
+        return themeCustom[colorName];
+    }
+    
+    return DEFAULT_COLORS[theme][colorName];
+}
+
+function setColor(colorName, value, theme) {
+    const settings = loadSettings();
+    if (!settings[theme]) {
+        settings[theme] = {};
+    }
+    settings[theme][colorName] = value;
+    saveSettings(settings);
+    applyColors();
+}
+
+function applyColors() {
+    const currentTheme = document.body.dataset.theme || 'dark';
+    const target = document.body;
+    
+    Object.keys(DEFAULT_COLORS.dark).forEach(colorName => {
+        const value = getColor(colorName, currentTheme);
+        target.style.setProperty(`--${colorName}`, value);
+    });
+}
+
+function loadFont() {
+    try {
+        const raw = localStorage.getItem('fontFamily');
+        return raw ? raw : 'tech';
+    } catch (error) {
+        return 'tech';
+    }
+}
+
+function saveFont(font) {
+    localStorage.setItem('fontFamily', font);
+    applyFont(font);
+}
+
+function applyFont(font) {
+    document.body.classList.remove('font-tech', 'font-serif', 'font-sans', 'font-system', 'font-monospace', 'font-georgia');
+    document.body.classList.add(`font-${font}`);
+}
 
 async function loadCatalog() {
     try {
@@ -167,6 +298,7 @@ function applyTheme(theme) {
     themeToggle.title = isLight ? 'Switch to dark mode' : 'Switch to light mode';
     themeToggle.setAttribute('aria-pressed', String(isLight));
     localStorage.setItem('homepageTheme', theme);
+    applyColors();  // Reapply colors when theme changes
 }
 
 function initTheme() {
@@ -413,7 +545,10 @@ async function init() {
     stories = sortByDisplayOrder(await loadCatalog());
     applyLayout(localStorage.getItem('homepageLayout') || 'grid');
     initTheme();
+    applyColors();  // Load and apply custom colors
+    applyFont(loadFont());  // Load and apply custom font
     buildCodeField();
+    initDragging();  // Initialize dragging for settings panel
     render();
 }
 
@@ -487,3 +622,285 @@ window.addEventListener('touchmove', event => {
         handleCursorMove(event.touches[0]);
     }
 }, { passive: true });
+// Settings Panel Functions
+function renderColorGrid(theme) {
+    if (!colorGrid) return;
+    colorGrid.innerHTML = '';
+    
+    const colors = DEFAULT_COLORS[theme];
+    Object.entries(colors).forEach(([colorName, defaultValue]) => {
+        const currentValue = getColor(colorName, theme);
+        const desc = COLOR_DESCRIPTIONS[colorName];
+        
+        const item = document.createElement('div');
+        item.className = 'color-item';
+        
+        const label = document.createElement('div');
+        label.className = 'color-label';
+        label.textContent = colorName.replace('-', ' ').toUpperCase();
+        
+        const labelDesc = document.createElement('div');
+        labelDesc.className = 'color-label-desc';
+        labelDesc.textContent = desc.desc;
+        
+        const inputWrapper = document.createElement('div');
+        inputWrapper.className = 'color-input-wrapper';
+        
+        const isGradient = currentValue.includes('linear-gradient');
+        
+        if (isGradient) {
+            // For gradients, use a text input with preview
+            const gradientPreview = document.createElement('div');
+            gradientPreview.className = 'gradient-preview';
+            gradientPreview.style.background = currentValue;
+            
+            const textInput = document.createElement('input');
+            textInput.className = 'gradient-text-input';
+            textInput.type = 'text';
+            textInput.value = currentValue;
+            
+            const updateGradientDisplay = (newValue) => {
+                gradientPreview.style.background = newValue;
+                setColor(colorName, newValue, theme);
+            };
+            
+            textInput.addEventListener('blur', (e) => {
+                updateGradientDisplay(e.target.value);
+            });
+            
+            textInput.addEventListener('input', (e) => {
+                try {
+                    gradientPreview.style.background = e.target.value;
+                } catch (error) {
+                    // Invalid gradient, don't update preview
+                }
+            });
+            
+            inputWrapper.appendChild(gradientPreview);
+            inputWrapper.appendChild(textInput);
+        } else {
+            // For solid colors, use color picker
+            const pickerBtn = document.createElement('button');
+            pickerBtn.className = 'color-picker-btn';
+            pickerBtn.type = 'button';
+            pickerBtn.style.backgroundColor = currentValue;
+            
+            const hiddenInput = document.createElement('input');
+            hiddenInput.className = 'color-picker-input';
+            hiddenInput.type = 'color';
+            hiddenInput.value = rgbToHex(currentValue);
+            
+            const valueDisplay = document.createElement('div');
+            valueDisplay.className = 'color-value';
+            valueDisplay.textContent = currentValue;
+            
+            const updateColorDisplay = (newValue) => {
+                pickerBtn.style.backgroundColor = newValue;
+                valueDisplay.textContent = newValue;
+                setColor(colorName, newValue, theme);
+            };
+            
+            pickerBtn.addEventListener('click', () => hiddenInput.click());
+            
+            hiddenInput.addEventListener('change', (e) => {
+                const hexValue = e.target.value;
+                updateColorDisplay(hexValue);
+            });
+            
+            hiddenInput.addEventListener('input', (e) => {
+                const hexValue = e.target.value;
+                pickerBtn.style.backgroundColor = hexValue;
+                valueDisplay.textContent = hexValue;
+            });
+            
+            inputWrapper.appendChild(pickerBtn);
+            inputWrapper.appendChild(valueDisplay);
+            inputWrapper.appendChild(hiddenInput);
+        }
+        
+        item.appendChild(label);
+        item.appendChild(labelDesc);
+        item.appendChild(inputWrapper);
+        colorGrid.appendChild(item);
+    });
+}
+
+function rgbToHex(color) {
+    // If already hex, return it
+    if (color.startsWith('#')) {
+        return color;
+    }
+    
+    // If rgba/rgb, convert to hex
+    const match = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+    if (match) {
+        const r = parseInt(match[1]).toString(16).padStart(2, '0');
+        const g = parseInt(match[2]).toString(16).padStart(2, '0');
+        const b = parseInt(match[3]).toString(16).padStart(2, '0');
+        return '#' + r + g + b;
+    }
+    
+    return '#000000';
+}
+
+function openSettings() {
+    if (!settingsPanel) return;
+    settingsPanel.hidden = false;
+    settingsCurrentTheme = document.body.dataset.theme || 'dark';
+    renderColorGrid(settingsCurrentTheme);
+    updateThemeTabs();
+    updateFontButtons();
+}
+
+function closeSettings() {
+    if (!settingsPanel) return;
+    settingsPanel.hidden = true;
+}
+
+function updateThemeTabs() {
+    const tabs = Array.from(document.querySelectorAll('.theme-tab'));
+    tabs.forEach(tab => {
+        const tabTheme = tab.dataset.theme;
+        if (tabTheme === settingsCurrentTheme) {
+            tab.classList.add('active');
+        } else {
+            tab.classList.remove('active');
+        }
+    });
+}
+
+function updateFontButtons() {
+    const fontBtns = Array.from(document.querySelectorAll('.font-btn'));
+    const currentFont = loadFont();
+    fontBtns.forEach(btn => {
+        if (btn.dataset.font === currentFont) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+}
+
+function initDragging() {
+    if (!settingsPanel) return;
+    
+    const header = settingsPanel.querySelector('.settings-header');
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+    let startPanelX = 0;
+    let startPanelY = 0;
+    
+    header.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        const rect = settingsPanel.getBoundingClientRect();
+        startPanelX = rect.left;
+        startPanelY = rect.top;
+        settingsPanel.classList.add('dragging');
+    });
+    
+    document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        
+        const deltaX = e.clientX - startX;
+        const deltaY = e.clientY - startY;
+        
+        const newX = startPanelX + deltaX;
+        const newY = startPanelY + deltaY;
+        
+        settingsPanel.style.left = Math.max(0, Math.min(newX, window.innerWidth - settingsPanel.offsetWidth)) + 'px';
+        settingsPanel.style.top = Math.max(0, Math.min(newY, window.innerHeight - settingsPanel.offsetHeight)) + 'px';
+    });
+    
+    document.addEventListener('mouseup', () => {
+        if (isDragging) {
+            isDragging = false;
+            settingsPanel.classList.remove('dragging');
+        }
+    });
+    
+    // Touch support
+    header.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+            isDragging = true;
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+            const rect = settingsPanel.getBoundingClientRect();
+            startPanelX = rect.left;
+            startPanelY = rect.top;
+            settingsPanel.classList.add('dragging');
+        }
+    });
+    
+    document.addEventListener('touchmove', (e) => {
+        if (!isDragging || !e.touches[0]) return;
+        
+        const deltaX = e.touches[0].clientX - startX;
+        const deltaY = e.touches[0].clientY - startY;
+        
+        const newX = startPanelX + deltaX;
+        const newY = startPanelY + deltaY;
+        
+        settingsPanel.style.left = Math.max(0, Math.min(newX, window.innerWidth - settingsPanel.offsetWidth)) + 'px';
+        settingsPanel.style.top = Math.max(0, Math.min(newY, window.innerHeight - settingsPanel.offsetHeight)) + 'px';
+    }, { passive: true });
+    
+    document.addEventListener('touchend', () => {
+        if (isDragging) {
+            isDragging = false;
+            settingsPanel.classList.remove('dragging');
+        }
+    });
+}
+
+if (settingsBtn) {
+    settingsBtn.addEventListener('click', openSettings);
+}
+
+if (settingsClose) {
+    settingsClose.addEventListener('click', closeSettings);
+}
+
+if (settingsPanel) {
+    settingsPanel.addEventListener('click', (e) => {
+        if (e.target === settingsPanel) {
+            closeSettings();
+        }
+    });
+    
+    // Theme tab switching
+    const themeTabs = Array.from(settingsPanel.querySelectorAll('.theme-tab'));
+    themeTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            settingsCurrentTheme = tab.dataset.theme;
+            updateThemeTabs();
+            renderColorGrid(settingsCurrentTheme);
+        });
+    });
+    
+    // Font selection
+    const fontBtns = Array.from(settingsPanel.querySelectorAll('.font-btn'));
+    fontBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            saveFont(btn.dataset.font);
+            updateFontButtons();
+        });
+    });
+}
+
+if (resetColorsBtn) {
+    resetColorsBtn.addEventListener('click', () => {
+        localStorage.removeItem('customColors');
+        applyColors();
+        renderColorGrid(settingsCurrentTheme);
+    });
+}
+
+// Close settings with Escape key
+window.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && settingsPanel && !settingsPanel.hidden) {
+        closeSettings();
+    }
+});

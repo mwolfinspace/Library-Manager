@@ -79,17 +79,4 @@ window.REPORT_CATALOG = [
     "storyText": "Summertime, join in the beach party now :D"
   }
 ];
-window.VIEWER_SETTINGS = {
-  "theme": "dark",
-  "fontSize": 16,
-  "lineSpacing": 1.6,
-  "scrollStep": 40,
-  "zoomStep": 0.1,
-  "keyboardMode": "left",
-  "panKeys": true,
-  "rememberZoom": true,
-  "fontFamily": "tech",
-  "customFont": "",
-  "rememberViewAll": false,
-  "customBindings": {}
-};
+
