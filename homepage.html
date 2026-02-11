@@ -1,0 +1,77 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xedryk Archive - Part 01</title>
+    <link rel="stylesheet" href="css/homepage.css">
+</head>
+<body data-theme="dark">
+    <div class="code-field" aria-hidden="true"></div>
+    <div class="page">
+        <header class="hero">
+            <div class="hero-left">
+                <p class="eyebrow">Xedryk Archive</p>
+                <h1>Extracted Report: Part 01</h1>
+            </div>
+            <div class="hero-right">
+                <div class="search-panel">
+                    <div class="search-row">
+                        <label for="search-input">Search</label>
+                        <div class="search-box">
+                            <input id="search-input" type="search" placeholder="Title, tag, or description">
+                            <button id="clear-search" type="button" aria-label="Clear search">🧹</button>
+                        </div>
+                        <button id="theme-toggle" type="button" class="theme-toggle" aria-label="Toggle theme">🌙</button>
+                        <button id="help-btn" type="button" class="help-btn" aria-label="About this archive">?</button>
+                    </div>
+                    <div class="controls-row">
+                        <div class="filters">
+                            <button class="filter-btn active" data-filter="all" title="All">All</button>
+                            <button class="filter-btn" data-filter="favorites" title="Favorites">★</button>
+                            <button class="filter-btn" data-filter="bookmarks" title="Bookmarks">🔖</button>
+                        </div>
+                        <div class="layout-toggle">
+                            <span class="layout-label">Layout</span>
+                            <button class="layout-btn active" data-layout="grid" type="button" title="Grid" aria-label="Grid layout">▦</button>
+                            <button class="layout-btn" data-layout="list" type="button" title="List" aria-label="List layout">☰</button>
+                            <button class="layout-btn" data-layout="compact" type="button" title="Compact" aria-label="Compact layout">▤</button>
+                            <button class="layout-btn" data-layout="spotlight" type="button" title="Spotlight" aria-label="Spotlight layout">⬚</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <section class="grid" id="story-grid" data-layout="grid"></section>
+
+        <p class="empty-state" id="empty-state">No reports found. Use the Data Manager to add reports.</p>
+    </div>
+
+    <div id="blackout" class="blackout" hidden>
+        <div class="blackout-content" aria-live="polite">
+            <div class="blackout-binary">404</div>
+            <div class="blackout-text">Press spacebar again to resume</div>
+        </div>
+    </div>
+
+    <div class="modal-backdrop" id="help-modal" aria-hidden="true">
+        <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="help-title">
+            <div class="modal-header">
+                <div>
+                    <p class="modal-eyebrow">Xedryk Archive</p>
+                    <h2 id="help-title">About This Archive</h2>
+                </div>
+                <button class="modal-close" id="help-close" type="button" aria-label="Close">✕</button>
+            </div>
+            <p class="modal-body" id="help-body"></p>
+            <div class="modal-actions">
+                <button class="modal-btn" id="help-ok" type="button">Got it</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="database/catalog.js"></script>
+    <script src="js/homepage.js"></script>
+</body>
+</html>

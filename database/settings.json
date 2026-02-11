@@ -1,0 +1,14 @@
+{
+  "theme": "dark",
+  "fontSize": 16,
+  "lineSpacing": 1.6,
+  "scrollStep": 40,
+  "zoomStep": 0.1,
+  "keyboardMode": "left",
+  "panKeys": true,
+  "rememberZoom": true,
+  "fontFamily": "tech",
+  "customFont": "",
+  "rememberViewAll": false,
+  "customBindings": {}
+}

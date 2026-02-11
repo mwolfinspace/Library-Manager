@@ -1,0 +1,2954 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xedryk's Lab System - Data Manager</title>
+    <style>
+        :root {
+            --ink: #e6f3ff;
+            --ink-muted: rgba(230, 243, 255, 0.68);
+            --bg: #0b1019;
+            --bg-soft: #141d2a;
+            --panel: #162235;
+            --panel-2: #1c2a3f;
+            --accent: #3ef0c1;
+            --accent-2: #5aa5ff;
+            --danger: #ff6b6b;
+            --shadow: rgba(6, 12, 22, 0.55);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        [hidden] {
+            display: none !important;
+        }
+
+        body {
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+            font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+            color: var(--ink);
+            background:
+                radial-gradient(circle at 20% 10%, rgba(62, 240, 193, 0.15), transparent 45%),
+                radial-gradient(circle at 80% 0%, rgba(90, 165, 255, 0.18), transparent 40%),
+                var(--bg);
+        }
+
+        .shell {
+            max-width: none;
+            width: 100%;
+            height: 100vh;
+            margin: 0 auto;
+            padding: 16px 20px 56px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        header {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            padding: 14px 18px;
+            border-radius: 18px;
+            background: linear-gradient(135deg, rgba(22, 34, 53, 0.95), rgba(20, 29, 42, 0.85));
+            box-shadow: 0 18px 34px var(--shadow);
+            border: 1px solid rgba(62, 240, 193, 0.2);
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: clamp(22px, 3vw, 32px);
+            font-family: "Palatino Linotype", "Georgia", serif;
+        }
+
+        .eyebrow {
+            margin: 0 0 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.28em;
+            font-size: 11px;
+            color: var(--accent);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        button,
+        .link-btn {
+            border: none;
+            border-radius: 999px;
+            padding: 8px 14px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 13px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #041018;
+            background: var(--accent);
+            box-shadow: 0 10px 16px rgba(62, 240, 193, 0.18);
+        }
+
+        .header-actions button,
+        .header-actions .link-btn {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        button.ghost,
+        .link-btn.ghost {
+            background: transparent;
+            color: var(--ink);
+            border: 1px solid rgba(90, 165, 255, 0.4);
+            box-shadow: none;
+        }
+
+        button.danger {
+            background: var(--danger);
+            color: #120606;
+        }
+
+        .layout {
+            flex: 1;
+            min-height: 0;
+            display: grid;
+            grid-template-columns: minmax(260px, 0.9fr) minmax(360px, 1.4fr) minmax(260px, 0.9fr);
+            grid-template-rows: 1fr;
+            grid-template-areas: "stories details defaults";
+            gap: 20px;
+        }
+
+        .panel {
+            background: rgba(22, 34, 53, 0.95);
+            border-radius: 20px;
+            padding: 18px 16px;
+            box-shadow: 0 16px 30px rgba(6, 12, 22, 0.5);
+            border: 1px solid rgba(62, 240, 193, 0.1);
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .panel h2 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .panel-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        form {
+            display: grid;
+            gap: 12px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            align-items: start;
+        }
+
+        .form-row.compact {
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+        }
+
+        label {
+            display: grid;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--ink-muted);
+        }
+
+        label.inline {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        label.inline input,
+        label.inline select {
+            width: 90px;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="file"],
+        textarea,
+        select {
+            padding: 8px 10px;
+            border-radius: 10px;
+            border: 1px solid rgba(90, 165, 255, 0.35);
+            background: var(--panel-2);
+            color: var(--ink);
+            font-size: 14px;
+        }
+
+        input[type="file"] {
+            padding: 6px;
+            background: rgba(12, 20, 34, 0.85);
+        }
+
+        input[type="file"]::file-selector-button {
+            border: none;
+            border-radius: 999px;
+            padding: 6px 12px;
+            margin-right: 10px;
+            font-weight: 600;
+            background: var(--accent-2);
+            color: #041018;
+            cursor: pointer;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 160px;
+        }
+
+        .hint {
+            font-size: 12px;
+            color: rgba(230, 243, 255, 0.55);
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .story-list {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 6px;
+            margin-top: 6px;
+        }
+
+        .story-card {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr) auto auto;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            border-radius: 12px;
+            background: rgba(15, 24, 38, 0.9);
+            border: 1px solid rgba(90, 165, 255, 0.2);
+            font-size: 11.5px;
+        }
+
+        .story-card.dragging {
+            opacity: 0.65;
+        }
+
+        .story-card.drag-target {
+            border-color: rgba(62, 240, 193, 0.7);
+        }
+
+        .story-card.selected {
+            border-color: rgba(62, 240, 193, 0.7);
+            box-shadow: 0 0 0 1px rgba(62, 240, 193, 0.2);
+        }
+
+        .story-check {
+            margin-top: 0;
+        }
+
+        .story-info {
+            flex: 1;
+            min-width: 0;
+            display: grid;
+            gap: 2px;
+        }
+
+        .story-card strong {
+            display: block;
+            margin-bottom: 1px;
+            font-size: 12.5px;
+            color: var(--ink);
+        }
+
+        .story-meta {
+            color: var(--ink-muted);
+        }
+
+        .story-actions {
+            display: flex;
+            gap: 6px;
+            flex-wrap: nowrap;
+        }
+
+        .story-actions button {
+            padding: 0;
+            width: 28px;
+            height: 28px;
+            font-size: 13px;
+            box-shadow: none;
+            border-radius: 9px;
+        }
+
+        .icon-btn {
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            font-size: 14px;
+            border-radius: 9px;
+            box-shadow: none;
+        }
+
+        .drag-handle {
+            width: 26px;
+            height: 26px;
+            border-radius: 9px;
+            border: 1px dashed rgba(90, 165, 255, 0.45);
+            background: transparent;
+            color: var(--ink-muted);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: grab;
+            font-size: 15px;
+        }
+
+        .drag-handle:active {
+            cursor: grabbing;
+        }
+
+        .danger-zone {
+            margin-top: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            flex-wrap: wrap;
+            padding-top: 8px;
+            border-top: 1px dashed rgba(90, 165, 255, 0.25);
+            background: rgba(22, 34, 53, 0.96);
+        }
+
+        .danger-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+        }
+
+        .auto-scan {
+            color: var(--ink-muted);
+        }
+
+        .tag-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 4px;
+        }
+
+        .tag {
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: rgba(62, 240, 193, 0.12);
+            color: var(--accent);
+            font-size: 11px;
+        }
+
+        .panel-content {
+            flex: 1;
+            min-height: 0;
+            overflow: auto;
+            display: grid;
+            gap: 16px;
+        }
+
+        .stories-panel .panel-content {
+            display: grid;
+            grid-template-rows: 1fr auto;
+            gap: 10px;
+            overflow: hidden;
+        }
+
+        .stories-panel .story-list {
+            min-height: 0;
+            overflow: auto;
+            padding-right: 4px;
+            scrollbar-width: none;
+        }
+
+        .stories-panel .story-list::-webkit-scrollbar {
+            width: 0;
+            height: 0;
+        }
+
+        .stories-panel .story-list:hover {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(90, 165, 255, 0.6) transparent;
+        }
+
+        .stories-panel .story-list:hover::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .stories-panel .story-list:hover::-webkit-scrollbar-thumb {
+            background: rgba(90, 165, 255, 0.6);
+            border-radius: 999px;
+        }
+
+        .stories-panel .story-list:hover::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .stories-panel button {
+            box-shadow: none;
+        }
+
+        .stories-panel {
+            grid-area: stories;
+        }
+
+        .details-panel {
+            grid-area: details;
+        }
+
+        .defaults-panel {
+            grid-area: defaults;
+        }
+
+        .defaults-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .defaults-actions button {
+            box-shadow: none;
+        }
+
+        .keybind-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(6, 10, 18, 0.78);
+            padding: 16px;
+            display: flex;
+            align-items: stretch;
+            justify-content: stretch;
+            z-index: 12;
+        }
+
+        .keybind-modal {
+            width: 100%;
+            height: 100%;
+            border-radius: 20px;
+            background: rgba(16, 24, 38, 0.96);
+            border: 1px solid rgba(90, 165, 255, 0.3);
+            box-shadow: 0 24px 40px rgba(6, 12, 22, 0.6);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .keybind-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 16px 18px;
+            border-bottom: 1px solid rgba(90, 165, 255, 0.25);
+            background: rgba(12, 20, 34, 0.9);
+        }
+
+        .keybind-title {
+            display: grid;
+            gap: 4px;
+        }
+
+        .keybind-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .keybind-grid {
+            flex: 1;
+            overflow: auto;
+            padding: 16px 18px 20px;
+            display: grid;
+            gap: 12px;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        }
+
+        .keybind-row {
+            display: grid;
+            gap: 8px;
+            padding: 12px;
+            border-radius: 14px;
+            background: rgba(15, 24, 38, 0.9);
+            border: 1px solid rgba(90, 165, 255, 0.2);
+        }
+
+        .keybind-row.active {
+            border-color: rgba(62, 240, 193, 0.6);
+            box-shadow: 0 0 0 1px rgba(62, 240, 193, 0.2);
+        }
+
+        .keybind-row span {
+            font-size: 13px;
+            color: var(--ink);
+        }
+
+        .keybind-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .keybind-key {
+            flex: 1;
+            min-width: 120px;
+            padding: 6px 10px;
+            border-radius: 10px;
+            border: 1px solid rgba(90, 165, 255, 0.35);
+            background: var(--panel-2);
+            color: var(--ink);
+            font-size: 13px;
+        }
+
+        .status-bar {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 18px;
+            background: rgba(10, 18, 32, 0.95);
+            border-top: 1px solid rgba(90, 165, 255, 0.35);
+            color: var(--ink-muted);
+            font-size: 12px;
+            z-index: 5;
+        }
+
+        .status-bar span {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .status-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .cover-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(6, 10, 18, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 10;
+        }
+
+        .cover-modal {
+            background: rgba(16, 24, 38, 0.95);
+            border-radius: 20px;
+            border: 1px solid rgba(90, 165, 255, 0.3);
+            padding: 18px;
+            width: min(860px, 90vw);
+            box-shadow: 0 24px 40px rgba(6, 12, 22, 0.6);
+            display: grid;
+            gap: 14px;
+        }
+
+        .cover-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .cover-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+            max-height: 320px;
+            overflow: auto;
+            padding-right: 6px;
+        }
+
+        .cover-item {
+            border-radius: 12px;
+            border: 2px solid transparent;
+            overflow: hidden;
+            width: 100%;
+            height: 96px;
+            cursor: pointer;
+            background: rgba(8, 14, 24, 0.7);
+        }
+
+        .cover-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .cover-item.active {
+            border-color: var(--accent);
+        }
+
+        .cover-item.dragging {
+            opacity: 0.6;
+        }
+
+        .cover-position-frame {
+            position: relative;
+            width: min(520px, 80vw);
+            height: min(320px, 60vh);
+            border-radius: 16px;
+            border: 1px solid rgba(90, 165, 255, 0.4);
+            background-color: rgba(10, 16, 26, 0.8);
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: 50% 50%;
+            overflow: hidden;
+            cursor: grab;
+        }
+
+        .cover-position-frame.dragging {
+            cursor: grabbing;
+        }
+
+        .cover-position-frame::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(to right, rgba(90, 165, 255, 0.35) 1px, transparent 1px),
+                linear-gradient(to right, rgba(90, 165, 255, 0.35) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(90, 165, 255, 0.35) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(90, 165, 255, 0.35) 1px, transparent 1px);
+            background-size: 1px 100%, 1px 100%, 100% 1px, 100% 1px;
+            background-position: 33.33% 0, 66.66% 0, 0 33.33%, 0 66.66%;
+            background-repeat: no-repeat;
+            pointer-events: none;
+            opacity: 0.65;
+        }
+
+        .cover-position-frame::after {
+            content: "";
+            position: absolute;
+            inset: 10%;
+            border: 1px dashed rgba(90, 165, 255, 0.5);
+            border-radius: 10px;
+            pointer-events: none;
+        }
+
+        .cover-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+        }
+
+        .image-preview {
+            margin-top: 10px;
+            display: grid;
+            gap: 8px;
+        }
+
+        .image-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            border-radius: 12px;
+            background: rgba(15, 24, 38, 0.9);
+            border: 1px dashed rgba(90, 165, 255, 0.35);
+            cursor: grab;
+            font-size: 12px;
+            color: var(--ink);
+        }
+
+        .image-item.dragging {
+            opacity: 0.6;
+        }
+
+        .image-index {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(62, 240, 193, 0.18);
+            color: var(--accent);
+            font-size: 11px;
+            flex-shrink: 0;
+        }
+
+        .image-empty {
+            font-size: 12px;
+            color: rgba(230, 243, 255, 0.5);
+        }
+
+        .help-backdrop {
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(circle at 20% 15%, rgba(62, 240, 193, 0.18), transparent 45%),
+                radial-gradient(circle at 80% 0%, rgba(90, 165, 255, 0.22), transparent 40%),
+                rgba(6, 10, 18, 0.78);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 14;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+            padding: 24px;
+            backdrop-filter: blur(6px);
+        }
+
+        .help-backdrop.is-open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .help-panel {
+            width: min(560px, 100%);
+            border-radius: 22px;
+            background: linear-gradient(180deg, rgba(14, 22, 36, 0.98) 0%, rgba(10, 16, 28, 0.97) 100%);
+            border: 1px solid rgba(62, 240, 193, 0.35);
+            box-shadow: 0 28px 60px rgba(6, 12, 22, 0.6);
+            padding: 20px 22px 22px;
+            transform: translateY(12px) scale(0.98);
+            transition: transform 0.25s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .help-backdrop.is-open .help-panel {
+            transform: translateY(0) scale(1);
+        }
+
+        .help-panel::before {
+            content: "";
+            position: absolute;
+            inset: -120px;
+            background:
+                radial-gradient(circle at 10% 0%, rgba(62, 240, 193, 0.16), transparent 52%),
+                radial-gradient(circle at 100% 20%, rgba(90, 165, 255, 0.16), transparent 45%);
+            opacity: 0.8;
+            z-index: 0;
+        }
+
+        .help-panel::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: 22px;
+            border: 1px solid rgba(90, 165, 255, 0.08);
+            box-shadow: inset 0 0 24px rgba(90, 165, 255, 0.12);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .help-header {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: flex-start;
+            position: relative;
+            z-index: 1;
+        }
+
+        .help-eyebrow {
+            margin: 0 0 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.28em;
+            font-size: 11px;
+            color: var(--accent);
+        }
+
+        .help-header h2 {
+            margin: 0;
+            font-family: "Palatino Linotype", "Georgia", serif;
+            letter-spacing: 0.04em;
+            font-size: 22px;
+        }
+
+        .help-close {
+            border-radius: 12px;
+            border: 1px solid rgba(90, 165, 255, 0.3);
+            background: rgba(12, 20, 34, 0.85);
+            color: var(--ink);
+            width: 36px;
+            height: 36px;
+            cursor: pointer;
+            font-size: 16px;
+            box-shadow: none;
+            transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+
+        .help-close:hover {
+            transform: translateY(-1px);
+            border-color: rgba(62, 240, 193, 0.6);
+            box-shadow: 0 0 12px rgba(62, 240, 193, 0.2);
+        }
+
+        .help-body {
+            margin: 16px 0 20px;
+            color: var(--ink-muted);
+            line-height: 1.6;
+            font-size: 14px;
+            white-space: pre-line;
+            position: relative;
+            z-index: 1;
+        }
+
+        .help-actions {
+            display: flex;
+            justify-content: flex-end;
+            position: relative;
+            z-index: 1;
+        }
+
+        .help-primary {
+            border-radius: 12px;
+            border: 1px solid rgba(62, 240, 193, 0.5);
+            background: linear-gradient(120deg, rgba(62, 240, 193, 0.95), rgba(90, 165, 255, 0.9));
+            color: #041018;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 13px;
+            letter-spacing: 0.03em;
+            box-shadow: 0 12px 22px rgba(6, 12, 22, 0.45);
+            transition: transform 0.15s ease, box-shadow 0.2s ease;
+        }
+
+        .help-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 16px 26px rgba(6, 12, 22, 0.5);
+        }
+
+        @media (max-width: 720px) {
+            .header-actions {
+                width: 100%;
+            }
+
+            .header-actions button,
+            .header-actions .link-btn {
+                flex: 1;
+            }
+        }
+
+        @media (max-width: 980px) {
+            .layout {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto;
+                grid-template-areas:
+                    "stories"
+                    "details"
+                    "defaults";
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="shell">
+        <header>
+            <div>
+                <p class="eyebrow">Xedryk's Lab System</p>
+                <h1>Data Manager</h1>
+            </div>
+            <div class="header-actions">
+                <button id="choose-folder">Choose Library Folder</button>
+                <button class="ghost" id="open-recent" type="button">Open Recent Folder</button>
+                <button class="ghost" id="scan-library">Scan Files</button>
+                <button class="ghost" id="reload-catalog">Reload Catalog</button>
+                <button class="ghost" id="fix-missing" type="button">Fix Missing Files</button>
+                <button class="ghost" id="help-btn" type="button">Help</button>
+                <label class="checkbox auto-scan">
+                    <input type="checkbox" id="auto-scan">
+                    Auto Scan
+                </label>
+                <a class="link-btn ghost" href="homepage.html">Open Homepage</a>
+            </div>
+        </header>
+
+        <main class="layout">
+            <section class="panel details-panel story-panel">
+                <div class="panel-header">
+                    <h2>Story Details</h2>
+                    <div class="panel-actions">
+                        <button type="submit" form="story-form">Save Story</button>
+                        <button type="button" class="ghost" id="clear-form" form="story-form">Clear Form</button>
+                    </div>
+                </div>
+                <div class="panel-content">
+                <form id="story-form">
+                    <div class="form-row">
+                        <label>
+                            Report Number
+                            <input type="number" id="report-number" min="1" placeholder="Auto">
+                            <span class="hint">Leave empty to auto-assign the next report number.</span>
+                        </label>
+
+                        <label>
+                            Title
+                            <input type="text" id="report-title" placeholder="The Report #1">
+                        </label>
+                    </div>
+
+                    <div class="form-row">
+                        <label>
+                            Short Description
+                            <input type="text" id="report-description" placeholder="A short sci-fi summary.">
+                        </label>
+
+                        <label>
+                            Tags (comma separated)
+                            <input type="text" id="report-tags" placeholder="sci-fi, lab, mission">
+                        </label>
+                    </div>
+
+                    <div class="form-row">
+                        <label>
+                            Cover
+                            <button type="button" class="ghost" id="cover-picker-btn">Choose Cover & Position</button>
+                            <input type="hidden" id="cover-position" value="50% 50%">
+                            <span class="hint" id="cover-summary">Cover: first image · Position: center</span>
+                        </label>
+
+                        <label>
+                            Story Images
+                            <input type="file" id="story-images" accept="image/*" multiple>
+                            <span class="hint" id="image-hint">Images will be renamed as storyId_001, storyId_002, etc.</span>
+                            <div class="image-preview" id="image-preview"></div>
+                        </label>
+                    </div>
+
+                    <div class="form-row">
+                        <label>
+                            Replace Existing Images
+                            <select id="replace-images">
+                                <option value="keep">Keep if no new images</option>
+                                <option value="replace">Replace with new selection</option>
+                            </select>
+                        </label>
+
+                        <label>
+                            Load Story From File
+                            <input type="file" id="story-file" accept=".md,.txt">
+                        </label>
+                    </div>
+
+                    <label>
+                        Story Text (Markdown)
+                        <textarea id="story-text" rows="10" placeholder="Write the story here..."></textarea>
+                    </label>
+                </form>
+                </div>
+            </section>
+            <section class="panel stories-panel">
+                <h2>Existing Stories</h2>
+                <div class="panel-content">
+                    <div class="story-list" id="story-list"></div>
+                    <div class="danger-zone">
+                        <label class="checkbox">
+                            <input type="checkbox" id="delete-files" checked>
+                            Delete files on removal
+                        </label>
+                        <div class="danger-actions">
+                            <button class="danger icon-btn" id="remove-selected" title="Remove Selected Stories" type="button">🗑️</button>
+                            <button class="ghost icon-btn" id="apply-view-defaults" title="Apply Viewer Defaults" type="button">👁️</button>
+                            <button class="ghost icon-btn" id="cleanup-selected" title="Cleanup Unused Images" type="button">🧹</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel defaults-panel">
+                <h2>Viewer Defaults</h2>
+                <div class="panel-content">
+                <form id="settings-form">
+                    <label>
+                        Theme
+                        <select id="default-theme">
+                            <option value="dark">Dark</option>
+                            <option value="light">Light</option>
+                        </select>
+                    </label>
+
+                    <label>
+                        Story Font
+                        <select id="default-font-family">
+                            <option value="tech">Share Tech Mono</option>
+                            <option value="orbitron">Orbitron</option>
+                            <option value="vt323">VT323</option>
+                            <option value="system-mono">System Mono</option>
+                            <option value="system-sans">System Sans</option>
+                            <option value="system-serif">System Serif</option>
+                        </select>
+                    </label>
+
+                    <label>
+                        Custom Font (optional)
+                        <input type="text" id="default-custom-font" placeholder="e.g. 'Fira Code', monospace">
+                    </label>
+
+                    <div class="form-row compact">
+                        <label class="inline">
+                            Font Size
+                            <input type="number" id="default-font" min="14" max="26" step="1">
+                        </label>
+
+                        <label class="inline">
+                            Line Spacing
+                            <input type="number" id="default-line" min="1.2" max="2.2" step="0.1">
+                        </label>
+
+                        <label class="inline">
+                            Scroll Step
+                            <input type="number" id="default-scroll" min="20" max="120" step="10">
+                        </label>
+
+                        <label class="inline">
+                            Zoom Step
+                            <input type="number" id="default-zoom" min="0.05" max="0.3" step="0.05">
+                        </label>
+                    </div>
+
+                    <label>
+                        Keyboard Mode
+                        <select id="default-keyboard">
+                            <option value="default">Default</option>
+                            <option value="left">One-Hand Left</option>
+                            <option value="right">One-Hand Right</option>
+                        </select>
+                    </label>
+
+                    <label class="checkbox">
+                        <input type="checkbox" id="default-pan">
+                        Enable pan keys (hold Shift)
+                    </label>
+
+                    <label class="checkbox">
+                        <input type="checkbox" id="default-remember">
+                        Remember zoom per story
+                    </label>
+
+                    <label class="checkbox">
+                        <input type="checkbox" id="default-remember-all">
+                        Remember view across all stories
+                    </label>
+
+                    <div class="defaults-actions">
+                        <button type="button" id="save-settings">💾 Save</button>
+                        <button type="button" class="ghost" id="export-settings">⬇️ Export</button>
+                        <button type="button" class="ghost" id="import-settings">⬆️ Import</button>
+                        <button type="button" class="ghost" id="edit-shortcuts">⌨️ Shortcuts</button>
+                    </div>
+                </form>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div class="status-bar">
+        <span id="status-bar-text">Ready.</span>
+        <span id="status-bar-recent">Recent folder: none · Recent story: none</span>
+    </div>
+
+    <div class="cover-overlay" id="cover-overlay" hidden>
+        <div class="cover-modal">
+            <div class="cover-header">
+                <strong>Select Cover Image</strong>
+                <button class="ghost" id="cover-close" type="button">Close</button>
+            </div>
+            <div class="cover-grid" id="cover-grid"></div>
+            <div class="cover-actions">
+                <button class="ghost" id="cover-skip" type="button">Use First Image</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="cover-overlay" id="cover-position-overlay" hidden>
+        <div class="cover-modal">
+            <div class="cover-header">
+                <strong>Position Cover</strong>
+                <button class="ghost" id="cover-position-close" type="button">Close</button>
+            </div>
+            <div class="cover-position-frame" id="cover-position-frame"></div>
+            <div class="cover-actions">
+                <button class="ghost" id="cover-position-reset" type="button">Center</button>
+                <button class="ghost" id="cover-position-cancel" type="button">Cancel</button>
+                <button type="button" id="cover-position-save">Save Position</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="keybind-overlay" id="keybind-overlay" hidden>
+        <div class="keybind-modal">
+            <div class="keybind-header">
+                <div class="keybind-title">
+                    <strong>Viewer Shortcuts</strong>
+                    <span class="hint">Click Assign then press a key. Backspace to clear. Escape to cancel.</span>
+                </div>
+                <div class="keybind-actions">
+                    <button type="button" class="ghost" id="keybind-reset">Reset</button>
+                    <button type="button" class="ghost" id="keybind-close">Close</button>
+                    <button type="button" id="keybind-save">Save</button>
+                </div>
+            </div>
+            <div class="keybind-grid" id="keybind-grid"></div>
+        </div>
+    </div>
+
+    <div class="help-backdrop" id="help-modal" aria-hidden="true">
+        <div class="help-panel" role="dialog" aria-modal="true" aria-labelledby="help-title">
+            <div class="help-header">
+                <div>
+                    <p class="help-eyebrow">Xedryk's Lab System</p>
+                    <h2 id="help-title">Data Manager Help</h2>
+                </div>
+                <button class="help-close" id="help-close" type="button" aria-label="Close">✕</button>
+            </div>
+            <p class="help-body" id="help-body"></p>
+            <div class="help-actions">
+                <button class="help-primary" id="help-ok" type="button">Got it</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const chooseFolderBtn = document.getElementById('choose-folder');
+        const openRecentBtn = document.getElementById('open-recent');
+        const scanLibraryBtn = document.getElementById('scan-library');
+        const reloadCatalogBtn = document.getElementById('reload-catalog');
+        const fixMissingBtn = document.getElementById('fix-missing');
+        const helpBtn = document.getElementById('help-btn');
+        const helpModal = document.getElementById('help-modal');
+        const helpClose = document.getElementById('help-close');
+        const helpOk = document.getElementById('help-ok');
+        const helpBody = document.getElementById('help-body');
+        const autoScanToggle = document.getElementById('auto-scan');
+        const statusEl = document.getElementById('status');
+        const recentInfoEl = document.getElementById('recent-info');
+        const statusBarText = document.getElementById('status-bar-text');
+        const statusBarRecent = document.getElementById('status-bar-recent');
+        const storyForm = document.getElementById('story-form');
+        const reportNumberInput = document.getElementById('report-number');
+        const reportTitleInput = document.getElementById('report-title');
+        const reportDescriptionInput = document.getElementById('report-description');
+        const reportTagsInput = document.getElementById('report-tags');
+        const coverPositionInput = document.getElementById('cover-position');
+        const coverPickerBtn = document.getElementById('cover-picker-btn');
+        const coverSummary = document.getElementById('cover-summary');
+        const coverOverlay = document.getElementById('cover-overlay');
+        const coverGrid = document.getElementById('cover-grid');
+        const coverCloseBtn = document.getElementById('cover-close');
+        const coverSkipBtn = document.getElementById('cover-skip');
+        const coverPositionOverlay = document.getElementById('cover-position-overlay');
+        const coverPositionFrame = document.getElementById('cover-position-frame');
+        const coverPositionClose = document.getElementById('cover-position-close');
+        const coverPositionReset = document.getElementById('cover-position-reset');
+        const coverPositionCancel = document.getElementById('cover-position-cancel');
+        const coverPositionSave = document.getElementById('cover-position-save');
+        const storyImagesInput = document.getElementById('story-images');
+        const replaceImagesSelect = document.getElementById('replace-images');
+        const imagePreviewEl = document.getElementById('image-preview');
+        const storyTextInput = document.getElementById('story-text');
+        const storyFileInput = document.getElementById('story-file');
+        const storyListEl = document.getElementById('story-list');
+        const clearFormBtn = document.getElementById('clear-form');
+        const removeSelectedBtn = document.getElementById('remove-selected');
+        const applyViewDefaultsBtn = document.getElementById('apply-view-defaults');
+        const cleanupSelectedBtn = document.getElementById('cleanup-selected');
+        const deleteFilesCheckbox = document.getElementById('delete-files');
+
+        const defaultTheme = document.getElementById('default-theme');
+        const defaultFontFamily = document.getElementById('default-font-family');
+        const defaultCustomFont = document.getElementById('default-custom-font');
+        const defaultFont = document.getElementById('default-font');
+        const defaultLine = document.getElementById('default-line');
+        const defaultScroll = document.getElementById('default-scroll');
+        const defaultZoom = document.getElementById('default-zoom');
+        const defaultKeyboard = document.getElementById('default-keyboard');
+        const defaultPan = document.getElementById('default-pan');
+        const defaultRemember = document.getElementById('default-remember');
+        const defaultRememberAll = document.getElementById('default-remember-all');
+        const saveSettingsBtn = document.getElementById('save-settings');
+        const exportSettingsBtn = document.getElementById('export-settings');
+        const importSettingsBtn = document.getElementById('import-settings');
+        const editShortcutsBtn = document.getElementById('edit-shortcuts');
+        const keybindOverlay = document.getElementById('keybind-overlay');
+        const keybindGrid = document.getElementById('keybind-grid');
+        const keybindCloseBtn = document.getElementById('keybind-close');
+        const keybindSaveBtn = document.getElementById('keybind-save');
+        const keybindResetBtn = document.getElementById('keybind-reset');
+
+        const state = {
+            rootHandle: null,
+            stories: [],
+            selectedId: null,
+            selectedEntry: null,
+        };
+
+        const AUTO_SCAN_KEY = 'dataManagerAutoScan';
+        const RECENT_FOLDER_KEY = 'dataManagerRecentFolder';
+        const RECENT_STORY_KEY = 'dataManagerRecentStory';
+        const RECENT_STORY_TITLE_KEY = 'dataManagerRecentStoryTitle';
+        const RECENT_FOLDER_TIME_KEY = 'dataManagerRecentFolderTime';
+        const RECENT_HANDLE_DB = 'story1-manager';
+        const RECENT_HANDLE_STORE = 'handles';
+        const RECENT_HANDLE_ID = 'library';
+        const DEFAULT_SETTINGS = {
+            theme: 'dark',
+            fontSize: 16,
+            lineSpacing: 1.6,
+            scrollStep: 40,
+            zoomStep: 0.1,
+            keyboardMode: 'default',
+            panKeys: true,
+            rememberZoom: true,
+            rememberViewAll: false,
+            fontFamily: 'tech',
+            customFont: '',
+            customBindings: {},
+        };
+        const HELP_TEXT = [
+            'Create, update, or remove reports.',
+            'This manager writes the catalog, moves images into the correct folder, and rebuilds the library database.',
+            'Use "Scan Files" to rebuild from disk, "Fix Missing Files" to repair links, and "Save Story" to update entries.'
+        ].join('\n');
+        const KEYBIND_ACTIONS = [
+            { action: 'prev', label: 'Prev image', fallback: 'arrowleft' },
+            { action: 'next', label: 'Next image', fallback: 'arrowright' },
+            { action: 'zoomOut', label: 'Zoom out', fallback: '-' },
+            { action: 'zoomIn', label: 'Zoom in', fallback: '=' },
+            { action: 'fit', label: 'Fit view', fallback: '0' },
+            { action: 'fontDown', label: 'Font down', fallback: '[' },
+            { action: 'fontUp', label: 'Font up', fallback: ']' },
+            { action: 'lineDown', label: 'Line down', fallback: '{' },
+            { action: 'lineUp', label: 'Line up', fallback: '}' },
+            { action: 'favorite', label: 'Favorite', fallback: 'f' },
+            { action: 'bookmark', label: 'Bookmark', fallback: 'b' },
+            { action: 'toggleTheme', label: 'Toggle theme', fallback: 't' },
+            { action: 'toggleSettings', label: 'Toggle settings', fallback: '?' },
+            { action: 'blackout', label: 'Blackout', fallback: 'space' },
+        ];
+
+        let selectedImages = [];
+        let dragIndex = null;
+        let selectedStoryIds = new Set();
+        let storyDragId = null;
+        let coverSelection = null;
+        let coverPreviewUrls = [];
+        let coverPosition = { x: 50, y: 50 };
+        let coverDragging = false;
+        let coverDragStart = { x: 0, y: 0, posX: 50, posY: 50 };
+        let coverDragIndex = null;
+        let customBindingsDraft = {};
+        let activeKeybindAction = null;
+
+        function setStatus(message) {
+            if (statusEl) {
+                statusEl.textContent = message;
+            }
+            if (statusBarText) {
+                statusBarText.textContent = message;
+            }
+        }
+
+        function openHelpModal() {
+            if (!helpModal || !helpBody) {
+                return;
+            }
+            helpBody.textContent = HELP_TEXT;
+            helpModal.classList.add('is-open');
+            helpModal.setAttribute('aria-hidden', 'false');
+        }
+
+        function closeHelpModal() {
+            if (!helpModal) {
+                return;
+            }
+            helpModal.classList.remove('is-open');
+            helpModal.setAttribute('aria-hidden', 'true');
+        }
+
+        function openHandleDb() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(RECENT_HANDLE_DB, 1);
+                request.onupgradeneeded = () => {
+                    const db = request.result;
+                    if (!db.objectStoreNames.contains(RECENT_HANDLE_STORE)) {
+                        db.createObjectStore(RECENT_HANDLE_STORE);
+                    }
+                };
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async function saveRecentHandle(handle) {
+            try {
+                const db = await openHandleDb();
+                await new Promise((resolve, reject) => {
+                    const tx = db.transaction(RECENT_HANDLE_STORE, 'readwrite');
+                    tx.objectStore(RECENT_HANDLE_STORE).put(handle, RECENT_HANDLE_ID);
+                    tx.oncomplete = () => resolve();
+                    tx.onerror = () => reject(tx.error);
+                });
+            } catch (error) {
+                // ignore
+            }
+        }
+
+        async function loadRecentHandle() {
+            try {
+                const db = await openHandleDb();
+                return await new Promise((resolve, reject) => {
+                    const tx = db.transaction(RECENT_HANDLE_STORE, 'readonly');
+                    const request = tx.objectStore(RECENT_HANDLE_STORE).get(RECENT_HANDLE_ID);
+                    request.onsuccess = () => resolve(request.result || null);
+                    request.onerror = () => reject(request.error);
+                });
+            } catch (error) {
+                return null;
+            }
+        }
+
+        function updateRecentInfo() {
+            const folder = localStorage.getItem(RECENT_FOLDER_KEY);
+            const storyTitle = localStorage.getItem(RECENT_STORY_TITLE_KEY);
+            const folderTime = localStorage.getItem(RECENT_FOLDER_TIME_KEY);
+            const timeText = folderTime ? ` · ${new Date(folderTime).toLocaleString()}` : '';
+
+            const folderText = folder ? `Recent folder: ${folder}${timeText}` : 'Recent folder: none';
+            const storyText = storyTitle ? `Recent story: ${storyTitle}` : 'Recent story: none';
+            if (recentInfoEl) {
+                recentInfoEl.textContent = `${folderText} · ${storyText}`;
+            }
+            if (statusBarRecent) {
+                statusBarRecent.textContent = `${folderText} · ${storyText}`;
+            }
+            if (openRecentBtn) {
+                openRecentBtn.disabled = !folder;
+            }
+        }
+
+        async function tryUseRecentHandle(auto = false) {
+            const handle = await loadRecentHandle();
+            if (!handle) {
+                if (!auto) {
+                    setStatus('No recent folder saved yet.');
+                }
+                return;
+            }
+            let permission = await handle.queryPermission({ mode: 'readwrite' });
+            if (permission !== 'granted' && !auto) {
+                permission = await handle.requestPermission({ mode: 'readwrite' });
+            }
+            if (permission !== 'granted') {
+                if (!auto) {
+                    setStatus('Permission denied for recent folder.');
+                }
+                return;
+            }
+
+            state.rootHandle = handle;
+            await ensureStructure();
+            await loadLibrary();
+            setStatus(`Loaded ${state.stories.length} stories from ${state.rootHandle.name}.`);
+        }
+
+        function saveRecentFolder(handle) {
+            if (!handle) return;
+            localStorage.setItem(RECENT_FOLDER_KEY, handle.name || 'Library');
+            localStorage.setItem(RECENT_FOLDER_TIME_KEY, new Date().toISOString());
+            updateRecentInfo();
+            saveRecentHandle(handle);
+        }
+
+        function saveRecentStory(entry) {
+            if (!entry) return;
+            const title = entry.title || (entry.reportNumber ? `The Report #${entry.reportNumber}` : entry.id);
+            localStorage.setItem(RECENT_STORY_KEY, entry.id);
+            localStorage.setItem(RECENT_STORY_TITLE_KEY, title);
+            updateRecentInfo();
+        }
+
+        function renderImagePreview() {
+            if (!imagePreviewEl) return;
+            imagePreviewEl.innerHTML = '';
+
+            if (selectedImages.length === 0) {
+                const empty = document.createElement('div');
+                empty.className = 'image-empty';
+                empty.textContent = 'No new images selected.';
+                imagePreviewEl.appendChild(empty);
+                return;
+            }
+
+            selectedImages.forEach((file, index) => {
+                const item = document.createElement('div');
+                item.className = 'image-item';
+                item.draggable = true;
+                item.dataset.index = index;
+
+                const indexBadge = document.createElement('span');
+                indexBadge.className = 'image-index';
+                indexBadge.textContent = String(index + 1);
+
+                const name = document.createElement('span');
+                name.textContent = file.name;
+
+                item.appendChild(indexBadge);
+                item.appendChild(name);
+
+                item.addEventListener('dragstart', () => {
+                    dragIndex = index;
+                    item.classList.add('dragging');
+                });
+
+                item.addEventListener('dragend', () => {
+                    dragIndex = null;
+                    item.classList.remove('dragging');
+                });
+
+                item.addEventListener('dragover', event => {
+                    event.preventDefault();
+                });
+
+                item.addEventListener('drop', event => {
+                    event.preventDefault();
+                    const targetIndex = parseInt(item.dataset.index, 10);
+                    if (!Number.isFinite(targetIndex) || dragIndex === null || dragIndex === targetIndex) {
+                        return;
+                    }
+                    const moved = selectedImages.splice(dragIndex, 1)[0];
+                    selectedImages.splice(targetIndex, 0, moved);
+                    if (coverSelection && coverSelection.source === 'selected') {
+                        if (coverSelection.index === dragIndex) {
+                            coverSelection.index = targetIndex;
+                        } else if (dragIndex < targetIndex && coverSelection.index > dragIndex && coverSelection.index <= targetIndex) {
+                            coverSelection.index -= 1;
+                        } else if (dragIndex > targetIndex && coverSelection.index < dragIndex && coverSelection.index >= targetIndex) {
+                            coverSelection.index += 1;
+                        }
+                    }
+                    updateCoverSummary();
+                    renderImagePreview();
+                });
+
+                imagePreviewEl.appendChild(item);
+            });
+        }
+
+        function clearCoverPreviewUrls() {
+            coverPreviewUrls.forEach(url => URL.revokeObjectURL(url));
+            coverPreviewUrls = [];
+        }
+
+        function normalizeCoverPosition(value) {
+            if (!value || value === 'center') {
+                return { x: 50, y: 50 };
+            }
+            const raw = String(value).trim();
+            const singleMatch = raw.match(/^(-?\d+(?:\.\d+)?)(%)?$/);
+            if (singleMatch) {
+                const single = parseFloat(singleMatch[1]);
+                if (Number.isFinite(single)) {
+                    const clamped = Math.max(0, Math.min(100, single));
+                    return { x: clamped, y: clamped };
+                }
+            }
+            const pairMatch = raw.match(/(-?\d+(?:\.\d+)?)%?\s*[ ,]\s*(-?\d+(?:\.\d+)?)%?/);
+            if (pairMatch) {
+                const x = parseFloat(pairMatch[1]);
+                const y = parseFloat(pairMatch[2]);
+                if (Number.isFinite(x) && Number.isFinite(y)) {
+                    return {
+                        x: Math.max(0, Math.min(100, x)),
+                        y: Math.max(0, Math.min(100, y)),
+                    };
+                }
+            }
+            return { x: 50, y: 50 };
+        }
+
+        function formatCoverPositionValue(position) {
+            const x = Math.max(0, Math.min(100, position.x));
+            const y = Math.max(0, Math.min(100, position.y));
+            return `${x.toFixed(0)}% ${y.toFixed(0)}%`;
+        }
+
+        function updateCoverSummary() {
+            if (!coverSummary) return;
+            const coverName = coverSelection ? (coverSelection.label || 'custom') : 'first image';
+            const posLabel = coverPositionInput.value || 'center';
+            coverSummary.textContent = `Cover: ${coverName} · Position: ${posLabel}`;
+        }
+
+        function normalizeKey(key) {
+            if (key === ' ') {
+                return 'space';
+            }
+            return String(key || '').toLowerCase();
+        }
+
+        function prettyKeyLabel(key) {
+            const map = {
+                arrowup: '↑',
+                arrowdown: '↓',
+                arrowleft: '←',
+                arrowright: '→',
+                space: 'Space',
+                escape: 'Esc',
+                backspace: 'Backspace',
+                delete: 'Delete',
+            };
+            return map[key] || key;
+        }
+
+        function formatKeyDisplay(action) {
+            const custom = customBindingsDraft && customBindingsDraft[action];
+            if (custom) {
+                return prettyKeyLabel(custom);
+            }
+            const fallback = KEYBIND_ACTIONS.find(item => item.action === action);
+            return fallback ? prettyKeyLabel(fallback.fallback) : '—';
+        }
+
+        function renderKeybindGrid() {
+            if (!keybindGrid) return;
+            keybindGrid.innerHTML = '';
+            KEYBIND_ACTIONS.forEach(row => {
+                const card = document.createElement('div');
+                card.className = 'keybind-row';
+                if (activeKeybindAction === row.action) {
+                    card.classList.add('active');
+                }
+
+                const label = document.createElement('span');
+                label.textContent = row.label;
+
+                const controls = document.createElement('div');
+                controls.className = 'keybind-controls';
+
+                const key = document.createElement('div');
+                key.className = 'keybind-key';
+                const activeLabel = activeKeybindAction === row.action ? ' (press key)' : '';
+                key.textContent = `${formatKeyDisplay(row.action)}${activeLabel}`;
+
+                const assignBtn = document.createElement('button');
+                assignBtn.type = 'button';
+                assignBtn.className = 'ghost';
+                assignBtn.textContent = 'Assign';
+                assignBtn.addEventListener('click', () => {
+                    activeKeybindAction = row.action;
+                    renderKeybindGrid();
+                });
+
+                const clearBtn = document.createElement('button');
+                clearBtn.type = 'button';
+                clearBtn.className = 'ghost';
+                clearBtn.textContent = 'Clear';
+                clearBtn.addEventListener('click', () => {
+                    if (customBindingsDraft) {
+                        delete customBindingsDraft[row.action];
+                    }
+                    activeKeybindAction = null;
+                    renderKeybindGrid();
+                });
+
+                controls.appendChild(key);
+                controls.appendChild(assignBtn);
+                controls.appendChild(clearBtn);
+
+                card.appendChild(label);
+                card.appendChild(controls);
+                keybindGrid.appendChild(card);
+            });
+        }
+
+        function openKeybindOverlay() {
+            if (!keybindOverlay) return;
+            activeKeybindAction = null;
+            renderKeybindGrid();
+            keybindOverlay.hidden = false;
+        }
+
+        function closeKeybindOverlay() {
+            if (!keybindOverlay) return;
+            activeKeybindAction = null;
+            keybindOverlay.hidden = true;
+        }
+
+        function buildCoverItems() {
+            clearCoverPreviewUrls();
+            if (selectedImages.length > 0) {
+                return selectedImages.map((file, index) => {
+                    const url = URL.createObjectURL(file);
+                    coverPreviewUrls.push(url);
+                    return { src: url, label: file.name, source: 'selected', index };
+                });
+            }
+            if (state.selectedEntry && Array.isArray(state.selectedEntry.images) && state.selectedEntry.images.length > 0) {
+                return state.selectedEntry.images.map((path, index) => ({
+                    src: path,
+                    label: getFileName(path),
+                    source: 'existing',
+                    index,
+                    path,
+                }));
+            }
+            return [];
+        }
+
+        function reorderCoverItems(source, fromIndex, toIndex) {
+            if (fromIndex === toIndex) return;
+            let list = null;
+            if (source === 'selected') {
+                list = selectedImages;
+            } else if (source === 'existing' && state.selectedEntry && Array.isArray(state.selectedEntry.images)) {
+                list = state.selectedEntry.images;
+            }
+            if (!list || !list[fromIndex]) {
+                return;
+            }
+            const moved = list.splice(fromIndex, 1)[0];
+            list.splice(toIndex, 0, moved);
+
+            if (coverSelection && coverSelection.source === source) {
+                if (coverSelection.index === fromIndex) {
+                    coverSelection.index = toIndex;
+                } else if (fromIndex < toIndex && coverSelection.index > fromIndex && coverSelection.index <= toIndex) {
+                    coverSelection.index -= 1;
+                } else if (fromIndex > toIndex && coverSelection.index < fromIndex && coverSelection.index >= toIndex) {
+                    coverSelection.index += 1;
+                }
+            }
+        }
+
+        function renderCoverGrid(items) {
+            if (!coverGrid) return;
+            coverGrid.innerHTML = '';
+            items.forEach(item => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'cover-item';
+                btn.draggable = true;
+                btn.dataset.index = item.index;
+                btn.dataset.source = item.source;
+                if (coverSelection && coverSelection.source === item.source && coverSelection.index === item.index) {
+                    btn.classList.add('active');
+                }
+                const img = document.createElement('img');
+                img.src = item.src;
+                img.alt = item.label || 'cover';
+                btn.appendChild(img);
+                btn.addEventListener('dragstart', () => {
+                    coverDragIndex = item.index;
+                    btn.classList.add('dragging');
+                });
+                btn.addEventListener('dragend', () => {
+                    coverDragIndex = null;
+                    btn.classList.remove('dragging');
+                });
+                btn.addEventListener('dragover', event => {
+                    event.preventDefault();
+                });
+                btn.addEventListener('drop', event => {
+                    event.preventDefault();
+                    const targetIndex = parseInt(btn.dataset.index, 10);
+                    if (!Number.isFinite(targetIndex) || coverDragIndex === null || coverDragIndex === targetIndex) {
+                        return;
+                    }
+                    reorderCoverItems(item.source, coverDragIndex, targetIndex);
+                    updateCoverSummary();
+                    renderCoverGrid(buildCoverItems());
+                    renderImagePreview();
+                });
+                btn.addEventListener('click', () => {
+                    coverSelection = item;
+                    openCoverPosition(item);
+                });
+                coverGrid.appendChild(btn);
+            });
+        }
+
+        function openCoverPicker() {
+            const items = buildCoverItems();
+            if (items.length === 0) {
+                setStatus('Select or load images first to choose a cover.');
+                return;
+            }
+            renderCoverGrid(items);
+            if (coverOverlay) {
+                coverOverlay.hidden = false;
+            }
+        }
+
+        function useFirstCover() {
+            const items = buildCoverItems();
+            if (items.length === 0) {
+                return;
+            }
+            coverSelection = items[0];
+            coverPosition = { x: 50, y: 50 };
+            coverPositionInput.value = '50% 50%';
+            updateCoverSummary();
+        }
+
+        function closeCoverPicker() {
+            if (coverOverlay) {
+                coverOverlay.hidden = true;
+            }
+        }
+
+        function applyCoverPosition() {
+            if (!coverPositionInput) return;
+            coverPositionInput.value = formatCoverPositionValue(coverPosition);
+            if (coverPositionFrame) {
+                coverPositionFrame.style.backgroundPosition = coverPositionInput.value;
+            }
+            updateCoverSummary();
+        }
+
+        function openCoverPosition(item) {
+            closeCoverPicker();
+            if (!coverPositionFrame) return;
+            coverPosition = normalizeCoverPosition(coverPositionInput.value);
+            coverPositionFrame.style.backgroundImage = `url('${item.src}')`;
+            applyCoverPosition();
+            if (coverPositionOverlay) {
+                coverPositionOverlay.hidden = false;
+            }
+        }
+
+        function closeCoverPosition() {
+            if (coverPositionOverlay) {
+                coverPositionOverlay.hidden = true;
+            }
+        }
+
+        function resetCoverPosition() {
+            coverPosition = { x: 50, y: 50 };
+            applyCoverPosition();
+        }
+
+        function startCoverDrag(event) {
+            if (!coverPositionFrame) return;
+            coverDragging = true;
+            coverPositionFrame.classList.add('dragging');
+            coverDragStart = {
+                x: event.clientX,
+                y: event.clientY,
+                posX: coverPosition.x,
+                posY: coverPosition.y,
+            };
+        }
+
+        function moveCoverDrag(event) {
+            if (!coverDragging || !coverPositionFrame) return;
+            const rect = coverPositionFrame.getBoundingClientRect();
+            const dx = event.clientX - coverDragStart.x;
+            const dy = event.clientY - coverDragStart.y;
+            const nextX = coverDragStart.posX + (dx / rect.width) * 100;
+            const nextY = coverDragStart.posY + (dy / rect.height) * 100;
+            coverPosition = {
+                x: Math.max(0, Math.min(100, nextX)),
+                y: Math.max(0, Math.min(100, nextY)),
+            };
+            applyCoverPosition();
+        }
+
+        function endCoverDrag() {
+            coverDragging = false;
+            if (coverPositionFrame) {
+                coverPositionFrame.classList.remove('dragging');
+            }
+        }
+
+        function supportsFileSystemAccess() {
+            return 'showDirectoryPicker' in window;
+        }
+
+        function normalizeCatalog(data) {
+            if (Array.isArray(data)) {
+                return data;
+            }
+            if (data && typeof data === 'object') {
+                return [data];
+            }
+            return [];
+        }
+
+        function loadAutoScanSetting() {
+            const raw = localStorage.getItem(AUTO_SCAN_KEY);
+            return raw === 'true';
+        }
+
+        function saveAutoScanSetting(value) {
+            localStorage.setItem(AUTO_SCAN_KEY, value ? 'true' : 'false');
+        }
+
+        async function pickLibraryFolder() {
+            if (!supportsFileSystemAccess()) {
+                setStatus('Your browser does not support the File System Access API. Use Chrome or Edge.');
+                return;
+            }
+
+            try {
+                state.rootHandle = await window.showDirectoryPicker();
+                await ensureStructure();
+                saveRecentFolder(state.rootHandle);
+                if (autoScanToggle && autoScanToggle.checked) {
+                    await scanLibrary();
+                } else {
+                    await loadLibrary();
+                }
+            } catch (error) {
+                setStatus('Folder selection cancelled.');
+            }
+        }
+
+        async function getDirectory(name, create = true) {
+            return state.rootHandle.getDirectoryHandle(name, { create });
+        }
+
+        async function getDatabaseDir() {
+            return getDirectory('database', true);
+        }
+
+        async function getStoryDir() {
+            return getDirectory('story', true);
+        }
+
+        async function getImageDir() {
+            return getDirectory('img-scr', true);
+        }
+
+        async function readJsonFile(dirHandle, fileName) {
+            try {
+                const fileHandle = await dirHandle.getFileHandle(fileName);
+                const file = await fileHandle.getFile();
+                const text = await file.text();
+                if (!text.trim()) {
+                    return null;
+                }
+                return JSON.parse(text);
+            } catch (error) {
+                return null;
+            }
+        }
+
+        async function readTextFile(dirHandle, fileName) {
+            try {
+                const fileHandle = await dirHandle.getFileHandle(fileName);
+                const file = await fileHandle.getFile();
+                return file.text();
+            } catch (error) {
+                return '';
+            }
+        }
+
+        async function fileExists(dirHandle, fileName) {
+            try {
+                await dirHandle.getFileHandle(fileName);
+                return true;
+            } catch (error) {
+                return false;
+            }
+        }
+
+        function getFileName(path) {
+            if (!path) return '';
+            const normalized = path.replace(/\\/g, '/');
+            return normalized.split('/').pop();
+        }
+
+        async function writeFile(dirHandle, fileName, contents) {
+            const fileHandle = await dirHandle.getFileHandle(fileName, { create: true });
+            const writable = await fileHandle.createWritable();
+            await writable.write(contents);
+            await writable.close();
+        }
+
+        function generateStoryId() {
+            const now = new Date();
+            const pad = value => String(value).padStart(2, '0');
+            return `r${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+        }
+
+        function parseTags(raw) {
+            return raw
+                .split(',')
+                .map(tag => tag.trim())
+                .filter(Boolean);
+        }
+
+        function getNextReportNumber() {
+            const max = state.stories.reduce((acc, story) => Math.max(acc, story.reportNumber || 0), 0);
+            return max + 1;
+        }
+
+        function hasDisplayOrder(list = state.stories) {
+            return list.some(story => Number.isFinite(story.displayOrder));
+        }
+
+        function getNextDisplayOrder(list = state.stories) {
+            const max = list.reduce((acc, story) => {
+                const order = Number.isFinite(story.displayOrder) ? story.displayOrder : -1;
+                return Math.max(acc, order);
+            }, -1);
+            return max + 1;
+        }
+
+        async function ensureStructure() {
+            await getDatabaseDir();
+            await getStoryDir();
+            await getImageDir();
+
+            const databaseDir = await getDatabaseDir();
+            const catalog = await readJsonFile(databaseDir, 'catalog.json');
+            if (!catalog) {
+                await writeCatalog([]);
+            }
+
+            const settings = await readJsonFile(databaseDir, 'settings.json');
+            if (!settings) {
+                await writeFile(databaseDir, 'settings.json', JSON.stringify(DEFAULT_SETTINGS, null, 2));
+            }
+        }
+
+        async function loadLibrary() {
+            if (!state.rootHandle) {
+                return;
+            }
+
+            const databaseDir = await getDatabaseDir();
+            const catalog = await readJsonFile(databaseDir, 'catalog.json');
+            state.stories = normalizeCatalog(catalog);
+            selectedStoryIds.clear();
+
+            await loadDefaultSettings();
+            renderStoryList();
+            setStatus(`Loaded ${state.stories.length} stories from ${state.rootHandle.name}.`);
+            saveRecentFolder(state.rootHandle);
+        }
+
+        async function scanLibrary() {
+            if (!state.rootHandle) {
+                setStatus('Choose a library folder first.');
+                return;
+            }
+
+            const databaseDir = await getDatabaseDir();
+            const storyDir = await getStoryDir();
+            const imageDir = await getImageDir();
+            const existingCatalog = normalizeCatalog(await readJsonFile(databaseDir, 'catalog.json'));
+            const existingMap = new Map(existingCatalog.map(entry => [entry.id, entry]));
+            const hasExistingOrder = hasDisplayOrder(existingCatalog);
+            let nextDisplayOrder = hasExistingOrder ? getNextDisplayOrder(existingCatalog) : 0;
+
+            const validExt = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg'];
+            const imageMap = new Map();
+
+            for await (const [name, handle] of imageDir.entries()) {
+                if (handle.kind !== 'file') continue;
+                const lower = name.toLowerCase();
+                const ext = lower.slice(lower.lastIndexOf('.'));
+                if (!validExt.includes(ext)) continue;
+                const match = name.match(/^(.+?)_(\d+)\./);
+                if (!match) continue;
+                const id = match[1];
+                const order = parseInt(match[2], 10) || 0;
+                if (!imageMap.has(id)) {
+                    imageMap.set(id, []);
+                }
+                imageMap.get(id).push({ name, order });
+            }
+
+            let nextReportNumber = existingCatalog.reduce((acc, story) => Math.max(acc, story.reportNumber || 0), 0) + 1;
+            const rebuilt = [];
+
+            for await (const [name, handle] of storyDir.entries()) {
+                if (handle.kind !== 'file' || !name.toLowerCase().endsWith('.md')) {
+                    continue;
+                }
+                const id = name.slice(0, -3);
+                const existing = existingMap.get(id);
+                const reportNumber = existing?.reportNumber || nextReportNumber++;
+                const title = existing?.title || `The Report #${reportNumber}`;
+                const description = existing?.description || '';
+                const tags = Array.isArray(existing?.tags) ? existing.tags : [];
+                const coverPosition = formatCoverPositionValue(
+                    normalizeCoverPosition(existing?.coverPosition || '50% 50%')
+                );
+
+                const images = (imageMap.get(id) || [])
+                    .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name))
+                    .map(item => `img-scr/${item.name}`);
+
+                const cover = images[0] || '';
+                const file = await handle.getFile();
+                const createdAt = existing?.createdAt || new Date(file.lastModified).toISOString();
+                const updatedAt = new Date().toISOString();
+
+                const displayOrder = Number.isFinite(existing?.displayOrder)
+                    ? existing.displayOrder
+                    : (hasExistingOrder ? nextDisplayOrder++ : undefined);
+
+                rebuilt.push({
+                    id,
+                    reportNumber,
+                    title,
+                    description,
+                    tags,
+                    cover,
+                    coverPosition,
+                    images,
+                    story: `story/${name}`,
+                    createdAt,
+                    updatedAt,
+                    displayOrder,
+                });
+            }
+
+            state.stories = rebuilt;
+            sortStories();
+            await writeCatalog(state.stories);
+            renderStoryList();
+            setStatus(`Scanned library and rebuilt ${state.stories.length} stories.`);
+            saveRecentFolder(state.rootHandle);
+        }
+
+        async function loadDefaultSettings() {
+            const databaseDir = await getDatabaseDir();
+            const settings = await readJsonFile(databaseDir, 'settings.json');
+            const data = settings || DEFAULT_SETTINGS;
+
+            defaultTheme.value = data.theme || 'dark';
+            if (defaultFontFamily) {
+                defaultFontFamily.value = data.fontFamily || 'tech';
+            }
+            if (defaultCustomFont) {
+                defaultCustomFont.value = data.customFont || '';
+            }
+            defaultFont.value = data.fontSize || 16;
+            defaultLine.value = data.lineSpacing || 1.6;
+            defaultScroll.value = data.scrollStep || 40;
+            defaultZoom.value = data.zoomStep || 0.1;
+            defaultKeyboard.value = data.keyboardMode || 'default';
+            defaultPan.checked = data.panKeys !== false;
+            defaultRemember.checked = data.rememberZoom !== false;
+            if (defaultRememberAll) {
+                defaultRememberAll.checked = data.rememberViewAll === true;
+            }
+            customBindingsDraft = { ...(data.customBindings || {}) };
+            if (keybindOverlay && !keybindOverlay.hidden) {
+                renderKeybindGrid();
+            }
+        }
+
+        function readSettingsForm() {
+            return {
+                theme: defaultTheme.value,
+                fontFamily: defaultFontFamily ? defaultFontFamily.value : 'tech',
+                customFont: defaultCustomFont ? defaultCustomFont.value.trim() : '',
+                fontSize: parseInt(defaultFont.value, 10) || 16,
+                lineSpacing: parseFloat(defaultLine.value) || 1.6,
+                scrollStep: parseInt(defaultScroll.value, 10) || 40,
+                zoomStep: parseFloat(defaultZoom.value) || 0.1,
+                keyboardMode: defaultKeyboard.value,
+                panKeys: defaultPan.checked,
+                rememberZoom: defaultRemember.checked,
+                rememberViewAll: defaultRememberAll ? defaultRememberAll.checked : false,
+                customBindings: { ...(customBindingsDraft || {}) },
+            };
+        }
+
+        async function saveDefaultSettings() {
+            if (!state.rootHandle) {
+                setStatus('Choose a library folder first.');
+                return;
+            }
+
+            const databaseDir = await getDatabaseDir();
+            const existing = (await readJsonFile(databaseDir, 'settings.json')) || {};
+            const data = { ...existing, ...readSettingsForm() };
+            await writeFile(databaseDir, 'settings.json', JSON.stringify(data, null, 2));
+            if (state.stories.length === 0) {
+                await loadLibrary();
+            }
+            await writeCatalog(state.stories);
+            setStatus('Viewer defaults saved.');
+        }
+
+        async function writeCatalog(catalog) {
+            const databaseDir = await getDatabaseDir();
+            const jsonCatalog = catalog.map(entry => {
+                const { storyText, ...rest } = entry;
+                return rest;
+            });
+            const catalogJson = JSON.stringify(jsonCatalog, null, 2);
+
+            const storyDir = await getStoryDir();
+            const catalogWithText = [];
+            for (const entry of catalog) {
+                const storyText = entry.storyText || await readTextFile(storyDir, `${entry.id}.md`);
+                catalogWithText.push({ ...entry, storyText });
+            }
+            const viewerSettings = (await readJsonFile(databaseDir, 'settings.json')) || DEFAULT_SETTINGS;
+            const catalogJs = `window.REPORT_CATALOG = ${JSON.stringify(catalogWithText, null, 2)};\n` +
+                `window.VIEWER_SETTINGS = ${JSON.stringify(viewerSettings, null, 2)};\n`;
+
+            await writeFile(databaseDir, 'catalog.json', catalogJson);
+            await writeFile(databaseDir, 'catalog.js', catalogJs);
+        }
+
+        function sortStories() {
+            if (hasDisplayOrder()) {
+                state.stories.sort((a, b) => {
+                    const aOrder = Number.isFinite(a.displayOrder) ? a.displayOrder : Number.MAX_SAFE_INTEGER;
+                    const bOrder = Number.isFinite(b.displayOrder) ? b.displayOrder : Number.MAX_SAFE_INTEGER;
+                    if (aOrder !== bOrder) {
+                        return aOrder - bOrder;
+                    }
+                    return (a.reportNumber || 0) - (b.reportNumber || 0);
+                });
+                return;
+            }
+            state.stories.sort((a, b) => (a.reportNumber || 0) - (b.reportNumber || 0));
+        }
+
+        function applyDisplayOrder() {
+            state.stories.forEach((story, index) => {
+                story.displayOrder = index;
+            });
+        }
+
+        function renderStoryList() {
+            storyListEl.innerHTML = '';
+
+            if (state.stories.length === 0) {
+                const empty = document.createElement('p');
+                empty.textContent = 'No stories yet.';
+                storyListEl.appendChild(empty);
+                return;
+            }
+
+            state.stories.forEach(story => {
+                const card = document.createElement('div');
+                card.className = 'story-card';
+                card.dataset.id = story.id;
+                if (selectedStoryIds.has(story.id)) {
+                    card.classList.add('selected');
+                }
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.className = 'story-check';
+                checkbox.checked = selectedStoryIds.has(story.id);
+                checkbox.addEventListener('change', () => {
+                    if (checkbox.checked) {
+                        selectedStoryIds.add(story.id);
+                    } else {
+                        selectedStoryIds.delete(story.id);
+                    }
+                    renderStoryList();
+                });
+
+                const info = document.createElement('div');
+                info.className = 'story-info';
+                const title = document.createElement('strong');
+                title.textContent = story.title || `The Report #${story.reportNumber || ''}`;
+                const meta = document.createElement('div');
+                meta.className = 'story-meta';
+                meta.textContent = story.description || story.id;
+
+                info.appendChild(title);
+                info.appendChild(meta);
+
+                if (story.tags && story.tags.length > 0) {
+                    const tagList = document.createElement('div');
+                    tagList.className = 'tag-list';
+                    story.tags.forEach(tag => {
+                        const pill = document.createElement('span');
+                        pill.className = 'tag';
+                        pill.textContent = tag;
+                        tagList.appendChild(pill);
+                    });
+                    info.appendChild(tagList);
+                }
+
+                const actions = document.createElement('div');
+                actions.className = 'story-actions';
+
+                const editBtn = document.createElement('button');
+                editBtn.type = 'button';
+                editBtn.className = 'icon-btn';
+                editBtn.title = 'Edit story';
+                editBtn.textContent = '✏️';
+                editBtn.addEventListener('click', () => editStory(story.id));
+
+                const previewBtn = document.createElement('button');
+                previewBtn.type = 'button';
+                previewBtn.textContent = '👁️';
+                previewBtn.className = 'ghost icon-btn';
+                previewBtn.title = 'Preview story';
+                previewBtn.addEventListener('click', () => {
+                    window.open(`view/viewer.html?story=${story.id}&from=Data_Manager.html`, '_blank');
+                });
+
+                actions.appendChild(editBtn);
+                actions.appendChild(previewBtn);
+
+                const dragHandle = document.createElement('button');
+                dragHandle.type = 'button';
+                dragHandle.className = 'drag-handle';
+                dragHandle.textContent = '⋮⋮';
+                dragHandle.title = 'Drag to reorder';
+                dragHandle.draggable = true;
+                dragHandle.addEventListener('dragstart', event => {
+                    storyDragId = story.id;
+                    card.classList.add('dragging');
+                    event.dataTransfer.effectAllowed = 'move';
+                    event.dataTransfer.setData('text/plain', story.id);
+                });
+                dragHandle.addEventListener('dragend', () => {
+                    storyDragId = null;
+                    card.classList.remove('dragging');
+                });
+
+                card.addEventListener('dragover', event => {
+                    if (!storyDragId || storyDragId === story.id) {
+                        return;
+                    }
+                    event.preventDefault();
+                    card.classList.add('drag-target');
+                });
+
+                card.addEventListener('dragleave', () => {
+                    card.classList.remove('drag-target');
+                });
+
+                card.addEventListener('drop', event => {
+                    event.preventDefault();
+                    card.classList.remove('drag-target');
+                    if (!storyDragId || storyDragId === story.id) {
+                        return;
+                    }
+                    reorderStories(storyDragId, story.id);
+                });
+
+                card.appendChild(checkbox);
+                card.appendChild(info);
+                card.appendChild(actions);
+                card.appendChild(dragHandle);
+                storyListEl.appendChild(card);
+            });
+        }
+
+        async function reorderStories(fromId, toId) {
+            if (!state.rootHandle) {
+                setStatus('Choose a library folder first.');
+                return;
+            }
+            const fromIndex = state.stories.findIndex(story => story.id === fromId);
+            const toIndex = state.stories.findIndex(story => story.id === toId);
+            if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) {
+                return;
+            }
+
+            const [moved] = state.stories.splice(fromIndex, 1);
+            const insertIndex = fromIndex < toIndex ? toIndex - 1 : toIndex;
+            state.stories.splice(insertIndex, 0, moved);
+
+            applyDisplayOrder();
+            await writeCatalog(state.stories);
+            renderStoryList();
+            setStatus('Story order updated.');
+        }
+
+        async function editStory(id) {
+            if (!state.rootHandle) {
+                setStatus('Choose a library folder first.');
+                return;
+            }
+
+            const story = state.stories.find(item => item.id === id);
+            if (!story) {
+                return;
+            }
+
+            state.selectedId = id;
+            state.selectedEntry = story;
+
+            reportNumberInput.value = story.reportNumber || '';
+            reportTitleInput.value = story.title || '';
+            reportDescriptionInput.value = story.description || '';
+            reportTagsInput.value = (story.tags || []).join(', ');
+            coverPositionInput.value = story.coverPosition || '50% 50%';
+            replaceImagesSelect.value = 'keep';
+            if (story.cover && Array.isArray(story.images)) {
+                const idx = story.images.findIndex(img => img === story.cover);
+                coverSelection = {
+                    source: 'existing',
+                    index: idx >= 0 ? idx : 0,
+                    path: story.cover,
+                    label: getFileName(story.cover),
+                };
+            } else {
+                coverSelection = null;
+            }
+            coverPosition = normalizeCoverPosition(coverPositionInput.value);
+            applyCoverPosition();
+
+            const storyDir = await getStoryDir();
+            storyTextInput.value = await readTextFile(storyDir, `${id}.md`);
+
+            storyImagesInput.value = '';
+            storyFileInput.value = '';
+            selectedImages = [];
+            renderImagePreview();
+
+            setStatus(`Editing ${story.title || story.id}.`);
+            saveRecentStory(story);
+        }
+
+        function resetForm() {
+            storyForm.reset();
+            reportTitleInput.value = '';
+            reportDescriptionInput.value = '';
+            reportTagsInput.value = '';
+            coverPositionInput.value = '50% 50%';
+            storyImagesInput.value = '';
+            storyFileInput.value = '';
+            storyTextInput.value = '';
+            replaceImagesSelect.value = 'keep';
+            state.selectedId = null;
+            state.selectedEntry = null;
+            selectedImages = [];
+            coverSelection = null;
+            coverPosition = { x: 50, y: 50 };
+            applyCoverPosition();
+            renderImagePreview();
+        }
+
+        async function removeStoryFiles(id) {
+            const storyDir = await getStoryDir();
+            try {
+                await storyDir.removeEntry(`${id}.md`);
+            } catch (error) {
+                // ignore
+            }
+
+            const imageDir = await getImageDir();
+            for await (const [name] of imageDir.entries()) {
+                if (name.startsWith(`${id}_`)) {
+                    await imageDir.removeEntry(name);
+                }
+            }
+        }
+
+        async function cleanupUnusedImages() {
+            if (!state.rootHandle) {
+                setStatus('Choose a library folder first.');
+                return;
+            }
+
+            if (!state.selectedId || !state.selectedEntry) {
+                setStatus('Select a story to clean up first.');
+                return;
+            }
+
+            const imageDir = await getImageDir();
+            const keep = new Set((state.selectedEntry.images || []).map(path => path.split('/').pop()));
+
+            for await (const [name] of imageDir.entries()) {
+                if (name.startsWith(`${state.selectedId}_`) && !keep.has(name)) {
+                    await imageDir.removeEntry(name);
+                }
+            }
+
+            setStatus('Cleaned unused images.');
+        }
+
+        async function handleSave(event) {
+            event.preventDefault();
+
+            if (!state.rootHandle) {
+                setStatus('Choose a library folder first.');
+                return;
+            }
+
+            let reportNumber = parseInt(reportNumberInput.value, 10);
+            if (!reportNumber) {
+                reportNumber = getNextReportNumber();
+            }
+
+            const id = state.selectedId || generateStoryId();
+            const title = reportTitleInput.value.trim() || `The Report #${reportNumber}`;
+            const description = reportDescriptionInput.value.trim();
+            const tags = parseTags(reportTagsInput.value);
+            coverPosition = normalizeCoverPosition(coverPositionInput.value);
+            const coverPositionValue = formatCoverPositionValue(coverPosition);
+            coverPositionInput.value = coverPositionValue;
+            const storyMarkdown = storyTextInput.value.trim();
+
+            if (!storyMarkdown) {
+                setStatus('Story text is required.');
+                return;
+            }
+
+            const imageFiles = Array.from(storyImagesInput.files || []);
+            const replaceImages = replaceImagesSelect.value === 'replace';
+            const orderedImages = selectedImages.length > 0 ? selectedImages : imageFiles;
+
+            let imagePaths = [];
+            if (orderedImages.length > 0) {
+                imagePaths = await storeImages(id, orderedImages, replaceImages);
+            } else if (state.selectedEntry && Array.isArray(state.selectedEntry.images)) {
+                imagePaths = state.selectedEntry.images;
+            } else {
+                setStatus('Please select at least one image.');
+                return;
+            }
+
+            if (replaceImages && imageFiles.length === 0 && state.selectedEntry) {
+                await cleanupImagesById(id, imagePaths);
+            }
+
+            let cover = imagePaths[0] || '';
+            if (coverSelection) {
+                if (coverSelection.source === 'selected') {
+                    cover = imagePaths[coverSelection.index] || cover;
+                } else if (coverSelection.source === 'existing') {
+                    const idx = imagePaths.findIndex(path => path === coverSelection.path);
+                    cover = idx >= 0 ? imagePaths[idx] : (coverSelection.path || cover);
+                }
+            }
+            const existingDisplayOrder = state.selectedEntry && Number.isFinite(state.selectedEntry.displayOrder)
+                ? state.selectedEntry.displayOrder
+                : undefined;
+            const displayOrder = Number.isFinite(existingDisplayOrder)
+                ? existingDisplayOrder
+                : (hasDisplayOrder() ? getNextDisplayOrder() : undefined);
+            const createdAt = (state.selectedEntry && state.selectedEntry.createdAt) || new Date().toISOString();
+            const updatedAt = new Date().toISOString();
+
+            const storyFile = `${id}.md`;
+            const storyDir = await getStoryDir();
+            await writeFile(storyDir, storyFile, storyMarkdown);
+
+            const entry = {
+                id,
+                reportNumber,
+                title,
+                description,
+                tags,
+                cover,
+                coverPosition: coverPositionValue,
+                images: imagePaths,
+                story: `story/${storyFile}`,
+                createdAt,
+                updatedAt,
+                displayOrder,
+            };
+
+            const existingIndex = state.stories.findIndex(item => item.id === id);
+            if (existingIndex >= 0) {
+                state.stories[existingIndex] = entry;
+            } else {
+                state.stories.push(entry);
+            }
+
+            sortStories();
+            await writeCatalog(state.stories);
+
+            setStatus(`Saved ${title}.`);
+            await loadLibrary();
+            resetForm();
+            saveRecentStory(entry);
+        }
+
+        async function storeImages(id, files, replaceExisting) {
+            const imageDir = await getImageDir();
+
+            if (replaceExisting) {
+                for await (const [name] of imageDir.entries()) {
+                    if (name.startsWith(`${id}_`)) {
+                        await imageDir.removeEntry(name);
+                    }
+                }
+            }
+
+            const paths = [];
+            for (let index = 0; index < files.length; index += 1) {
+                const file = files[index];
+                const extensionMatch = file.name.match(/\.([a-zA-Z0-9]+)$/);
+                const extension = extensionMatch ? extensionMatch[1].toLowerCase() : 'jpg';
+                const fileName = `${id}_${String(index + 1).padStart(3, '0')}.${extension}`;
+                const fileHandle = await imageDir.getFileHandle(fileName, { create: true });
+                const writable = await fileHandle.createWritable();
+                await writable.write(await file.arrayBuffer());
+                await writable.close();
+                paths.push(`img-scr/${fileName}`);
+            }
+
+            return paths;
+        }
+
+        async function cleanupImagesById(id, keepPaths) {
+            const imageDir = await getImageDir();
+            const keep = new Set(keepPaths.map(path => path.split('/').pop()));
+            for await (const [name] of imageDir.entries()) {
+                if (name.startsWith(`${id}_`) && !keep.has(name)) {
+                    await imageDir.removeEntry(name);
+                }
+            }
+        }
+
+        async function exportSettings() {
+            if (!state.rootHandle) {
+                setStatus('Choose a library folder first.');
+                return;
+            }
+            if (!supportsFileSystemAccess()) {
+                setStatus('File System Access API not supported.');
+                return;
+            }
+            const databaseDir = await getDatabaseDir();
+            const existing = (await readJsonFile(databaseDir, 'settings.json')) || {};
+            const data = { ...existing, ...readSettingsForm() };
+            const suggested = `viewer-settings-${new Date().toISOString().slice(0, 10)}.json`;
+            try {
+                const handle = await window.showSaveFilePicker({
+                    suggestedName: suggested,
+                    types: [
+                        { description: 'JSON', accept: { 'application/json': ['.json'] } },
+                    ],
+                });
+                const writable = await handle.createWritable();
+                await writable.write(JSON.stringify(data, null, 2));
+                await writable.close();
+                setStatus('Settings exported.');
+            } catch (error) {
+                setStatus('Export cancelled.');
+            }
+        }
+
+        async function importSettings() {
+            if (!state.rootHandle) {
+                setStatus('Choose a library folder first.');
+                return;
+            }
+            if (!supportsFileSystemAccess()) {
+                setStatus('File System Access API not supported.');
+                return;
+            }
+            try {
+                const [handle] = await window.showOpenFilePicker({
+                    types: [
+                        { description: 'JSON', accept: { 'application/json': ['.json'] } },
+                    ],
+                    multiple: false,
+                });
+                if (!handle) return;
+                const file = await handle.getFile();
+                const text = await file.text();
+                const data = JSON.parse(text);
+                const merged = { ...DEFAULT_SETTINGS, ...data };
+                const databaseDir = await getDatabaseDir();
+                await writeFile(databaseDir, 'settings.json', JSON.stringify(merged, null, 2));
+                await loadDefaultSettings();
+                if (state.stories.length === 0) {
+                    await loadLibrary();
+                }
+                await writeCatalog(state.stories);
+                setStatus('Settings imported.');
+            } catch (error) {
+                setStatus('Import cancelled or invalid file.');
+            }
+        }
+
+        function handleKeybindKeydown(event) {
+            if (!keybindOverlay || keybindOverlay.hidden) {
+                return;
+            }
+            if (!activeKeybindAction) {
+                return;
+            }
+            event.preventDefault();
+            const pressed = normalizeKey(event.key);
+            if (pressed === 'escape') {
+                activeKeybindAction = null;
+                renderKeybindGrid();
+                return;
+            }
+            if (pressed === 'backspace' || pressed === 'delete') {
+                if (customBindingsDraft) {
+                    delete customBindingsDraft[activeKeybindAction];
+                }
+                activeKeybindAction = null;
+                renderKeybindGrid();
+                return;
+            }
+            if (!customBindingsDraft) {
+                customBindingsDraft = {};
+            }
+            customBindingsDraft[activeKeybindAction] = pressed;
+            activeKeybindAction = null;
+            renderKeybindGrid();
+        }
+
+        async function handleRemove() {
+            if (!state.rootHandle) {
+                setStatus('Choose a library folder first.');
+                return;
+            }
+
+            const idsToRemove = selectedStoryIds.size > 0
+                ? Array.from(selectedStoryIds)
+                : (state.selectedId ? [state.selectedId] : []);
+
+            if (idsToRemove.length === 0) {
+                setStatus('Select a story to remove.');
+                return;
+            }
+
+            if (!window.confirm(`Remove ${idsToRemove.length} selected stor${idsToRemove.length > 1 ? 'ies' : 'y'}?`)) {
+                return;
+            }
+
+            for (const id of idsToRemove) {
+                if (deleteFilesCheckbox.checked) {
+                    await removeStoryFiles(id);
+                }
+            }
+
+            state.stories = state.stories.filter(item => !idsToRemove.includes(item.id));
+            await writeCatalog(state.stories);
+
+            selectedStoryIds.clear();
+            resetForm();
+            renderStoryList();
+            setStatus(`Removed ${idsToRemove.length} stor${idsToRemove.length > 1 ? 'ies' : 'y'}.`);
+        }
+
+        async function applyViewDefaultsToSelected() {
+            if (!state.rootHandle) {
+                setStatus('Choose a library folder first.');
+                return;
+            }
+            const ids = selectedStoryIds.size > 0 ? Array.from(selectedStoryIds) : [];
+            if (ids.length === 0) {
+                setStatus('Select stories to apply defaults.');
+                return;
+            }
+            const databaseDir = await getDatabaseDir();
+            const existing = (await readJsonFile(databaseDir, 'settings.json')) || {};
+            const defaults = { ...existing, ...readSettingsForm() };
+            state.stories = state.stories.map(entry => {
+                if (ids.includes(entry.id)) {
+                    return { ...entry, viewDefaults: defaults };
+                }
+                return entry;
+            });
+            await writeCatalog(state.stories);
+            renderStoryList();
+            setStatus(`Applied viewer defaults to ${ids.length} stor${ids.length > 1 ? 'ies' : 'y'}.`);
+        }
+
+        async function fixMissingFiles() {
+            if (!state.rootHandle) {
+                setStatus('Choose a library folder first.');
+                return;
+            }
+
+            if (!supportsFileSystemAccess()) {
+                setStatus('File System Access API not supported.');
+                return;
+            }
+
+            await loadLibrary();
+            const storyDir = await getStoryDir();
+            const imageDir = await getImageDir();
+
+            let fixedCount = 0;
+            let removedCount = 0;
+
+            for (let i = state.stories.length - 1; i >= 0; i -= 1) {
+                const entry = state.stories[i];
+                const title = entry.title || entry.id;
+
+                const storyFileName = `${entry.id}.md`;
+                const storyExists = await fileExists(storyDir, storyFileName);
+                if (!storyExists) {
+                    const locate = window.confirm(`Story file missing for "${title}". Locate a file now?`);
+                    if (locate) {
+                        try {
+                            const [handle] = await window.showOpenFilePicker({
+                                types: [
+                                    {
+                                        description: 'Markdown or Text',
+                                        accept: { 'text/plain': ['.md', '.txt'] },
+                                    },
+                                ],
+                                multiple: false,
+                            });
+                            if (handle) {
+                                const file = await handle.getFile();
+                                const text = await file.text();
+                                await writeFile(storyDir, storyFileName, text);
+                                entry.story = `story/${storyFileName}`;
+                                fixedCount += 1;
+                            }
+                        } catch (error) {
+                            // user cancelled
+                        }
+                    } else {
+                        const removeStory = window.confirm(`Remove "${title}" from the catalog?`);
+                        if (removeStory) {
+                            state.stories.splice(i, 1);
+                            removedCount += 1;
+                            continue;
+                        }
+                    }
+                }
+
+                if (Array.isArray(entry.images)) {
+                    for (let j = entry.images.length - 1; j >= 0; j -= 1) {
+                        const imagePath = entry.images[j];
+                        const fileName = getFileName(imagePath);
+                        if (!fileName) continue;
+                        const imageExists = await fileExists(imageDir, fileName);
+                        if (!imageExists) {
+                            const locateImage = window.confirm(`Image missing (${fileName}) for "${title}". Locate a replacement?`);
+                            if (locateImage) {
+                                try {
+                                    const [handle] = await window.showOpenFilePicker({
+                                        types: [
+                                            {
+                                                description: 'Image files',
+                                                accept: { 'image/*': ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp'] },
+                                            },
+                                        ],
+                                        multiple: false,
+                                    });
+                                    if (handle) {
+                                        const file = await handle.getFile();
+                                        const buffer = await file.arrayBuffer();
+                                        const outHandle = await imageDir.getFileHandle(fileName, { create: true });
+                                        const writable = await outHandle.createWritable();
+                                        await writable.write(buffer);
+                                        await writable.close();
+                                        fixedCount += 1;
+                                    }
+                                } catch (error) {
+                                    // user cancelled
+                                }
+                            } else {
+                                const removeImage = window.confirm(`Remove missing image (${fileName}) from the catalog?`);
+                                if (removeImage) {
+                                    entry.images.splice(j, 1);
+                                    removedCount += 1;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (entry.images && entry.images.length > 0) {
+                    const coverName = getFileName(entry.cover);
+                    if (!coverName || !(await fileExists(imageDir, coverName))) {
+                        entry.cover = entry.images[0];
+                    }
+                } else {
+                    entry.cover = '';
+                }
+            }
+
+            await writeCatalog(state.stories);
+            renderStoryList();
+            setStatus(`Fix completed. Repaired ${fixedCount} file(s), removed ${removedCount} missing reference(s).`);
+        }
+
+        if (autoScanToggle) {
+            autoScanToggle.checked = loadAutoScanSetting();
+            autoScanToggle.addEventListener('change', () => saveAutoScanSetting(autoScanToggle.checked));
+        }
+
+        chooseFolderBtn.addEventListener('click', pickLibraryFolder);
+        openRecentBtn.addEventListener('click', () => tryUseRecentHandle(false));
+        scanLibraryBtn.addEventListener('click', scanLibrary);
+        reloadCatalogBtn.addEventListener('click', loadLibrary);
+        fixMissingBtn.addEventListener('click', fixMissingFiles);
+        if (helpBtn) {
+            helpBtn.addEventListener('click', () => {
+                openHelpModal();
+            });
+        }
+        if (helpClose) {
+            helpClose.addEventListener('click', closeHelpModal);
+        }
+        if (helpOk) {
+            helpOk.addEventListener('click', closeHelpModal);
+        }
+        if (helpModal) {
+            helpModal.addEventListener('click', event => {
+                if (event.target === helpModal) {
+                    closeHelpModal();
+                }
+            });
+        }
+        clearFormBtn.addEventListener('click', resetForm);
+        removeSelectedBtn.addEventListener('click', handleRemove);
+        applyViewDefaultsBtn.addEventListener('click', applyViewDefaultsToSelected);
+        cleanupSelectedBtn.addEventListener('click', cleanupUnusedImages);
+        saveSettingsBtn.addEventListener('click', saveDefaultSettings);
+        exportSettingsBtn.addEventListener('click', exportSettings);
+        importSettingsBtn.addEventListener('click', importSettings);
+        if (editShortcutsBtn) {
+            editShortcutsBtn.addEventListener('click', openKeybindOverlay);
+        }
+        if (keybindCloseBtn) {
+            keybindCloseBtn.addEventListener('click', closeKeybindOverlay);
+        }
+        if (keybindResetBtn) {
+            keybindResetBtn.addEventListener('click', () => {
+                customBindingsDraft = {};
+                activeKeybindAction = null;
+                renderKeybindGrid();
+            });
+        }
+        if (keybindSaveBtn) {
+            keybindSaveBtn.addEventListener('click', async () => {
+                await saveDefaultSettings();
+                closeKeybindOverlay();
+            });
+        }
+
+        document.addEventListener('keydown', handleKeybindKeydown);
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape') {
+                closeHelpModal();
+            }
+        });
+
+        storyForm.addEventListener('submit', handleSave);
+
+        storyImagesInput.addEventListener('change', () => {
+            selectedImages = Array.from(storyImagesInput.files || []);
+            coverSelection = null;
+            coverPosition = { x: 50, y: 50 };
+            coverPositionInput.value = '50% 50%';
+            applyCoverPosition();
+            renderImagePreview();
+        });
+
+        if (coverPickerBtn) {
+            coverPickerBtn.addEventListener('click', openCoverPicker);
+        }
+        if (coverCloseBtn) {
+            coverCloseBtn.addEventListener('click', closeCoverPicker);
+        }
+        if (coverSkipBtn) {
+            coverSkipBtn.addEventListener('click', () => {
+                useFirstCover();
+                closeCoverPicker();
+            });
+        }
+        if (coverPositionClose) {
+            coverPositionClose.addEventListener('click', closeCoverPosition);
+        }
+        if (coverPositionCancel) {
+            coverPositionCancel.addEventListener('click', closeCoverPosition);
+        }
+        if (coverPositionReset) {
+            coverPositionReset.addEventListener('click', resetCoverPosition);
+        }
+        if (coverPositionSave) {
+            coverPositionSave.addEventListener('click', () => {
+                applyCoverPosition();
+                closeCoverPosition();
+            });
+        }
+        if (coverPositionFrame) {
+            coverPositionFrame.addEventListener('mousedown', event => {
+                startCoverDrag(event);
+            });
+        }
+        document.addEventListener('mousemove', moveCoverDrag);
+        document.addEventListener('mouseup', endCoverDrag);
+
+        storyFileInput.addEventListener('change', async () => {
+            const file = storyFileInput.files[0];
+            if (file) {
+                const text = await file.text();
+                storyTextInput.value = text;
+            }
+        });
+
+        if (!supportsFileSystemAccess()) {
+            setStatus('File System Access API not supported. Use Chrome or Edge for offline management.');
+            if (openRecentBtn) {
+                openRecentBtn.disabled = true;
+            }
+            if (fixMissingBtn) {
+                fixMissingBtn.disabled = true;
+            }
+            if (exportSettingsBtn) {
+                exportSettingsBtn.disabled = true;
+            }
+            if (importSettingsBtn) {
+                importSettingsBtn.disabled = true;
+            }
+        }
+
+        updateRecentInfo();
+        renderImagePreview();
+        updateCoverSummary();
+        tryUseRecentHandle(true);
+    </script>
+</body>
+</html>
