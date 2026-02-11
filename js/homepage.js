@@ -90,6 +90,25 @@ const COLOR_DESCRIPTIONS = {
     'cursor-glow': { desc: 'Cursor glow', icon: 'cg2' },
 };
 
+async function loadFonts() {
+    try {
+        const response = await fetch('database/fonts.json');
+        const fonts = await response.json();
+        if (fontSelect) {
+            fontSelect.innerHTML = '';
+            fonts.forEach(font => {
+                const option = document.createElement('option');
+                option.value = font.family;
+                option.textContent = font.name;
+                fontSelect.appendChild(option);
+            });
+            fontSelect.value = loadFont();
+        }
+    } catch (error) {
+        console.error('Error loading fonts:', error);
+    }
+}
+
 function loadSettings() {
     try {
         const raw = localStorage.getItem('customColors');
@@ -137,9 +156,9 @@ function applyColors() {
 function loadFont() {
     try {
         const raw = localStorage.getItem('fontFamily');
-        return raw ? raw : 'tech';
+        return raw ? raw : "'Share Tech Mono', monospace";
     } catch (error) {
-        return 'tech';
+        return "'Share Tech Mono', monospace";
     }
 }
 
@@ -149,8 +168,7 @@ function saveFont(font) {
 }
 
 function applyFont(font) {
-    document.body.classList.remove('font-tech', 'font-serif', 'font-sans', 'font-system', 'font-monospace', 'font-georgia');
-    document.body.classList.add(`font-${font}`);
+    document.body.style.fontFamily = font;
 }
 
 function loadPanelSettings() {
@@ -603,18 +621,27 @@ window.addEventListener('storage', event => {
 });
 
 async function init() {
+    const fontSelect = document.getElementById('font-select');
+    if (fontSelect) {
+        fontSelect.addEventListener('change', () => {
+            saveFont(fontSelect.value);
+        });
+    }
+
     stories = sortByDisplayOrder(await loadCatalog());
     applyLayout(localStorage.getItem('homepageLayout') || 'grid');
     initTheme();
+    await loadFonts(); // Load fonts for the dropdown
     applyColors();  // Load and apply custom colors
     applyFont(loadFont());  // Load and apply custom font
-    loadPanelSettings(); // Load panel size and position
     buildCodeField();
     initDragging();  // Initialize dragging for settings panel
     render();
 }
 
-init();
+window.addEventListener('DOMContentLoaded', (event) => {
+    init();
+});
 
 if (themeToggle) {
     themeToggle.addEventListener('click', () => {
@@ -807,11 +834,11 @@ function rgbToHex(color) {
 
 function openSettings() {
     if (!settingsPanel) return;
+    loadPanelSettings();
     settingsPanel.hidden = false;
     settingsCurrentTheme = document.body.dataset.theme || 'dark';
     renderColorGrid(settingsCurrentTheme);
     updateThemeTabs();
-    updateFontButtons();
 }
 
 function closeSettings() {
@@ -827,18 +854,6 @@ function updateThemeTabs() {
             tab.classList.add('active');
         } else {
             tab.classList.remove('active');
-        }
-    });
-}
-
-function updateFontButtons() {
-    const fontBtns = Array.from(document.querySelectorAll('.font-btn'));
-    const currentFont = loadFont();
-    fontBtns.forEach(btn => {
-        if (btn.dataset.font === currentFont) {
-            btn.classList.add('active');
-        } else {
-            btn.classList.remove('active');
         }
     });
 }
@@ -948,15 +963,6 @@ if (settingsPanel) {
             settingsCurrentTheme = tab.dataset.theme;
             updateThemeTabs();
             renderColorGrid(settingsCurrentTheme);
-        });
-    });
-    
-    // Font selection
-    const fontBtns = Array.from(settingsPanel.querySelectorAll('.font-btn'));
-    fontBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            saveFont(btn.dataset.font);
-            updateFontButtons();
         });
     });
 }

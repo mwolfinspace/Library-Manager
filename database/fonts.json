@@ -1,0 +1,32 @@
+[
+  {
+    "name": "ibm plex mono",
+    "family": "'ibm plex mono', sans-serif",
+    "source": "local"
+  },
+  {
+    "name": "orbitron",
+    "family": "'orbitron', sans-serif",
+    "source": "local"
+  },
+  {
+    "name": "roboto mono",
+    "family": "'roboto mono', sans-serif",
+    "source": "local"
+  },
+  {
+    "name": "share tech mono",
+    "family": "'share tech mono', sans-serif",
+    "source": "local"
+  },
+  {
+    "name": "space mono",
+    "family": "'space mono', sans-serif",
+    "source": "local"
+  },
+  {
+    "name": "vt323",
+    "family": "'vt323', sans-serif",
+    "source": "local"
+  }
+]

@@ -842,38 +842,14 @@ body[data-theme="light"] .draggable-panel {
     font-weight: 600;
 }
 
-.font-options {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-}
-
-.font-btn {
-    border-radius: 8px;
+.font-select {
+    padding: 8px 10px;
+    border-radius: 10px;
     border: 1px solid var(--btn-border);
     background: var(--btn);
     color: var(--ink);
-    padding: 8px 12px;
-    cursor: pointer;
-    font-size: 12px;
-    transition: all 0.2s ease;
-}
-
-.font-btn:hover {
-    border-color: var(--accent);
-    box-shadow: 0 0 8px rgba(98, 247, 255, 0.2);
-}
-
-.font-btn.active {
-    background: linear-gradient(120deg, rgba(98, 247, 255, 0.3), rgba(141, 255, 123, 0.2));
-    border-color: var(--accent);
-    box-shadow: 0 0 12px rgba(98, 247, 255, 0.3);
-}
-
-body[data-theme="light"] .font-btn.active {
-    background: linear-gradient(120deg, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.03));
-    border-color: var(--accent);
-    box-shadow: 0 0 12px rgba(0, 0, 0, 0.08);
+    font-size: 14px;
+    width: 100%;
 }
 
 .theme-tabs {
