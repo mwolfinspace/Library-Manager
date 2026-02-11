@@ -1,7 +1,6 @@
 ﻿const grid = document.getElementById("story-grid");
 const emptyState = document.getElementById("empty-state");
 const searchInput = document.getElementById("search-input");
-const clearSearchBtn = document.getElementById("clear-search");
 const themeToggle = document.getElementById("theme-toggle");
 const codeField = document.querySelector(".code-field");
 const helpBtn = document.getElementById("help-btn");
@@ -707,10 +706,6 @@ filterButtons.forEach((button) => {
 });
 
 searchInput.addEventListener("input", render);
-clearSearchBtn.addEventListener("click", () => {
-  searchInput.value = "";
-  render();
-});
 
 function applyLayout(layout) {
   activeLayout = layout || "grid";
@@ -790,6 +785,8 @@ async function init() {
 
   const page = document.querySelector(".page");
   if (page) page.style.opacity = "0";
+
+
 
   function updateProgress(percent) {
     if (loader.progressBar) loader.progressBar.style.width = `${percent}%`;

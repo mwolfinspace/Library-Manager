@@ -1035,3 +1035,69 @@ body[data-theme="light"] .image-controls:hover {
         grid-template-columns: 1fr;
     }
 }
+
+/* Restore Fullscreen Notification */
+.restore-fullscreen {
+    position: fixed;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    animation: slide-down 0.4s ease;
+}
+
+@keyframes slide-down {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+.restore-fullscreen-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 24px;
+    border-radius: 999px;
+    border: 1px solid var(--accent);
+    background: var(--panel);
+    color: var(--accent);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 8px 24px rgba(88, 242, 201, 0.25), 0 0 0 1px rgba(88, 242, 201, 0.3);
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.restore-fullscreen-btn:hover {
+    background: rgba(88, 242, 201, 0.15);
+    box-shadow: 0 12px 32px rgba(88, 242, 201, 0.4), 0 0 0 1px rgba(88, 242, 201, 0.5);
+    transform: scale(1.02);
+}
+
+.restore-fullscreen-btn:active {
+    transform: scale(0.98);
+}
+
+.restore-fullscreen-btn span {
+    font-size: 18px;
+}
+
+body[data-theme="light"] .restore-fullscreen-btn {
+    border-color: var(--accent-2);
+    color: var(--accent-2);
+    box-shadow: 0 8px 24px rgba(58, 93, 181, 0.2), 0 0 0 1px rgba(58, 93, 181, 0.25);
+}
+
+body[data-theme="light"] .restore-fullscreen-btn:hover {
+    background: rgba(58, 93, 181, 0.12);
+    box-shadow: 0 12px 32px rgba(58, 93, 181, 0.35), 0 0 0 1px rgba(58, 93, 181, 0.4);
+}

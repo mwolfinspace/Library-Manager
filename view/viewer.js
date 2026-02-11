@@ -87,7 +87,6 @@ document.addEventListener("DOMContentLoaded", () => {
     bookmarkBtn: document.getElementById("bookmark-btn"),
     settingsBtn: document.getElementById("settings-btn"),
     themeToggleBtn: document.getElementById("theme-toggle-btn"),
-    fullscreenBtn: document.getElementById("fullscreen-btn"),
     fontUpBtn: document.getElementById("font-up-btn"),
     fontDownBtn: document.getElementById("font-down-btn"),
     prevStoryBtn: document.getElementById("prev-story-btn"),
@@ -689,13 +688,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  function updateFullscreenButton() {
-    if (!els.fullscreenBtn) return;
-    const active = !!document.fullscreenElement;
-    els.fullscreenBtn.textContent = active ? "🡽" : "⛶";
-    els.fullscreenBtn.title = active ? "Exit fullscreen" : "Fullscreen";
-  }
-
   function setStoryNavState() {
     if (!els.prevStoryBtn || !els.nextStoryBtn) return;
     const hasPrev = storyIndex > 0;
@@ -1259,21 +1251,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  if (els.fullscreenBtn) {
-    els.fullscreenBtn.addEventListener("click", async () => {
-      try {
-        if (document.fullscreenElement) {
-          await document.exitFullscreen();
-        } else {
-          await document.documentElement.requestFullscreen();
-        }
-      } catch (error) {
-        // ignore
-      }
-      updateFullscreenButton();
-    });
-  }
-
   if (els.fontUpBtn) {
     els.fontUpBtn.addEventListener("click", () => {
       settings.fontSize = Math.min(26, settings.fontSize + 1);
@@ -1375,7 +1352,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   document.addEventListener("keydown", handleKeydown);
-  document.addEventListener("fullscreenchange", updateFullscreenButton);
   window.addEventListener("resize", buildCodeField);
   window.addEventListener("mousemove", handleCursorMove);
   window.addEventListener(
@@ -1472,7 +1448,6 @@ document.addEventListener("DOMContentLoaded", () => {
     updateFavoriteButton();
     updateBookmarkButton();
     setStoryNavState();
-    updateFullscreenButton();
     updateRecentViewTimestamp(); // Update timestamp for recent sorting
   }
 
@@ -1489,4 +1464,3 @@ function marked(text) {
   output = output.replace(/`(.*?)`/gim, "<code>$1</code>");
   output = output.replace(/\n$/gim, "<br>");
   return output;
-}
