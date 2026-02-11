@@ -556,15 +556,23 @@ body[data-theme="light"] .image-controls:hover {
 @keyframes binary-glow {
     0% {
         opacity: 0.6;
-        text-shadow: 0 0 10px rgba(88, 242, 201, 0.4);
+        text-shadow: 0 0 10px rgba(88, 242, 201, 0.4), 0 0 20px rgba(90, 165, 255, 0.2);
+    }
+    25% {
+        opacity: 0.85;
+        text-shadow: 0 0 20px rgba(88, 242, 201, 0.6), 0 0 40px rgba(88, 242, 201, 0.3);
     }
     50% {
         opacity: 1;
-        text-shadow: 0 0 22px rgba(88, 242, 201, 0.7);
+        text-shadow: 0 0 22px rgba(88, 242, 201, 0.7), 0 0 44px rgba(90, 165, 255, 0.4);
+    }
+    75% {
+        opacity: 0.85;
+        text-shadow: 0 0 20px rgba(88, 242, 201, 0.6), 0 0 40px rgba(88, 242, 201, 0.3);
     }
     100% {
         opacity: 0.7;
-        text-shadow: 0 0 14px rgba(88, 242, 201, 0.5);
+        text-shadow: 0 0 14px rgba(88, 242, 201, 0.5), 0 0 28px rgba(90, 165, 255, 0.2);
     }
 }
 

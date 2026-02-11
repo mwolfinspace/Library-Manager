@@ -626,11 +626,46 @@ document.addEventListener('DOMContentLoaded', () => {
         els.nextStoryBtn.disabled = !hasNext;
     }
 
+    let blackoutTimeInterval = null;
+
+    function updateBlackoutTime() {
+        const timeElement = document.getElementById('blackout-time');
+        if (!timeElement) return;
+        
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        
+        timeElement.textContent = `${hours}:${minutes}:${seconds}`;
+    }
+
+    function startBlackoutTimer() {
+        updateBlackoutTime();  // Update immediately
+        if (blackoutTimeInterval) {
+            clearInterval(blackoutTimeInterval);
+        }
+        blackoutTimeInterval = setInterval(updateBlackoutTime, 100);  // Update 10 times per second for smooth display
+    }
+
+    function stopBlackoutTimer() {
+        if (blackoutTimeInterval) {
+            clearInterval(blackoutTimeInterval);
+            blackoutTimeInterval = null;
+        }
+    }
+
     function toggleBlackout() {
         if (!els.blackout) return;
         const willShow = els.blackout.hidden;
         els.blackout.hidden = !willShow;
         document.body.classList.toggle('blackout-active', willShow);
+        
+        if (willShow) {
+            startBlackoutTimer();
+        } else {
+            stopBlackoutTimer();
+        }
     }
 
     function buildStoryUrl(id) {

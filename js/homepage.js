@@ -360,6 +360,35 @@ function buildCodeField() {
     updateCursorGlow(cursorX, cursorY);
 }
 
+let blackoutTimeInterval = null;
+
+function updateBlackoutTime() {
+    const timeElement = document.getElementById('blackout-time');
+    if (!timeElement) return;
+    
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    
+    timeElement.textContent = `${hours}:${minutes}:${seconds}`;
+}
+
+function startBlackoutTimer() {
+    updateBlackoutTime();  // Update immediately
+    if (blackoutTimeInterval) {
+        clearInterval(blackoutTimeInterval);
+    }
+    blackoutTimeInterval = setInterval(updateBlackoutTime, 100);  // Update 10 times per second for smooth display
+}
+
+function stopBlackoutTimer() {
+    if (blackoutTimeInterval) {
+        clearInterval(blackoutTimeInterval);
+        blackoutTimeInterval = null;
+    }
+}
+
 function toggleBlackout() {
     if (!blackout) {
         return;
@@ -367,6 +396,12 @@ function toggleBlackout() {
     const willShow = blackout.hidden;
     blackout.hidden = !willShow;
     document.body.classList.toggle('blackout-active', willShow);
+    
+    if (willShow) {
+        startBlackoutTimer();
+    } else {
+        stopBlackoutTimer();
+    }
 }
 
 function updateCursorGlow(xRatio, yRatio) {
