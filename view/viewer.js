@@ -774,6 +774,21 @@ document.addEventListener("DOMContentLoaded", () => {
     updateBookmarkButton();
   }
 
+  function updateRecentViewTimestamp() {
+    if (!storyId) {
+      return;
+    }
+    // Always update the timestamp when viewing a story for "Recent" sorting
+    const existingBookmark = getBookmark();
+    const payload = {
+      photoIndex: currentPhotoIndex,
+      scrollPosition: els.storyContent.scrollTop,
+      timestamp: new Date().toISOString(),
+      source: "auto", // Mark as automatically created for recent tracking
+    };
+    localStorage.setItem(`bookmark:${storyId}`, JSON.stringify(payload));
+  }
+
   function showSettings() {
     els.settingsOverlay.hidden = false;
     setActiveTab("appearance");
@@ -1448,6 +1463,7 @@ document.addEventListener("DOMContentLoaded", () => {
     updateBookmarkButton();
     setStoryNavState();
     updateFullscreenButton();
+    updateRecentViewTimestamp(); // Update timestamp for recent sorting
   }
 
   initialize();

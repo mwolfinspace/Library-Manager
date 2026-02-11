@@ -21,6 +21,7 @@ let stories = [];
 let activeFilter = "all";
 let activeLayout = "grid";
 let activeSort = "default";
+let titleSortDirection = "asc"; // 'asc' for A-Z, 'desc' for Z-A
 let codeRefreshTimer = null;
 let cursorRaf = null;
 let cursorX = 0.5;
@@ -230,6 +231,23 @@ function saveFavorites(favorites) {
   localStorage.setItem("favorites", JSON.stringify(Array.from(favorites)));
 }
 
+function loadSortPreference() {
+  try {
+    const raw = localStorage.getItem("homepageSort");
+    const sortData = raw
+      ? JSON.parse(raw)
+      : { type: "default", direction: "asc" };
+    return sortData;
+  } catch (error) {
+    return { type: "default", direction: "asc" };
+  }
+}
+
+function saveSortPreference(sortType, direction = "asc") {
+  const sortData = { type: sortType, direction: direction };
+  localStorage.setItem("homepageSort", JSON.stringify(sortData));
+}
+
 function saveBookmark(id, payload) {
   localStorage.setItem(`bookmark:${id}`, JSON.stringify(payload));
 }
@@ -329,11 +347,87 @@ function sortByDisplayOrder(list) {
 function sortStories(list) {
   const sorted = [...list];
   if (activeSort === "title") {
-    sorted.sort((a, b) => storyTitle(a).localeCompare(storyTitle(b)));
+    const direction = titleSortDirection === "asc" ? 1 : -1;
+    sorted.sort(
+      (a, b) => storyTitle(a).localeCompare(storyTitle(b)) * direction,
+    );
   } else if (activeSort === "createdAt") {
     sorted.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   } else if (activeSort === "updatedAt") {
     sorted.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+  } else if (activeSort === "recent") {
+    // Sort by most recent viewer activity (bookmark timestamps)
+    sorted.sort((a, b) => {
+      const aBookmark = getBookmark(a.id);
+      const bBookmark = getBookmark(b.id);
+
+      // Use timestamp from bookmark, or fallback to updatedAt if no bookmark
+      const aTime = aBookmark?.timestamp
+        ? new Date(aBookmark.timestamp).getTime()
+        : new Date(a.updatedAt || a.createdAt).getTime();
+      const bTime = bBookmark?.timestamp
+        ? new Date(bBookmark.timestamp).getTime()
+        : new Date(b.updatedAt || b.createdAt).getTime();
+
+      return bTime - aTime; // Most recent first
+    });
+  } else if (activeSort === "priority") {
+    // Sort by priority: Favorite > Bookmark > Normal, then by recent activity
+    sorted.sort((a, b) => {
+      const favorites = loadFavorites();
+      const aBookmark = getBookmark(a.id);
+      const bBookmark = getBookmark(b.id);
+
+      const aIsFavorite = favorites.has(a.id);
+      const bIsFavorite = favorites.has(b.id);
+      // Only consider MANUAL bookmarks (not auto-created ones) for priority grouping
+      const aIsBookmarked = aBookmark ? aBookmark.source !== "auto" : false;
+      const bIsBookmarked = bBookmark ? bBookmark.source !== "auto" : false;
+
+      // Priority: Favorite > Bookmark > Normal
+      if (aIsFavorite !== bIsFavorite) {
+        return aIsFavorite ? -1 : 1;
+      }
+      if (aIsBookmarked !== bIsBookmarked) {
+        return aIsBookmarked ? -1 : 1;
+      }
+
+      // If same priority, sort by recent activity
+      // For favorites, we want them to stay at the top regardless of normal story views
+      // So we use a special timestamp logic:
+      // - Favorites: use a very high timestamp to keep them at top of their group
+      // - Bookmarks: use bookmark timestamp or updatedAt
+      // - Normal: use bookmark timestamp or updatedAt
+      let aTime, bTime;
+
+      if (aIsFavorite) {
+        // Favorites get a high priority timestamp to stay at top
+        aTime =
+          9999999999999 -
+          (aBookmark?.timestamp
+            ? new Date(aBookmark.timestamp).getTime()
+            : new Date(a.updatedAt || a.createdAt).getTime());
+      } else {
+        aTime = aBookmark?.timestamp
+          ? new Date(aBookmark.timestamp).getTime()
+          : new Date(a.updatedAt || a.createdAt).getTime();
+      }
+
+      if (bIsFavorite) {
+        // Favorites get a high priority timestamp to stay at top
+        bTime =
+          9999999999999 -
+          (bBookmark?.timestamp
+            ? new Date(bBookmark.timestamp).getTime()
+            : new Date(b.updatedAt || b.createdAt).getTime());
+      } else {
+        bTime = bBookmark?.timestamp
+          ? new Date(bBookmark.timestamp).getTime()
+          : new Date(b.updatedAt || b.createdAt).getTime();
+      }
+
+      return bTime - aTime;
+    });
   } else {
     // Default sort is handled by sortByDisplayOrder
   }
@@ -627,6 +721,23 @@ function applyLayout(layout) {
   localStorage.setItem("homepageLayout", activeLayout);
 }
 
+function applySortPreference(sortData) {
+  if (!sortData) {
+    sortData = { type: "default", direction: "asc" };
+  }
+
+  activeSort = sortData.type || "default";
+  titleSortDirection = sortData.direction || "asc";
+
+  sortButtons.forEach((button) => {
+    button.classList.toggle("active", button.dataset.sort === activeSort);
+    if (button.dataset.sort === "title" && activeSort === "title") {
+      button.textContent =
+        titleSortDirection === "asc" ? "Title A-Z" : "Title Z-A";
+    }
+  });
+}
+
 layoutButtons.forEach((button) => {
   button.addEventListener("click", () => {
     applyLayout(button.dataset.layout);
@@ -635,9 +746,27 @@ layoutButtons.forEach((button) => {
 
 sortButtons.forEach((button) => {
   button.addEventListener("click", () => {
+    const sortType = button.dataset.sort;
+
+    if (sortType === "title" && activeSort === "title") {
+      // Toggle title sort direction
+      titleSortDirection = titleSortDirection === "asc" ? "desc" : "asc";
+      button.textContent =
+        titleSortDirection === "asc" ? "Title A-Z" : "Title Z-A";
+    } else {
+      // Reset title sort direction for new sort type
+      titleSortDirection = "asc";
+      sortButtons.forEach((btn) => {
+        if (btn.dataset.sort === "title") {
+          btn.textContent = "Title";
+        }
+      });
+    }
+
     sortButtons.forEach((btn) => btn.classList.remove("active"));
     button.classList.add("active");
-    activeSort = button.dataset.sort;
+    activeSort = sortType;
+    saveSortPreference(activeSort, titleSortDirection);
     render();
   });
 });
@@ -743,6 +872,7 @@ async function init() {
     }
 
     applyLayout(localStorage.getItem("homepageLayout") || "grid");
+    applySortPreference(loadSortPreference());
     initTheme();
     await loadFonts(); // Load fonts for the dropdown
     applyColors(); // Load and apply custom colors
