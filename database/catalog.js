@@ -88,7 +88,7 @@ window.VIEWER_SETTINGS = {
   "keyboardMode": "left",
   "panKeys": true,
   "rememberZoom": true,
-  "fontFamily": "tech",
+  "fontFamily": "'orbitron', sans-serif",
   "customFont": "",
   "rememberViewAll": false,
   "customBindings": {}

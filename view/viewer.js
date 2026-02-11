@@ -70,15 +70,6 @@ const DEFAULT_SETTINGS = {
     rememberViewAll: false,
 };
 
-const FONT_OPTIONS = {
-    tech: '"Share Tech Mono", "Lucida Console", "Consolas", "Courier New", monospace',
-    orbitron: '"Orbitron", "Segoe UI", Tahoma, sans-serif',
-    vt323: '"VT323", "Lucida Console", monospace',
-    'system-mono': '"Lucida Console", "Consolas", "Courier New", monospace',
-    'system-sans': '"Segoe UI", Tahoma, sans-serif',
-    'system-serif': '"Georgia", "Times New Roman", serif',
-};
-
 document.addEventListener('DOMContentLoaded', () => {
     const els = {
         photo: document.getElementById('photo'),
@@ -292,7 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function applySettings() {
         document.body.dataset.theme = settings.theme;
-        const fontChoice = (settings.customFont || '').trim() || FONT_OPTIONS[settings.fontFamily] || FONT_OPTIONS.tech;
+        const fontChoice = (settings.customFont || '').trim() || (window.FONTS.find(f => f.name === settings.fontFamily) || {}).family || 'monospace';
         if (els.storyPanel) {
             els.storyPanel.style.fontFamily = fontChoice;
         } else {
@@ -302,7 +293,18 @@ document.addEventListener('DOMContentLoaded', () => {
         els.storyContent.style.lineHeight = settings.lineSpacing;
 
         if (els.themeSelect) els.themeSelect.value = settings.theme;
-        if (els.fontFamily) els.fontFamily.value = settings.fontFamily || 'tech';
+        if (els.fontFamily) {
+            els.fontFamily.innerHTML = '';
+            if (window.FONTS) {
+                window.FONTS.forEach(font => {
+                    const option = document.createElement('option');
+                    option.value = font.name;
+                    option.textContent = font.name;
+                    els.fontFamily.appendChild(option);
+                });
+            }
+            els.fontFamily.value = settings.fontFamily || 'tech';
+        }
         if (els.customFont) els.customFont.value = settings.customFont || '';
         if (els.fontSize) els.fontSize.value = settings.fontSize;
         if (els.lineSpacing) els.lineSpacing.value = settings.lineSpacing;

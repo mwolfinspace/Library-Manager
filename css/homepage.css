@@ -287,7 +287,8 @@ body {
     gap: 8px;
 }
 
-.layout-label {
+.layout-label,
+.sort-label {
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.3em;
@@ -296,7 +297,8 @@ body {
 }
 
 .layout-btn,
-.filter-btn {
+.filter-btn,
+.sort-btn {
     border-radius: 999px;
     border: 1px solid var(--btn-border);
     background: var(--btn);
@@ -307,7 +309,8 @@ body {
 }
 
 .layout-btn.active,
-.filter-btn.active {
+.filter-btn.active,
+.sort-btn.active {
     background: var(--accent);
     color: #041017;
     border-color: transparent;

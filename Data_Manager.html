@@ -1019,12 +1019,6 @@
                     <label>
                         Story Font
                         <select id="default-font-family">
-                            <option value="tech">Share Tech Mono</option>
-                            <option value="orbitron">Orbitron</option>
-                            <option value="vt323">VT323</option>
-                            <option value="system-mono">System Mono</option>
-                            <option value="system-sans">System Sans</option>
-                            <option value="system-serif">System Serif</option>
                         </select>
                     </label>
 
@@ -1398,6 +1392,7 @@
             state.rootHandle = handle;
             await ensureStructure();
             await loadLibrary();
+            await loadFontsIntoSelect();
             setStatus(`Loaded ${state.stories.length} stories from ${state.rootHandle.name}.`);
         }
 
@@ -1966,6 +1961,24 @@
             return getDirectory('fonts', true);
         }
 
+        async function loadFontsIntoSelect() {
+            try {
+                const dbDir = await getDatabaseDir();
+                const fonts = await readJsonFile(dbDir, 'fonts.json');
+                if (fonts && defaultFontFamily) {
+                    defaultFontFamily.innerHTML = '';
+                    fonts.forEach(font => {
+                        const option = document.createElement('option');
+                        option.value = font.family;
+                        option.textContent = font.name;
+                        defaultFontFamily.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading fonts into select:', error);
+            }
+        }
+
         async function updateFonts() {
             if (!state.rootHandle) {
                 setStatus('Choose a library folder first.');
@@ -2032,6 +2045,8 @@
 
                 const dbDir = await getDatabaseDir();
                 await writeFile(dbDir, 'fonts.json', JSON.stringify(fontsJson, null, 2));
+
+                await loadFontsIntoSelect();
 
                 setStatus(`Successfully updated ${fontFamilies.size} font(s).`);
             } catch (e) {

@@ -24,6 +24,14 @@
 }
 
 @font-face {
+  font-family: 'Quantico';
+  src: url(../fonts/Quantico/Quantico-Bold.ttf) format('truetype'),
+       url(../fonts/Quantico/Quantico-BoldItalic.ttf) format('truetype'),
+       url(../fonts/Quantico/Quantico-Italic.ttf) format('truetype'),
+       url(../fonts/Quantico/Quantico-Regular.ttf) format('truetype');
+}
+
+@font-face {
   font-family: 'roboto mono';
   src: url(../fonts/roboto-mono/RobotoMono-Italic-VariableFont_wght.ttf) format('truetype'),
        url(../fonts/roboto-mono/RobotoMono-VariableFont_wght.ttf) format('truetype');

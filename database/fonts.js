@@ -1,4 +1,4 @@
-[
+window.FONTS = [
   {
     "name": "ibm plex mono",
     "family": "'ibm plex mono', sans-serif",
@@ -34,4 +34,4 @@
     "family": "'vt323', sans-serif",
     "source": "local"
   }
-]
+];

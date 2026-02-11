@@ -12,6 +12,7 @@ const helpBody = document.getElementById('help-body');
 const blackout = document.getElementById('blackout');
 const filterButtons = Array.from(document.querySelectorAll('.filter-btn'));
 const layoutButtons = Array.from(document.querySelectorAll('.layout-btn'));
+const sortButtons = Array.from(document.querySelectorAll('.sort-btn'));
 const settingsBtn = document.getElementById('settings-btn');
 const settingsPanel = document.getElementById('settings-panel');
 const settingsClose = document.getElementById('settings-close');
@@ -21,6 +22,7 @@ const resetColorsBtn = document.getElementById('reset-colors');
 let stories = [];
 let activeFilter = 'all';
 let activeLayout = 'grid';
+let activeSort = 'default';
 let codeRefreshTimer = null;
 let cursorRaf = null;
 let cursorX = 0.5;
@@ -92,8 +94,8 @@ const COLOR_DESCRIPTIONS = {
 
 async function loadFonts() {
     try {
-        const response = await fetch('database/fonts.json');
-        const fonts = await response.json();
+        const fonts = window.FONTS || [];
+        const fontSelect = document.getElementById('font-select');
         if (fontSelect) {
             fontSelect.innerHTML = '';
             fonts.forEach(font => {
@@ -187,17 +189,19 @@ function loadPanelSettings() {
 function savePanelSettings() {
     if (!settingsPanel) return;
 
-    const rect = settingsPanel.getBoundingClientRect();
     const settings = {
-        left: `${rect.left}px`,
-        top: `${rect.top}px`,
-        width: `${rect.width}px`,
-        height: `${rect.height}px`,
+        left: settingsPanel.style.left,
+        top: settingsPanel.style.top,
+        width: settingsPanel.style.width,
+        height: settingsPanel.style.height,
     };
     localStorage.setItem('panelSettings', JSON.stringify(settings));
 }
 
 async function loadCatalog() {
+    if (Array.isArray(window.REPORT_CATALOG)) {
+        return window.REPORT_CATALOG;
+    }
     try {
         const response = await fetch('database/catalog.json', { cache: 'no-store' });
         if (!response.ok) {
@@ -206,9 +210,6 @@ async function loadCatalog() {
         const data = await response.json();
         return Array.isArray(data) ? data : [];
     } catch (error) {
-        if (Array.isArray(window.REPORT_CATALOG)) {
-            return window.REPORT_CATALOG;
-        }
         return [];
     }
 }
@@ -251,7 +252,7 @@ function matchesSearch(story, query) {
     if (!query) {
         return true;
     }
-    const haystack = [story.title, story.description, story.reportNumber, ...(story.tags || [])]
+    const haystack = [story.title, story.description, ...(story.tags || [])]
         .join(' ')
         .toLowerCase();
     return haystack.includes(query.toLowerCase());
@@ -320,6 +321,20 @@ function sortByDisplayOrder(list) {
             return a.index - b.index;
         })
         .map(item => item.story);
+}
+
+function sortStories(list) {
+    const sorted = [...list];
+    if (activeSort === 'title') {
+        sorted.sort((a, b) => storyTitle(a).localeCompare(storyTitle(b)));
+    } else if (activeSort === 'createdAt') {
+        sorted.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    } else if (activeSort === 'updatedAt') {
+        sorted.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+    } else {
+        // Default sort is handled by sortByDisplayOrder
+    }
+    return sorted;
 }
 
 function storyTitle(story, index) {
@@ -478,16 +493,18 @@ function render() {
     const favorites = loadFavorites();
     const query = searchInput.value.trim();
 
-    const filtered = sortByBookmark(filterStories(stories, favorites, query));
+    const filtered = filterStories(stories, favorites, query);
+    const sorted = sortStories(filtered);
+    const finalStories = sortByBookmark(sorted);
 
-    if (filtered.length === 0) {
+    if (finalStories.length === 0) {
         emptyState.style.display = 'block';
         return;
     }
 
     emptyState.style.display = 'none';
 
-    filtered.forEach((story, index) => {
+    finalStories.forEach((story, index) => {
         const card = document.createElement('a');
         card.className = 'story-card';
         card.href = `view/viewer.html?story=${story.id}&from=homepage.html`;
@@ -608,6 +625,15 @@ function applyLayout(layout) {
 layoutButtons.forEach(button => {
     button.addEventListener('click', () => {
         applyLayout(button.dataset.layout);
+    });
+});
+
+sortButtons.forEach(button => {
+    button.addEventListener('click', () => {
+        sortButtons.forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+        activeSort = button.dataset.sort;
+        render();
     });
 });
 
@@ -933,10 +959,8 @@ function initDragging() {
         }
     });
 
-    let resizeTimer;
     const observer = new ResizeObserver(() => {
-        clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(savePanelSettings, 300);
+        savePanelSettings();
     });
     observer.observe(settingsPanel);
 }
