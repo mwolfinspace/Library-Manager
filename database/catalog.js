@@ -57,7 +57,7 @@ window.REPORT_CATALOG = [
   {
     "id": "r20260211-001405",
     "reportNumber": 3,
-    "title": "Ready to the beach",
+    "title": "Ready To The Beach",
     "description": "Summertime, join in the beach party now :D",
     "tags": [
       "beach",
@@ -68,20 +68,20 @@ window.REPORT_CATALOG = [
       "fox"
     ],
     "cover": "img-scr/r20260211-001405_001.jpeg",
-    "coverPosition": "52% 8%",
+    "coverPosition": "54% 10%",
     "images": [
       "img-scr/r20260211-001405_001.jpeg",
       "img-scr/r20260211-001405_002.jpeg"
     ],
     "story": "story/r20260211-001405.md",
     "createdAt": "2026-02-10T17:14:05.747Z",
-    "updatedAt": "2026-02-11T02:51:22.393Z",
+    "updatedAt": "2026-02-11T07:50:29.623Z",
     "storyText": "Summertime, join in the beach party now :D"
   },
   {
     "id": "r20260211-113938",
     "reportNumber": 4,
-    "title": "Ready to go out?",
+    "title": "Ready To Go Out?",
     "description": "You need a mask and a collar to go out, pup!",
     "tags": [
       "lion",
@@ -98,7 +98,7 @@ window.REPORT_CATALOG = [
     ],
     "story": "story/r20260211-113938.md",
     "createdAt": "2026-02-11T04:39:38.195Z",
-    "updatedAt": "2026-02-11T04:39:38.195Z",
+    "updatedAt": "2026-02-11T07:50:16.446Z",
     "storyText": "You need a mask and a collar to go out, pup!"
   },
   {
@@ -121,6 +121,48 @@ window.REPORT_CATALOG = [
     "createdAt": "2026-02-11T07:20:57.786Z",
     "updatedAt": "2026-02-11T07:21:37.008Z",
     "storyText": "Doodle for drakonika (https://twitter.com/drakonika123)"
+  },
+  {
+    "id": "r20260211-143637",
+    "reportNumber": 6,
+    "title": "No Bath For Today",
+    "description": "Summer disaster.",
+    "tags": [
+      "weregarurumon",
+      "digimon",
+      "funny",
+      "summer",
+      "doodle"
+    ],
+    "cover": "img-scr/r20260211-143637_001.png",
+    "coverPosition": "47% 11%",
+    "images": [
+      "img-scr/r20260211-143637_001.png"
+    ],
+    "story": "story/r20260211-143637.md",
+    "createdAt": "2026-02-11T07:36:37.976Z",
+    "updatedAt": "2026-02-11T07:50:04.235Z",
+    "storyText": "Summer disaster = power cut + out of water"
+  },
+  {
+    "id": "r20260211-144945",
+    "reportNumber": 7,
+    "title": "Catch Me If You Can",
+    "description": "Slow down, or you’ll fall!",
+    "tags": [
+      "doodle",
+      "wolf",
+      "gift"
+    ],
+    "cover": "img-scr/r20260211-144945_001.png",
+    "coverPosition": "53% 14%",
+    "images": [
+      "img-scr/r20260211-144945_001.png"
+    ],
+    "story": "story/r20260211-144945.md",
+    "createdAt": "2026-02-11T07:49:45.544Z",
+    "updatedAt": "2026-02-11T07:49:45.544Z",
+    "storyText": "Doodle for beautifulpanda20 (https://www.furaffinity.net/user/beautifulpanda20)"
   }
 ];
 window.VIEWER_SETTINGS = {
