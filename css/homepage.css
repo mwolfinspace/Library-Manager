@@ -18,10 +18,8 @@
     --cursor-glow: rgba(98, 247, 255, 0.2);
 }
 
-body[data-theme="light"] {
-    /* Light mode theme is now applied via JavaScript applyColors() function */
-    /* This allows users to customize colors in settings */
-}
+/* Light mode theme is now applied via JavaScript applyColors() function */
+/* This allows users to customize colors in settings */
 
 * {
     box-sizing: border-box;
@@ -1016,7 +1014,6 @@ body[data-theme="light"] .settings-reset-btn {
 body[data-theme="light"] .settings-reset-btn:hover {
     background: var(--btn);
     box-shadow: 0 0 12px var(--accent);
-}
 }
 
 /* Font family application */
