@@ -153,6 +153,32 @@ function applyFont(font) {
     document.body.classList.add(`font-${font}`);
 }
 
+function loadPanelSettings() {
+    if (!settingsPanel) return;
+
+    const saved = localStorage.getItem('panelSettings');
+    if (saved) {
+        const settings = JSON.parse(saved);
+        settingsPanel.style.left = settings.left;
+        settingsPanel.style.top = settings.top;
+        settingsPanel.style.width = settings.width;
+        settingsPanel.style.height = settings.height;
+    }
+}
+
+function savePanelSettings() {
+    if (!settingsPanel) return;
+
+    const rect = settingsPanel.getBoundingClientRect();
+    const settings = {
+        left: `${rect.left}px`,
+        top: `${rect.top}px`,
+        width: `${rect.width}px`,
+        height: `${rect.height}px`,
+    };
+    localStorage.setItem('panelSettings', JSON.stringify(settings));
+}
+
 async function loadCatalog() {
     try {
         const response = await fetch('database/catalog.json', { cache: 'no-store' });
@@ -582,6 +608,7 @@ async function init() {
     initTheme();
     applyColors();  // Load and apply custom colors
     applyFont(loadFont());  // Load and apply custom font
+    loadPanelSettings(); // Load panel size and position
     buildCodeField();
     initDragging();  // Initialize dragging for settings panel
     render();
@@ -853,6 +880,7 @@ function initDragging() {
         if (isDragging) {
             isDragging = false;
             settingsPanel.classList.remove('dragging');
+            savePanelSettings();
         }
     });
     
@@ -886,8 +914,16 @@ function initDragging() {
         if (isDragging) {
             isDragging = false;
             settingsPanel.classList.remove('dragging');
+            savePanelSettings();
         }
     });
+
+    let resizeTimer;
+    const observer = new ResizeObserver(() => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(savePanelSettings, 300);
+    });
+    observer.observe(settingsPanel);
 }
 
 if (settingsBtn) {
