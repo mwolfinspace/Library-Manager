@@ -118,18 +118,16 @@ window.DATABASE_SETTINGS = {
           const parsed = JSON.parse(savedData);
           if (this.validateStructure(parsed)) {
             this.db = parsed;
-            console.log('Database loaded from localStorage');
             return;
           }
         } catch (e) {
-          console.log('Corrupted localStorage data, using defaults');
+          // Corrupted data, using defaults
         }
       }
       
       // Use defaults
       this.db = this.createDefaultDatabase();
       this.saveToStorage();
-      console.log('Database initialized with defaults');
     } catch (error) {
       console.error('Error initializing database:', error);
       this.db = this.createDefaultDatabase();

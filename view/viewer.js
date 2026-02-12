@@ -461,22 +461,22 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function loadDefaultSettings() {
+    // First check DATABASE_SETTINGS (localStorage-based)
+    if (window.DATABASE_SETTINGS && window.DATABASE_SETTINGS.db) {
+      const dbSettings = window.DATABASE_SETTINGS.getViewerSettings();
+      if (dbSettings) {
+        settings = { ...settings, ...dbSettings };
+        return;
+      }
+    }
+    
+    // Fallback to VIEWER_SETTINGS global
     if (window.VIEWER_SETTINGS) {
       settings = { ...settings, ...window.VIEWER_SETTINGS };
       return;
     }
-    try {
-      const response = await fetch("../database/settings.json", {
-        cache: "no-store",
-      });
-      if (!response.ok) {
-        throw new Error("Settings not found");
-      }
-      const data = await response.json();
-      settings = { ...settings, ...data };
-    } catch (error) {
-      // fallback to window
-    }
+    
+    // No file fetch - all settings now use localStorage
   }
 
   function getStoryId() {
@@ -1573,6 +1573,7 @@ document.addEventListener("DOMContentLoaded", () => {
       currentPhotoIndex =
         (currentPhotoIndex - 1 + photos.length) % photos.length;
       updatePhoto();
+      SFX.navigation();
     }
   });
 
@@ -1580,6 +1581,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (photos.length > 0) {
       currentPhotoIndex = (currentPhotoIndex + 1) % photos.length;
       updatePhoto();
+      SFX.navigation();
     }
   });
 
@@ -1587,17 +1589,20 @@ document.addEventListener("DOMContentLoaded", () => {
     zoomLevel += settings.zoomStep;
     updateTransform();
     saveZoomState();
+    SFX.adjust();
   });
 
   els.zoomOutBtn.addEventListener("click", () => {
     zoomLevel = Math.max(0.1, zoomLevel - settings.zoomStep);
     updateTransform();
     saveZoomState();
+    SFX.adjust();
   });
 
   els.fitViewBtn.addEventListener("click", () => {
     resetView();
     saveZoomState();
+    SFX.click();
   });
 
   els.photo.addEventListener("mousedown", (event) => {
@@ -1735,14 +1740,27 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  els.favoriteBtn.addEventListener("click", toggleFavorite);
-  els.bookmarkBtn.addEventListener("click", toggleBookmark);
-  els.settingsBtn.addEventListener("click", showSettings);
-  els.closeSettings.addEventListener("click", hideSettings);
+  els.favoriteBtn.addEventListener("click", () => {
+    toggleFavorite();
+    SFX.favorite();
+  });
+  els.bookmarkBtn.addEventListener("click", () => {
+    toggleBookmark();
+    SFX.toggle();
+  });
+  els.settingsBtn.addEventListener("click", () => {
+    showSettings();
+    SFX.panel();
+  });
+  els.closeSettings.addEventListener("click", () => {
+    hideSettings();
+    SFX.click();
+  });
   if (els.tabButtons) {
     els.tabButtons.forEach((button) => {
       button.addEventListener("click", () => {
         setActiveTab(button.dataset.tab);
+        SFX.tab();
       });
     });
   }
@@ -1752,6 +1770,7 @@ document.addEventListener("DOMContentLoaded", () => {
       saveThemeToHomepage(settings.theme); // Sync to homepage
       applySettings();
       saveSettings();
+      SFX.theme();
     });
   }
 
@@ -1760,6 +1779,7 @@ document.addEventListener("DOMContentLoaded", () => {
       settings.fontSize = Math.min(26, settings.fontSize + 1);
       applySettings();
       saveSettings();
+      SFX.adjust();
     });
   }
 
@@ -1768,6 +1788,7 @@ document.addEventListener("DOMContentLoaded", () => {
       settings.fontSize = Math.max(14, settings.fontSize - 1);
       applySettings();
       saveSettings();
+      SFX.adjust();
     });
   }
 

@@ -1036,6 +1036,7 @@ filterButtons.forEach((button) => {
     button.classList.add("active");
     activeFilter = button.dataset.filter;
     saveFilterState();
+    SFX.filterChange();
     render();
   });
 });
@@ -1085,6 +1086,7 @@ layoutButtons.forEach((button) => {
   button.addEventListener("click", () => {
     applyLayout(button.dataset.layout);
     saveFilterState();
+    SFX.click();
   });
 });
 
@@ -1166,7 +1168,6 @@ function showAgeVerificationForStartup() {
   }
   
   overlay.hidden = false;
-  console.log('Age verification overlay shown');
   
   // Handle Yes button - start loading after verification
   // Note: We do NOT save to localStorage here
@@ -1178,7 +1179,6 @@ function showAgeVerificationForStartup() {
     const newYesBtn = yesBtn.cloneNode(true);
     yesBtn.parentNode.replaceChild(newYesBtn, yesBtn);
     newYesBtn.addEventListener('click', handleYesClick);
-    console.log('Yes button handler attached');
   } else {
     console.error('Yes button not found!');
   }
@@ -1189,7 +1189,6 @@ function showAgeVerificationForStartup() {
     const newNoBtn = noBtn.cloneNode(true);
     noBtn.parentNode.replaceChild(newNoBtn, noBtn);
     newNoBtn.addEventListener('click', handleNoClick);
-    console.log('No button handler attached');
   } else {
     console.error('No button not found!');
   }
@@ -1445,6 +1444,7 @@ if (document.readyState === 'loading') {
 if (themeToggle) {
   themeToggle.addEventListener("click", () => {
     const next = document.body.dataset.theme === "light" ? "dark" : "light";
+    SFX.themeSwitch();
     applyTheme(next);
   });
 }

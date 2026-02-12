@@ -3292,11 +3292,35 @@ body[data-theme="light"] .custom-popup-btn-danger:hover {
 
 /* Legacy confirm styles - now unified */
 .confirm-overlay {
-    composes: custom-popup-overlay;
+    position: fixed;
+    inset: 0;
+    background: rgba(3, 5, 11, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 3000 !important;
+    backdrop-filter: blur(4px);
+}
+
+body[data-theme="light"] .confirm-overlay {
+    background: rgba(255, 255, 255, 0.85);
 }
 
 .confirm-modal {
-    composes: custom-popup-modal;
+    background: var(--panel);
+    border-radius: 20px;
+    padding: 24px 28px;
+    max-width: 420px;
+    width: 100%;
+    border: 1px solid var(--btn-border);
+    box-shadow: 0 24px 48px var(--shadow);
+    animation: confirm-slide-in 0.3s ease;
+}
+
+body[data-theme="light"] .confirm-modal {
+    background: #ffffff;
+    border-color: rgba(11, 18, 32, 0.2);
 }
 
 @keyframes confirm-slide-in {
