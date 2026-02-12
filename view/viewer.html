@@ -1,175 +1,455 @@
-﻿<!DOCTYPE html>
+﻿<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Viewer</title>
-    <link rel="stylesheet" href="viewer.css">
-    <link rel="stylesheet" href="../css/fonts.css">
-</head>
-<body>
-    <div class="code-field" aria-hidden="true"></div>
-    <div class="viewer">
-        <div class="image-layer">
-            <div class="image-hud" aria-hidden="true">
-                <span class="hud-mark tl"></span>
-                <span class="hud-mark tr"></span>
-                <span class="hud-mark bl"></span>
-                <span class="hud-mark br"></span>
-            </div>
-            <div id="image-fallback" class="image-fallback" hidden>Image missing</div>
-            <img id="photo" src="" alt="Photo">
-            <div class="image-controls">
-                <button id="prev-btn" class="control-btn" type="button" title="Previous image" aria-label="Previous image">◀️</button>
-                <button id="zoom-out-btn" class="control-btn" type="button" title="Zoom out" aria-label="Zoom out">➖</button>
-                <button id="zoom-in-btn" class="control-btn" type="button" title="Zoom in" aria-label="Zoom in">➕</button>
-                <button id="fit-view-btn" class="control-btn" type="button" title="Fit" aria-label="Fit">⛶</button>
-                <button id="next-btn" class="control-btn" type="button" title="Next image" aria-label="Next image">▶️</button>
-                <span id="image-counter" class="image-counter">0 / 0</span>
-            </div>
-        </div>
-        <div id="blackout" class="blackout" hidden>
-            <div class="blackout-content" aria-live="polite">
-                <div class="blackout-binary" id="blackout-time">00:00:00</div>
-                <div class="blackout-text">Press spacebar again to resume</div>
-            </div>
-        </div>
-
-        <header class="viewer-toolbar">
-            <button id="prev-story-btn" class="icon-btn" title="Previous story" aria-label="Previous story">⟵</button>
-            <button id="next-story-btn" class="icon-btn" title="Next story" aria-label="Next story">⟶</button>
-            <button id="font-down-btn" class="icon-btn" title="Decrease font size" aria-label="Decrease font size">➖</button>
-            <button id="font-up-btn" class="icon-btn" title="Increase font size" aria-label="Increase font size">➕</button>
-            <button id="theme-toggle-btn" class="icon-btn" title="Toggle theme" aria-label="Toggle theme">🌙</button>
-            <button id="favorite-btn" class="icon-btn" title="Favorite" aria-label="Favorite">☆</button>
-            <button id="bookmark-btn" class="icon-btn" title="Bookmark" aria-label="Bookmark">🔖</button>
-            <button id="settings-btn" class="icon-btn" type="button" title="Settings" aria-label="Settings">⚙️</button>
-            <a class="icon-btn" href="../homepage.html" title="Library" aria-label="Library">🏠</a>
-        </header>
-
-        <main class="viewer-body">
-            <section class="story-panel">
-                <div class="story-header">
-                    <p class="eyebrow">Report Viewer</p>
-                    <h1 id="story-title">Story</h1>
-                    <p id="story-meta" class="story-meta"></p>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Viewer</title>
+        <link rel="stylesheet" href="viewer.css" />
+        <link rel="stylesheet" href="../css/fonts.css" />
+    </head>
+    <body>
+        <div class="code-field" aria-hidden="true"></div>
+        <div class="viewer">
+            <div class="image-layer">
+                <div class="image-hud" aria-hidden="true">
+                    <span class="hud-mark tl"></span>
+                    <span class="hud-mark tr"></span>
+                    <span class="hud-mark bl"></span>
+                    <span class="hud-mark br"></span>
                 </div>
-                <div id="story-content" class="story-content"></div>
-            </section>
-        </main>
-    </div>
-
-    <div class="settings-overlay" id="settings-overlay" hidden>
-        <div class="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
-            <div class="settings-header">
-                <h2 id="settings-title">Viewer Settings</h2>
-                <button id="close-settings" class="ghost" type="button">Close</button>
+                <div id="image-fallback" class="image-fallback" hidden>
+                    Image missing
+                </div>
+                <img id="photo" src="" alt="Photo" />
+                <div class="image-controls">
+                    <button
+                        id="prev-btn"
+                        class="control-btn"
+                        type="button"
+                        title="Previous image"
+                        aria-label="Previous image"
+                    >
+                        ◀️
+                    </button>
+                    <button
+                        id="zoom-out-btn"
+                        class="control-btn"
+                        type="button"
+                        title="Zoom out"
+                        aria-label="Zoom out"
+                    >
+                        ➖
+                    </button>
+                    <button
+                        id="zoom-in-btn"
+                        class="control-btn"
+                        type="button"
+                        title="Zoom in"
+                        aria-label="Zoom in"
+                    >
+                        ➕
+                    </button>
+                    <button
+                        id="fit-view-btn"
+                        class="control-btn"
+                        type="button"
+                        title="Fit"
+                        aria-label="Fit"
+                    >
+                        ⛶
+                    </button>
+                    <button
+                        id="next-btn"
+                        class="control-btn"
+                        type="button"
+                        title="Next image"
+                        aria-label="Next image"
+                    >
+                        ▶️
+                    </button>
+                    <span id="image-counter" class="image-counter">0 / 0</span>
+                </div>
             </div>
-            <div class="settings-tabs" role="tablist">
-                <button class="tab-btn active" data-tab="appearance" type="button" role="tab" aria-selected="true">Appearance</button>
-                <button class="tab-btn" data-tab="reading" type="button" role="tab" aria-selected="false">Reading</button>
-                <button class="tab-btn" data-tab="input" type="button" role="tab" aria-selected="false">Input</button>
-                <button class="tab-btn" data-tab="shortcuts" type="button" role="tab" aria-selected="false">Shortcuts</button>
-            </div>
-            <div class="tab-panel active" data-tab-panel="appearance" role="tabpanel">
-                <div class="settings-grid">
-                    <label>
-                        Theme
-                        <select id="theme-select">
-                            <option value="dark">Dark</option>
-                            <option value="light">Light</option>
-                        </select>
-                    </label>
-
-                    <label class="full">
-                        Story Font
-                        <select id="font-family">
-                            <option value="tech">Share Tech Mono</option>
-                            <option value="orbitron">Orbitron</option>
-                            <option value="vt323">VT323</option>
-                            <option value="system-mono">System Mono</option>
-                            <option value="system-sans">System Sans</option>
-                            <option value="system-serif">System Serif</option>
-                        </select>
-                    </label>
-
-                    <label class="full">
-                        Custom Font (optional)
-                        <input type="text" id="custom-font" placeholder="e.g. 'Fira Code', monospace">
-                    </label>
+            <div id="blackout" class="blackout" hidden>
+                <div class="blackout-content" aria-live="polite">
+                    <div class="blackout-binary" id="blackout-time">
+                        00:00:00
+                    </div>
+                    <div class="blackout-text">
+                        Press spacebar again to resume
+                    </div>
                 </div>
             </div>
 
-            <div class="tab-panel" data-tab-panel="reading" role="tabpanel" hidden>
-                <div class="settings-grid">
-                    <label>
-                        Font Size
-                        <input type="range" id="font-size" min="14" max="26" step="1">
-                    </label>
+            <header class="viewer-toolbar">
+                <button
+                    id="prev-story-btn"
+                    class="icon-btn"
+                    title="Previous story"
+                    aria-label="Previous story"
+                >
+                    ⟵
+                </button>
+                <button
+                    id="next-story-btn"
+                    class="icon-btn"
+                    title="Next story"
+                    aria-label="Next story"
+                >
+                    ⟶
+                </button>
+                <button
+                    id="font-down-btn"
+                    class="icon-btn"
+                    title="Decrease font size"
+                    aria-label="Decrease font size"
+                >
+                    ➖
+                </button>
+                <button
+                    id="font-up-btn"
+                    class="icon-btn"
+                    title="Increase font size"
+                    aria-label="Increase font size"
+                >
+                    ➕
+                </button>
+                <button
+                    id="theme-toggle-btn"
+                    class="icon-btn"
+                    title="Toggle theme"
+                    aria-label="Toggle theme"
+                >
+                    🌙
+                </button>
+                <button
+                    id="favorite-btn"
+                    class="icon-btn"
+                    title="Favorite"
+                    aria-label="Favorite"
+                >
+                    ☆
+                </button>
+                <button
+                    id="bookmark-btn"
+                    class="icon-btn"
+                    title="Pinned"
+                    aria-label="Pinned"
+                >
+                    📌
+                </button>
+                <button
+                    id="help-btn"
+                    class="icon-btn"
+                    type="button"
+                    title="Help & Shortcuts"
+                    aria-label="Help and shortcuts"
+                >
+                    ❓
+                </button>
+                <button
+                    id="settings-btn"
+                    class="icon-btn"
+                    type="button"
+                    title="Settings"
+                    aria-label="Settings"
+                >
+                    ⚙️
+                </button>
+                <a
+                    class="icon-btn"
+                    href="../homepage.html"
+                    title="Library"
+                    aria-label="Library"
+                    >🏠</a
+                >
+            </header>
 
-                    <label>
-                        Line Spacing
-                        <input type="range" id="line-spacing" min="1.2" max="2.2" step="0.1">
-                    </label>
+            <main class="viewer-body">
+                <section class="story-panel">
+                    <div class="story-header">
+                        <p class="eyebrow">Report Viewer</p>
+                        <h1 id="story-title">Story</h1>
+                        <p id="story-meta" class="story-meta"></p>
+                    </div>
+                    <div id="story-content" class="story-content"></div>
+                </section>
+            </main>
+        </div>
 
-                    <label>
-                        Scroll Step
-                        <select id="scroll-step">
-                            <option value="20">20 px</option>
-                            <option value="40">40 px</option>
-                            <option value="60">60 px</option>
-                            <option value="80">80 px</option>
-                        </select>
-                    </label>
+        <div class="help-overlay" id="help-overlay" hidden>
+            <div
+                class="help-modal"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="help-title"
+            >
+                <div class="help-header">
+                    <h2 id="help-title">🎮 SHORTCUTS</h2>
+                    <button id="close-help" class="ghost" type="button">✕</button>
+                </div>
+                <div class="help-content">
+                    <div class="shortcuts-grid">
+                        <div class="shortcut-category">
+                            <h4>Navigate</h4>
+                            <div class="shortcut-items">
+                                <div class="shortcut-item"><span class="shortcut-label">Pan</span><span class="shortcut-keys">WASD / Arrows</span></div>
+                                <div class="shortcut-item"><span class="shortcut-label">Prev Story</span><span class="shortcut-keys">Ctrl+← / PgUp</span></div>
+                                <div class="shortcut-item"><span class="shortcut-label">Next Story</span><span class="shortcut-keys">Ctrl+→ / PgDn</span></div>
+                                <div class="shortcut-item"><span class="shortcut-label">Scroll</span><span class="shortcut-keys">Shift + W/S</span></div>
+                            </div>
+                        </div>
+                        <div class="shortcut-category">
+                            <h4>Zoom</h4>
+                            <div class="shortcut-items">
+                                <div class="shortcut-item"><span class="shortcut-label">Zoom Out</span><span class="shortcut-keys" id="zoom-out-key">- / Q</span></div>
+                                <div class="shortcut-item"><span class="shortcut-label">Zoom In</span><span class="shortcut-keys" id="zoom-in-key">= / E</span></div>
+                                <div class="shortcut-item"><span class="shortcut-label">Fit</span><span class="shortcut-keys" id="fit-key">0 / 1</span></div>
+                            </div>
+                        </div>
+                        <div class="shortcut-category">
+                            <h4>Text</h4>
+                            <div class="shortcut-items">
+                                <div class="shortcut-item"><span class="shortcut-label">Font -</span><span class="shortcut-keys" id="font-down-key">[</span></div>
+                                <div class="shortcut-item"><span class="shortcut-label">Font +</span><span class="shortcut-keys" id="font-up-key">]</span></div>
+                                <div class="shortcut-item"><span class="shortcut-label">Line -</span><span class="shortcut-keys" id="line-down-key">{</span></div>
+                                <div class="shortcut-item"><span class="shortcut-label">Line +</span><span class="shortcut-keys" id="line-up-key">}</span></div>
+                            </div>
+                        </div>
+                        <div class="shortcut-category">
+                            <h4>Actions</h4>
+                            <div class="shortcut-items">
+                                <div class="shortcut-item"><span class="shortcut-label">Favorite</span><span class="shortcut-keys" id="favorite-key">F</span></div>
+                                <div class="shortcut-item"><span class="shortcut-label">Pin</span><span class="shortcut-keys" id="bookmark-key">B</span></div>
+                                <div class="shortcut-item"><span class="shortcut-label">Theme</span><span class="shortcut-keys" id="theme-key">T</span></div>
+                                <div class="shortcut-item"><span class="shortcut-label">Settings</span><span class="shortcut-keys" id="settings-key">?</span></div>
+                                <div class="shortcut-item"><span class="shortcut-label">Blackout</span><span class="shortcut-keys" id="blackout-key">Space</span></div>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="help-footer">Customize keys in Settings → Shortcuts</p>
+                </div>
 
-                    <label>
-                        Zoom Step
-                        <select id="zoom-step">
-                            <option value="0.05">0.05</option>
-                            <option value="0.1">0.1</option>
-                            <option value="0.2">0.2</option>
-                        </select>
-                    </label>
+                <div class="help-section">
+                    <h3>🔍 Search Guide</h3>
+                    <div class="search-guide">
+                        <div class="search-example">
+                            <span class="search-query">tag1 tag2</span>
+                            <span class="search-desc">Stories with either tag1 OR tag2</span>
+                        </div>
+                        <div class="search-example">
+                            <span class="search-query">+tag1 +tag2</span>
+                            <span class="search-desc">Stories with BOTH tag1 AND tag2 (required)</span>
+                        </div>
+                        <div class="search-example">
+                            <span class="search-query">-tag1</span>
+                            <span class="search-desc">Exclude stories with tag1</span>
+                        </div>
+                        <div class="search-example">
+                            <span class="search-query">tag1 | tag2</span>
+                            <span class="search-desc">Stories with tag1 OR tag2 (pipe separator)</span>
+                        </div>
+                        <div class="search-example">
+                            <span class="search-query">action +sci-fi -romance</span>
+                            <span class="search-desc">Action stories that are sci-fi but NOT romance</span>
+                        </div>
+                        <div class="search-example">
+                            <span class="search-query">tag1, tag2, tag3</span>
+                            <span class="search-desc">Commas are treated as spaces (same as "tag1 tag2 tag3")</span>
+                        </div>
+                    </div>
+                    <p class="search-tip">💡 Click tags on story cards to auto-add them to search</p>
                 </div>
             </div>
+        </div>
 
-            <div class="tab-panel" data-tab-panel="input" role="tabpanel" hidden>
-                <div class="settings-grid">
-                    <label>
-                        Keyboard Mode
-                        <select id="keyboard-mode">
-                            <option value="default">Default</option>
-                            <option value="left">One-Hand Left</option>
-                            <option value="right">One-Hand Right</option>
-                        </select>
-                    </label>
+        <div class="settings-overlay" id="settings-overlay" hidden>
+            <div
+                class="settings-modal"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="settings-title"
+            >
+                <div class="settings-header">
+                    <h2 id="settings-title">Viewer Settings</h2>
+                    <button id="close-settings" class="ghost" type="button">
+                        Close
+                    </button>
+                </div>
+                <div class="settings-tabs" role="tablist">
+                    <button
+                        class="tab-btn active"
+                        data-tab="appearance"
+                        type="button"
+                        role="tab"
+                        aria-selected="true"
+                    >
+                        Appearance
+                    </button>
+                    <button
+                        class="tab-btn"
+                        data-tab="reading"
+                        type="button"
+                        role="tab"
+                        aria-selected="false"
+                    >
+                        Reading
+                    </button>
+                    <button
+                        class="tab-btn"
+                        data-tab="input"
+                        type="button"
+                        role="tab"
+                        aria-selected="false"
+                    >
+                        Input
+                    </button>
+                    <button
+                        class="tab-btn"
+                        data-tab="shortcuts"
+                        type="button"
+                        role="tab"
+                        aria-selected="false"
+                    >
+                        Shortcuts
+                    </button>
+                </div>
+                <div
+                    class="tab-panel active"
+                    data-tab-panel="appearance"
+                    role="tabpanel"
+                >
+                    <div class="settings-grid">
+                        <label>
+                            Theme
+                            <select id="theme-select">
+                                <option value="dark">Dark</option>
+                                <option value="light">Light</option>
+                            </select>
+                        </label>
 
-                <label class="checkbox">
-                    <input type="checkbox" id="pan-keys">
-                    Enable Pan Keys (WASD / Arrows)
-                </label>
+                        <label class="full">
+                            Story Font
+                            <select id="font-family">
+                                <option value="tech">Share Tech Mono</option>
+                                <option value="orbitron">Orbitron</option>
+                                <option value="vt323">VT323</option>
+                                <option value="system-mono">System Mono</option>
+                                <option value="system-sans">System Sans</option>
+                                <option value="system-serif">
+                                    System Serif
+                                </option>
+                            </select>
+                        </label>
 
-                <label class="checkbox">
-                    <input type="checkbox" id="remember-zoom">
-                    Remember Zoom Per Story
-                </label>
+                        <label class="full">
+                            Custom Font (optional)
+                            <input
+                                type="text"
+                                id="custom-font"
+                                placeholder="e.g. 'Fira Code', monospace"
+                            />
+                        </label>
+                    </div>
+                </div>
 
-                <label class="checkbox">
-                    <input type="checkbox" id="remember-view-all">
-                    Remember View Across All Stories
-                </label>
-            </div>
-            </div>
+                <div
+                    class="tab-panel"
+                    data-tab-panel="reading"
+                    role="tabpanel"
+                    hidden
+                >
+                    <div class="settings-grid">
+                        <label>
+                            Font Size
+                            <input
+                                type="range"
+                                id="font-size"
+                                min="14"
+                                max="26"
+                                step="1"
+                            />
+                        </label>
 
-            <div class="tab-panel" data-tab-panel="shortcuts" role="tabpanel" hidden>
-                <div class="shortcuts" id="shortcut-list"></div>
-                <div class="keybinds" id="keybind-list"></div>
+                        <label>
+                            Line Spacing
+                            <input
+                                type="range"
+                                id="line-spacing"
+                                min="1.2"
+                                max="2.2"
+                                step="0.1"
+                            />
+                        </label>
+
+                        <label>
+                            Scroll Step
+                            <select id="scroll-step">
+                                <option value="20">20 px</option>
+                                <option value="40">40 px</option>
+                                <option value="60">60 px</option>
+                                <option value="80">80 px</option>
+                            </select>
+                        </label>
+
+                        <label>
+                            Zoom Step
+                            <select id="zoom-step">
+                                <option value="0.05">0.05</option>
+                                <option value="0.1">0.1</option>
+                                <option value="0.2">0.2</option>
+                            </select>
+                        </label>
+                    </div>
+                </div>
+
+                <div
+                    class="tab-panel"
+                    data-tab-panel="input"
+                    role="tabpanel"
+                    hidden
+                >
+                    <div class="settings-grid">
+                        <label>
+                            Keyboard Mode
+                            <select id="keyboard-mode">
+                                <option value="default">Default</option>
+                                <option value="left">One-Hand Left</option>
+                                <option value="right">One-Hand Right</option>
+                            </select>
+                        </label>
+
+                        <label class="checkbox">
+                            <input type="checkbox" id="pan-keys" />
+                            Enable Pan Keys (WASD / Arrows)
+                        </label>
+
+                        <label class="checkbox">
+                            <input type="checkbox" id="remember-zoom" />
+                            Remember Zoom Per Story
+                        </label>
+
+                        <label class="checkbox">
+                            <input type="checkbox" id="remember-view-all" />
+                            Remember View Across All Stories
+                        </label>
+                    </div>
+                </div>
+
+                <div
+                    class="tab-panel"
+                    data-tab-panel="shortcuts"
+                    role="tabpanel"
+                    hidden
+                >
+                    <div class="shortcuts" id="shortcut-list"></div>
+                    <div class="keybinds" id="keybind-list"></div>
+                </div>
             </div>
         </div>
-    </div>
 
-    <script src="../database/fonts.js"></script>
-    <script src="../database/catalog.js"></script>
-    <script src="viewer.js"></script>
-</body>
+        <script src="../database/fonts.js"></script>
+        <script src="../database/catalog.js"></script>
+        <script src="viewer.js"></script>
+    </body>
 </html>

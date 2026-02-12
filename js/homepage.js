@@ -49,6 +49,8 @@ const DEFAULT_COLORS = {
     "card-overlay-list":
       "linear-gradient(90deg, rgba(5, 7, 13, 0.88) 0%, rgba(5, 7, 13, 0.5) 55%, rgba(5, 7, 13, 0.12) 100%)",
     "cursor-glow": "rgba(98, 247, 255, 0.2)",
+    "tag-bg": "rgba(98, 247, 255, 0.15)",
+    "tag-bg-hover": "rgba(98, 247, 255, 0.3)",
   },
   light: {
     ink: "#0b1220",
@@ -70,6 +72,8 @@ const DEFAULT_COLORS = {
     "card-overlay-list":
       "linear-gradient(90deg, rgba(238, 243, 249, 0.5) 0%, rgba(238, 243, 249, 0.25) 55%, rgba(238, 243, 249, 0.05) 100%)",
     "cursor-glow": "rgba(59, 91, 255, 0.18)",
+    "tag-bg": "rgba(10, 166, 199, 0.15)",
+    "tag-bg-hover": "rgba(10, 166, 199, 0.25)",
   },
 };
 
@@ -91,6 +95,8 @@ const COLOR_DESCRIPTIONS = {
   "card-overlay": { desc: "Card overlay gradient", icon: "co" },
   "card-overlay-list": { desc: "Card overlay list gradient", icon: "cl" },
   "cursor-glow": { desc: "Cursor glow", icon: "cg2" },
+  "tag-bg": { desc: "Tag background", icon: "tg" },
+  "tag-bg-hover": { desc: "Tag hover background", icon: "tgh" },
 };
 
 async function loadFonts() {
@@ -291,10 +297,64 @@ function matchesSearch(story, query) {
   if (!query) {
     return true;
   }
-  const haystack = [story.title, story.description, ...(story.tags || [])]
-    .join(" ")
-    .toLowerCase();
-  return haystack.includes(query.toLowerCase());
+
+  // Normalize query: remove commas and extra spaces
+  const normalizedQuery = query.toLowerCase().replace(/,/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!normalizedQuery) return true;
+
+  const storyTags = story.tags || [];
+  const storyText = [story.title, story.description, ...storyTags].join(" ").toLowerCase();
+
+  // Parse OR groups (| operator)
+  const orGroups = normalizedQuery.split('|').map(g => g.trim()).filter(g => g);
+
+  // Must match at least one OR group
+  return orGroups.some(orGroup => {
+    const terms = orGroup.split(' ').filter(t => t);
+
+    let hasRequired = false;  // Has any +term
+    let hasExcluded = false;  // Has any -term
+    let requiredMet = true;   // All +terms match
+    let excludedMet = true;   // No -terms match
+    let optionalMet = false;  // At least one optional term matches
+
+    for (const term of terms) {
+      if (term.startsWith('+')) {
+        // Required term (AND)
+        hasRequired = true;
+        const requiredTag = term.slice(1);
+        if (!storyTags.some(tag => tag.toLowerCase() === requiredTag)) {
+          requiredMet = false;
+        }
+      } else if (term.startsWith('-')) {
+        // Excluded term (NOT)
+        hasExcluded = true;
+        const excludedTag = term.slice(1);
+        if (storyTags.some(tag => tag.toLowerCase() === excludedTag) ||
+            storyText.includes(excludedTag)) {
+          excludedMet = false;
+        }
+      } else {
+        // Optional term (OR within the group)
+        const termInTags = storyTags.some(tag => tag.toLowerCase() === term);
+        const termInText = storyText.includes(term);
+        if (termInTags || termInText) {
+          optionalMet = true;
+        }
+      }
+    }
+
+    // If only optional terms, at least one must match
+    // If has required terms, all must match
+    // If has excluded terms, none must match
+    const onlyOptional = !hasRequired && !hasExcluded;
+
+    if (onlyOptional) {
+      return optionalMet || terms.length === 0;
+    } else {
+      return requiredMet && excludedMet && (optionalMet || !terms.some(t => !t.startsWith('+') && !t.startsWith('-')));
+    }
+  });
 }
 
 function isEditableTarget(target) {
@@ -621,6 +681,13 @@ function render() {
 
   emptyState.style.display = "none";
 
+  // Store the filtered story IDs for viewer navigation
+  const filteredStoryIds = finalStories.map((story) => story.id);
+  localStorage.setItem(
+    "filteredStorySequence",
+    JSON.stringify(filteredStoryIds),
+  );
+
   finalStories.forEach((story, index) => {
     const card = document.createElement("a");
     card.className = "story-card";
@@ -657,7 +724,7 @@ function render() {
     const favoriteBtn = document.createElement("button");
     favoriteBtn.className = "favorite-btn";
     favoriteBtn.type = "button";
-    favoriteBtn.textContent = favorites.has(story.id) ? "★" : "☆";
+    favoriteBtn.textContent = "⭐";
     if (favorites.has(story.id)) {
       favoriteBtn.classList.add("active");
     }
@@ -675,11 +742,12 @@ function render() {
     const content = document.createElement("div");
     content.className = "card-content";
 
+    // Show "New" badge for stories that haven't been opened yet (no bookmark)
     const bookmark = getBookmark(story.id);
-    if (bookmark) {
+    if (!bookmark) {
       const badge = document.createElement("div");
-      badge.className = "badge";
-      badge.textContent = "Resume available";
+      badge.className = "badge new-badge";
+      badge.textContent = "New";
       content.appendChild(badge);
     }
 
@@ -698,16 +766,43 @@ function render() {
       const tagRow = document.createElement("div");
       tagRow.className = "tag-row";
       story.tags.forEach((tag) => {
-        const pill = document.createElement("span");
+        const pill = document.createElement("button");
         pill.className = "tag";
+        pill.type = "button";
         pill.textContent = tag;
+        pill.addEventListener("click", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          const currentSearch = searchInput.value.trim();
+          // Check if tag already exists in search
+          const existingTags = currentSearch.split(",").map(t => t.trim()).filter(t => t);
+          if (!existingTags.includes(tag)) {
+            if (currentSearch) {
+              searchInput.value = currentSearch + ", " + tag;
+            } else {
+              searchInput.value = tag;
+            }
+            saveFilterState();
+            render();
+          }
+        });
         tagRow.appendChild(pill);
       });
       content.appendChild(tagRow);
     }
 
-    card.appendChild(pinBtn);
+    // Add cursor tracking for card shine effect
+    card.addEventListener("mousemove", (e) => {
+      const rect = card.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      const y = ((e.clientY - rect.top) / rect.height) * 100;
+      card.style.setProperty("--card-cursor-x", `${x}%`);
+      card.style.setProperty("--card-cursor-y", `${y}%`);
+    });
+
+    // Append buttons: favorite (star) on the right, pin beside it
     card.appendChild(favoriteBtn);
+    card.appendChild(pinBtn);
     card.appendChild(content);
     grid.appendChild(card);
   });
@@ -841,7 +936,11 @@ window.addEventListener("storage", (event) => {
   if (!event.key) {
     return;
   }
-  if (event.key === "favorites" || event.key === "pinned" || event.key.startsWith("bookmark:")) {
+  if (
+    event.key === "favorites" ||
+    event.key === "pinned" ||
+    event.key.startsWith("bookmark:")
+  ) {
     render();
   }
 });
@@ -856,8 +955,6 @@ async function init() {
 
   const page = document.querySelector(".page");
   if (page) page.style.opacity = "0";
-
-
 
   function updateProgress(percent) {
     if (loader.progressBar) loader.progressBar.style.width = `${percent}%`;
@@ -953,9 +1050,12 @@ async function init() {
     }
 
     // Apply layout and sort (will use saved values or defaults)
-    const layoutToApply = savedState?.layout || localStorage.getItem("homepageLayout") || "grid";
-    const sortToApply = savedState?.sort || loadSortPreference()?.type || "default";
-    const sortDirection = savedState?.sortDirection || loadSortPreference()?.direction || "asc";
+    const layoutToApply =
+      savedState?.layout || localStorage.getItem("homepageLayout") || "grid";
+    const sortToApply =
+      savedState?.sort || loadSortPreference()?.type || "default";
+    const sortDirection =
+      savedState?.sortDirection || loadSortPreference()?.direction || "asc";
 
     applyLayout(layoutToApply);
     applySortPreference({ type: sortToApply, direction: sortDirection });
@@ -1337,10 +1437,31 @@ function initDragging() {
     }
   });
 
-  const observer = new ResizeObserver(() => {
+  // Save size when panel is resized via resize handle
+  const resizeObserver = new ResizeObserver(() => {
+    // Debounce the save to avoid excessive writes
+    clearTimeout(settingsPanel.resizeTimeout);
+    settingsPanel.resizeTimeout = setTimeout(() => {
+      savePanelSettings();
+    }, 100);
+  });
+  resizeObserver.observe(settingsPanel);
+
+  // Also save on window resize to ensure position stays valid
+  window.addEventListener("resize", () => {
+    // Ensure panel stays within bounds after window resize
+    const rect = settingsPanel.getBoundingClientRect();
+    const maxX = window.innerWidth - rect.width;
+    const maxY = window.innerHeight - rect.height;
+
+    if (rect.left > maxX) {
+      settingsPanel.style.left = Math.max(0, maxX) + "px";
+    }
+    if (rect.top > maxY) {
+      settingsPanel.style.top = Math.max(0, maxY) + "px";
+    }
     savePanelSettings();
   });
-  observer.observe(settingsPanel);
 }
 
 if (settingsBtn) {
@@ -1383,3 +1504,109 @@ window.addEventListener("keydown", (event) => {
     closeSettings();
   }
 });
+
+// Reset all bookmarks functionality with confirmation dialog
+function resetAllBookmarks() {
+  // Count bookmarks before clearing
+  let bookmarkCount = 0;
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith("bookmark:")) {
+      bookmarkCount++;
+    }
+  }
+
+  if (bookmarkCount === 0) {
+    alert("No bookmarks to reset. All reports are already marked as 'New'.");
+    return;
+  }
+
+  // Show confirmation dialog
+  const confirmed = confirm(
+    `⚠️ WARNING: Reset Reading Progress\n\n` +
+    `You are about to clear ${bookmarkCount} bookmark(s).\n\n` +
+    `This will:\n` +
+    `• Remove all reading progress timestamps\n` +
+    `• Mark all reports as "New" and unread\n` +
+    `• This action CANNOT be undone\n\n` +
+    `Are you sure you want to continue?\n\n` +
+    `Click "OK" to reset all bookmarks, or "Cancel" to keep your progress.`
+  );
+
+  if (confirmed) {
+    // Clear all bookmark entries
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith("bookmark:")) {
+        keysToRemove.push(key);
+      }
+    }
+
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+
+    // Re-render to show "New" badges
+    render();
+
+    // Show success message
+    alert(`✅ Success!\n\n${bookmarkCount} bookmark(s) have been cleared.\nAll reports are now marked as "New".`);
+
+    console.log(`Reset ${bookmarkCount} bookmarks`);
+  } else {
+    console.log("Bookmark reset cancelled by user");
+  }
+}
+
+// Attach reset button listener
+const resetBookmarksBtn = document.getElementById("reset-bookmarks-btn");
+if (resetBookmarksBtn) {
+  resetBookmarksBtn.addEventListener("click", resetAllBookmarks);
+}
+
+// Function to save current color values as new defaults
+// Call this once to update DEFAULT_COLORS with current custom colors
+function saveCurrentColorsAsDefaults() {
+  const customColors = loadSettings();
+  const newDefaults = { ...DEFAULT_COLORS };
+
+  // Merge custom colors into defaults for both themes
+  if (customColors.dark) {
+    Object.keys(customColors.dark).forEach((key) => {
+      if (customColors.dark[key]) {
+        newDefaults.dark[key] = customColors.dark[key];
+      }
+    });
+  }
+  if (customColors.light) {
+    Object.keys(customColors.light).forEach((key) => {
+      if (customColors.light[key]) {
+        newDefaults.light[key] = customColors.light[key];
+      }
+    });
+  }
+
+  // Log the new defaults so they can be copied to update DEFAULT_COLORS
+  console.log("New DEFAULT_COLORS:", JSON.stringify(newDefaults, null, 2));
+
+  // Also save to a special key in localStorage for reference
+  localStorage.setItem("savedDefaults", JSON.stringify(newDefaults));
+
+  return newDefaults;
+}
+
+// Auto-save current colors as defaults on first load (only this time)
+(function autoSaveDefaultsOnce() {
+  const hasSavedDefaults = localStorage.getItem("defaultsSavedOnce");
+  if (!hasSavedDefaults) {
+    const customColors = loadSettings();
+    const hasCustomColors =
+      Object.keys(customColors.dark || {}).length > 0 ||
+      Object.keys(customColors.light || {}).length > 0;
+
+    if (hasCustomColors) {
+      saveCurrentColorsAsDefaults();
+      localStorage.setItem("defaultsSavedOnce", "true");
+      console.log("Current colors saved as defaults (one-time operation)");
+    }
+  }
+})();

@@ -135,6 +135,8 @@ document.addEventListener("DOMContentLoaded", () => {
   let settings = { ...DEFAULT_SETTINGS };
   let catalog = [];
   let storyIndex = -1;
+  let filteredStorySequence = [];
+  let filteredStoryIndex = -1;
   let bindingTarget = null;
   let codeRefreshTimer = null;
   let cursorRaf = null;
@@ -293,6 +295,65 @@ document.addEventListener("DOMContentLoaded", () => {
     els.imageCounter.textContent = "0 / 0";
   }
 
+  // Load custom colors from homepage settings
+  function loadHomepageColors() {
+    try {
+      const raw = localStorage.getItem("customColors");
+      return raw ? JSON.parse(raw) : { dark: {}, light: {} };
+    } catch (error) {
+      return { dark: {}, light: {} };
+    }
+  }
+
+  // Load homepage theme setting
+  function loadHomepageTheme() {
+    try {
+      return localStorage.getItem("homepageTheme") || "dark";
+    } catch (error) {
+      return "dark";
+    }
+  }
+
+  // Apply homepage colors to viewer
+  function applyHomepageColors() {
+    const customColors = loadHomepageColors();
+    const currentTheme = settings.theme || "dark";
+    const themeColors = customColors[currentTheme] || {};
+
+    // Apply custom colors as CSS variables
+    Object.entries(themeColors).forEach(([colorName, value]) => {
+      if (value) {
+        document.body.style.setProperty(`--${colorName}`, value);
+      }
+    });
+  }
+
+  // Sync theme with homepage
+  function syncThemeWithHomepage() {
+    const homepageTheme = loadHomepageTheme();
+    if (settings.theme !== homepageTheme) {
+      settings.theme = homepageTheme;
+      return true; // Theme was changed
+    }
+    return false; // No change needed
+  }
+
+  // Save theme to homepage (bidirectional sync)
+  function saveThemeToHomepage(theme) {
+    try {
+      localStorage.setItem("homepageTheme", theme);
+      // Dispatch storage event to notify other tabs
+      window.dispatchEvent(new StorageEvent("storage", {
+        key: "homepageTheme",
+        newValue: theme,
+        oldValue: null,
+        storageArea: localStorage
+      }));
+    } catch (error) {
+      console.error("Failed to save theme to homepage:", error);
+    }
+  }
+
   function applySettings() {
     document.body.dataset.theme = settings.theme;
     const fontChoice =
@@ -331,6 +392,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (els.rememberViewAll)
       els.rememberViewAll.checked = settings.rememberViewAll;
 
+    // Apply homepage colors after setting theme
+    applyHomepageColors();
+
     updateThemeToggle();
     renderShortcutList();
     renderKeybindList();
@@ -349,7 +413,48 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function saveSettings() {
+    // Save to localStorage for immediate access
     localStorage.setItem("viewerSettings", JSON.stringify(settings));
+    
+    // Also attempt to save to database for persistence across sessions
+    saveSettingsToDatabase();
+  }
+
+  async function saveSettingsToDatabase() {
+    try {
+      // Create a settings object to save (exclude transient data)
+      const settingsToSave = {
+        theme: settings.theme,
+        fontSize: settings.fontSize,
+        lineSpacing: settings.lineSpacing,
+        scrollStep: settings.scrollStep,
+        zoomStep: settings.zoomStep,
+        keyboardMode: settings.keyboardMode,
+        panKeys: settings.panKeys,
+        rememberZoom: settings.rememberZoom,
+        fontFamily: settings.fontFamily,
+        customFont: settings.customFont,
+        customBindings: settings.customBindings,
+        rememberViewAll: settings.rememberViewAll,
+      };
+
+      // Try to save via API endpoint if available
+      const response = await fetch("../api/save-settings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(settingsToSave),
+      });
+
+      if (!response.ok) {
+        // API not available, settings remain in localStorage only
+        console.log("Settings saved to localStorage (API not available)");
+      }
+    } catch (error) {
+      // API not available, localStorage is the fallback
+      console.log("Settings saved to localStorage");
+    }
   }
 
   async function loadDefaultSettings() {
@@ -377,6 +482,23 @@ document.addEventListener("DOMContentLoaded", () => {
     return paramId ? paramId.trim() : null;
   }
 
+  function loadFilteredSequence() {
+    try {
+      const raw = localStorage.getItem("filteredStorySequence");
+      return raw ? JSON.parse(raw) : [];
+    } catch (error) {
+      return [];
+    }
+  }
+
+  function updateFilteredStoryIndex() {
+    if (filteredStorySequence.length === 0 || !storyId) {
+      filteredStoryIndex = -1;
+      return;
+    }
+    filteredStoryIndex = filteredStorySequence.indexOf(storyId);
+  }
+
   function setupBackLink() {
     const params = new URLSearchParams(window.location.search);
     const from = params.get("from");
@@ -385,7 +507,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     const safe = from.replace(/[^a-zA-Z0-9._-]/g, "");
     // Add from=viewer parameter when returning to homepage so it knows to restore state
-    const backUrl = safe.startsWith("http") || safe.startsWith("/") ? safe : `../${safe}`;
+    const backUrl =
+      safe.startsWith("http") || safe.startsWith("/") ? safe : `../${safe}`;
     const separator = backUrl.includes("?") ? "&" : "?";
     els.backLink.href = `${backUrl}${separator}from=viewer`;
     els.backLink.hidden = false;
@@ -692,8 +815,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function setStoryNavState() {
     if (!els.prevStoryBtn || !els.nextStoryBtn) return;
-    const hasPrev = storyIndex > 0;
-    const hasNext = storyIndex >= 0 && storyIndex < catalog.length - 1;
+
+    // Use filtered sequence if available, otherwise use full catalog
+    const hasFilteredSequence = filteredStorySequence.length > 0;
+
+    let hasPrev, hasNext;
+    if (hasFilteredSequence && filteredStoryIndex >= 0) {
+      hasPrev = filteredStoryIndex > 0;
+      hasNext = filteredStoryIndex < filteredStorySequence.length - 1;
+    } else {
+      hasPrev = storyIndex > 0;
+      hasNext = storyIndex >= 0 && storyIndex < catalog.length - 1;
+    }
+
     els.prevStoryBtn.disabled = !hasPrev;
     els.nextStoryBtn.disabled = !hasNext;
   }
@@ -752,13 +886,36 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function goToStory(index) {
-    if (!catalog.length || index < 0 || index >= catalog.length) {
+    if (!catalog.length) {
       return;
     }
+
+    // Use filtered sequence if available, otherwise use full catalog
+    const hasFilteredSequence = filteredStorySequence.length > 0;
+    let targetStoryId;
+
+    if (hasFilteredSequence && filteredStoryIndex >= 0) {
+      // Navigate within filtered sequence
+      const newFilteredIndex = index;
+      if (
+        newFilteredIndex < 0 ||
+        newFilteredIndex >= filteredStorySequence.length
+      ) {
+        return;
+      }
+      targetStoryId = filteredStorySequence[newFilteredIndex];
+    } else {
+      // Navigate within full catalog
+      if (index < 0 || index >= catalog.length) {
+        return;
+      }
+      targetStoryId = catalog[index].id;
+    }
+
     saveScrollPosition();
     saveZoomState();
     localStorage.setItem(getStorageKey("currentPhotoIndex"), currentPhotoIndex);
-    window.location.href = buildStoryUrl(catalog[index].id);
+    window.location.href = buildStoryUrl(targetStoryId);
   }
 
   function toggleBookmark() {
@@ -803,24 +960,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function renderShortcutList() {
-    const profile = KEY_PROFILES[settings.keyboardMode] || KEY_PROFILES.default;
-    const list = (keys) => keys.map(prettyKeyLabel).join(", ");
-    const lines = [
-      "Pan Image: W A S D / Arrow keys",
-      "Scroll Story: Shift + W/S or Shift + ↑/↓",
-      `Zoom: ${list(profile.zoomOut)} / ${list(profile.zoomIn)}`,
-      `Fit: ${list(profile.fit)}`,
-      `Font: ${list(profile.fontDown)} / ${list(profile.fontUp)}`,
-      `Line: ${list(profile.lineDown)} / ${list(profile.lineUp)}`,
-      `Favorite: ${list(profile.favorite)}`,
-      `Bookmark: ${list(profile.bookmark)}`,
-      `Theme: ${list(profile.toggleTheme)}`,
-      `Settings: ${list(profile.toggleSettings)}`,
-      `Blackout: ${list(profile.blackout)}`,
-      `View Memory: ${settings.rememberViewAll ? "Global" : "Per Story"}`,
-    ];
-
-    els.shortcutList.innerHTML = `<strong>Shortcuts</strong><br>${lines.join("<br>")}`;
+    // Shortcuts tab now focuses only on key assignment
+    // Content is rendered by renderKeybindList
+    els.shortcutList.innerHTML = '';
   }
 
   function isEditableTarget(target) {
@@ -878,43 +1020,91 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
     const profile = KEY_PROFILES[settings.keyboardMode] || KEY_PROFILES.default;
-    const rows = [
-      { action: "prev", label: "Prev image", keys: profile.prev },
-      { action: "next", label: "Next image", keys: profile.next },
-      { action: "zoomOut", label: "Zoom out", keys: profile.zoomOut },
-      { action: "zoomIn", label: "Zoom in", keys: profile.zoomIn },
-      { action: "fit", label: "Fit view", keys: profile.fit },
-      { action: "favorite", label: "Favorite", keys: profile.favorite },
-      { action: "bookmark", label: "Bookmark", keys: profile.bookmark },
+
+    // Group related bindings together - includes all customizable actions
+    const bindingGroups = [
       {
-        action: "toggleTheme",
-        label: "Toggle theme",
-        keys: profile.toggleTheme,
+        category: "Image Navigation",
+        bindings: [
+          { action: "prev", label: "Prev image", keys: profile.prev },
+          { action: "next", label: "Next image", keys: profile.next },
+        ],
       },
       {
-        action: "toggleSettings",
-        label: "Toggle settings",
-        keys: profile.toggleSettings,
+        category: "Pan Image",
+        bindings: [
+          { action: "panUp", label: "Pan up", keys: ["w", "arrowup"] },
+          { action: "panDown", label: "Pan down", keys: ["s", "arrowdown"] },
+          { action: "panLeft", label: "Pan left", keys: ["a", "arrowleft"] },
+          { action: "panRight", label: "Pan right", keys: ["d", "arrowright"] },
+        ],
       },
-      { action: "blackout", label: "Blackout screen", keys: profile.blackout },
+      {
+        category: "Story Navigation",
+        bindings: [
+          { action: "prevStory", label: "Prev story", keys: ["ctrl+arrowleft", "pageup"] },
+          { action: "nextStory", label: "Next story", keys: ["ctrl+arrowright", "pagedown"] },
+          { action: "scrollUp", label: "Scroll up", keys: profile.scrollUp },
+          { action: "scrollDown", label: "Scroll down", keys: profile.scrollDown },
+        ],
+      },
+      {
+        category: "Zoom Controls",
+        bindings: [
+          { action: "zoomOut", label: "Zoom out", keys: profile.zoomOut },
+          { action: "zoomIn", label: "Zoom in", keys: profile.zoomIn },
+          { action: "fit", label: "Fit view", keys: profile.fit },
+        ],
+      },
+      {
+        category: "Text Adjustment",
+        bindings: [
+          { action: "fontDown", label: "Font size down", keys: profile.fontDown },
+          { action: "fontUp", label: "Font size up", keys: profile.fontUp },
+          { action: "lineDown", label: "Line spacing down", keys: profile.lineDown },
+          { action: "lineUp", label: "Line spacing up", keys: profile.lineUp },
+        ],
+      },
+      {
+        category: "Interface Actions",
+        bindings: [
+          { action: "favorite", label: "Favorite", keys: profile.favorite },
+          { action: "bookmark", label: "Pin Story", keys: profile.bookmark },
+          { action: "toggleTheme", label: "Toggle theme", keys: profile.toggleTheme },
+          { action: "toggleSettings", label: "Toggle settings", keys: profile.toggleSettings },
+          { action: "blackout", label: "Blackout screen", keys: profile.blackout },
+        ],
+      },
     ];
 
-    const content = rows
-      .map((row) => {
-        const currentKey = formatBinding(row.action, row.keys) || "—";
-        const active = bindingTarget === row.action;
-        const activeLabel = active ? " (press key)" : "";
-        return `
-                <div class="keybind-row${active ? " active" : ""}" data-action="${row.action}">
-                    <span>${row.label}</span>
-                    <span class="keybind-key">${currentKey}${activeLabel}</span>
-                    <button type="button" data-bind="${row.action}">Assign</button>
-                </div>
-            `;
-      })
-      .join("");
+    let content = '<div class="keybind-grid">';
 
-    els.keybindList.innerHTML = `<strong>Key Bindings</strong><div style="opacity:0.8;margin-bottom:6px;">Click Assign then press a key. Backspace to clear.</div>${content}`;
+    bindingGroups.forEach((group) => {
+      content += `<div class="keybind-group">`;
+      content += `<h4 class="keybind-group-title">${group.category}</h4>`;
+      content += `<div class="keybind-group-items">`;
+
+      group.bindings.forEach((binding) => {
+        const currentKey = formatBinding(binding.action, binding.keys) || "—";
+        const active = bindingTarget === binding.action;
+        const activeLabel = active ? " (press key)" : "";
+
+        content += `
+          <div class="keybind-row${active ? " active" : ""}" data-action="${binding.action}">
+            <span class="keybind-label">${binding.label}</span>
+            <span class="keybind-key">${currentKey}${activeLabel}</span>
+            <button type="button" class="keybind-assign-btn" data-bind="${binding.action}">Assign</button>
+          </div>
+        `;
+      });
+
+      content += `</div>`;
+      content += `</div>`;
+    });
+
+    content += "</div>";
+
+    els.keybindList.innerHTML = `<div class="keybind-instructions">Click <strong>Assign</strong> then press a key. Backspace to clear.</div>${content}`;
 
     els.keybindList.querySelectorAll("button[data-bind]").forEach((button) => {
       button.addEventListener("click", () => {
@@ -993,6 +1183,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (keyMatches(profile.toggleTheme, key, "toggleTheme")) {
       event.preventDefault();
       settings.theme = settings.theme === "dark" ? "light" : "dark";
+      saveThemeToHomepage(settings.theme); // Sync to homepage
       applySettings();
       saveSettings();
       return;
@@ -1033,32 +1224,36 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    // Story navigation with Ctrl+Arrow keys (check BEFORE pan keys to avoid conflict)
     if (
-      settings.panKeys &&
-      [
-        "w",
-        "a",
-        "s",
-        "d",
-        "arrowup",
-        "arrowdown",
-        "arrowleft",
-        "arrowright",
-      ].includes(key)
+      (key === "arrowleft" && event.ctrlKey) ||
+      (key === "pageup" && !event.shiftKey)
     ) {
       event.preventDefault();
-      const panStep = 24;
-      if (key === "w" || key === "arrowup") {
-        translateY -= panStep;
-      } else if (key === "s" || key === "arrowdown") {
-        translateY += panStep;
-      } else if (key === "a" || key === "arrowleft") {
-        translateX -= panStep;
-      } else if (key === "d" || key === "arrowright") {
-        translateX += panStep;
+      const hasFilteredSequence = filteredStorySequence.length > 0;
+      if (hasFilteredSequence && filteredStoryIndex > 0) {
+        goToStory(filteredStoryIndex - 1);
+      } else if (storyIndex > 0) {
+        goToStory(storyIndex - 1);
       }
-      updateTransform();
-      saveZoomState();
+      return;
+    }
+
+    if (
+      (key === "arrowright" && event.ctrlKey) ||
+      (key === "pagedown" && !event.shiftKey)
+    ) {
+      event.preventDefault();
+      const hasFilteredSequence = filteredStorySequence.length > 0;
+      if (
+        hasFilteredSequence &&
+        filteredStoryIndex >= 0 &&
+        filteredStoryIndex < filteredStorySequence.length - 1
+      ) {
+        goToStory(filteredStoryIndex + 1);
+      } else if (storyIndex >= 0 && storyIndex < catalog.length - 1) {
+        goToStory(storyIndex + 1);
+      }
       return;
     }
 
@@ -1079,6 +1274,33 @@ document.addEventListener("DOMContentLoaded", () => {
         updatePhoto();
       }
       return;
+    }
+
+    // Check for customizable pan keys (only if Ctrl is NOT pressed)
+    if (settings.panKeys && !event.ctrlKey) {
+      const panStep = 24;
+      let panHandled = false;
+      
+      if (keyMatches(["w", "arrowup"], key, "panUp")) {
+        translateY -= panStep;
+        panHandled = true;
+      } else if (keyMatches(["s", "arrowdown"], key, "panDown")) {
+        translateY += panStep;
+        panHandled = true;
+      } else if (keyMatches(["a", "arrowleft"], key, "panLeft")) {
+        translateX -= panStep;
+        panHandled = true;
+      } else if (keyMatches(["d", "arrowright"], key, "panRight")) {
+        translateX += panStep;
+        panHandled = true;
+      }
+      
+      if (panHandled) {
+        event.preventDefault();
+        updateTransform();
+        saveZoomState();
+        return;
+      }
     }
 
     if (keyMatches(profile.zoomIn, key, "zoomIn")) {
@@ -1202,9 +1424,12 @@ document.addEventListener("DOMContentLoaded", () => {
   document.addEventListener(
     "wheel",
     (event) => {
+      // Check if any overlay/modal is open - if so, don't zoom image
+      const helpOverlay = document.getElementById("help-overlay");
       if (
         (els.storyPanel && els.storyPanel.contains(event.target)) ||
-        (els.settingsOverlay && !els.settingsOverlay.hidden)
+        (els.settingsOverlay && !els.settingsOverlay.hidden) ||
+        (helpOverlay && !helpOverlay.hidden)
       ) {
         return;
       }
@@ -1234,6 +1459,78 @@ document.addEventListener("DOMContentLoaded", () => {
 
   els.storyContent.addEventListener("scroll", saveScrollPosition);
 
+  // Help button functionality
+  const helpBtn = document.getElementById("help-btn");
+  const helpOverlay = document.getElementById("help-overlay");
+  const closeHelpBtn = document.getElementById("close-help");
+
+  function showHelp() {
+    if (helpOverlay) {
+      helpOverlay.hidden = false;
+      updateHelpShortcuts();
+    }
+  }
+
+  function hideHelp() {
+    if (helpOverlay) {
+      helpOverlay.hidden = true;
+    }
+  }
+
+  function updateHelpShortcuts() {
+    if (!els.keybindList) return;
+
+    const profile = KEY_PROFILES[settings.keyboardMode] || KEY_PROFILES.default;
+    const customBindings = settings.customBindings || {};
+
+    // Update shortcut keys in help modal
+    const keyMappings = {
+      "zoom-out-key": formatBinding("zoomOut", profile.zoomOut),
+      "zoom-in-key": formatBinding("zoomIn", profile.zoomIn),
+      "fit-key": formatBinding("fit", profile.fit),
+      "font-down-key": formatBinding("fontDown", profile.fontDown),
+      "font-up-key": formatBinding("fontUp", profile.fontUp),
+      "line-down-key": formatBinding("lineDown", profile.lineDown),
+      "line-up-key": formatBinding("lineUp", profile.lineUp),
+      "favorite-key": formatBinding("favorite", profile.favorite),
+      "bookmark-key": formatBinding("bookmark", profile.bookmark),
+      "theme-key": formatBinding("toggleTheme", profile.toggleTheme),
+      "settings-key": formatBinding("toggleSettings", profile.toggleSettings),
+      "blackout-key": formatBinding("blackout", profile.blackout),
+    };
+
+    Object.entries(keyMappings).forEach(([id, key]) => {
+      const element = document.getElementById(id);
+      if (element) {
+        element.textContent = key || "—";
+      }
+    });
+  }
+
+  if (helpBtn) {
+    helpBtn.addEventListener("click", showHelp);
+  }
+
+  if (closeHelpBtn) {
+    closeHelpBtn.addEventListener("click", hideHelp);
+  }
+
+  // Close help with Escape key
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && helpOverlay && !helpOverlay.hidden) {
+      hideHelp();
+    }
+  });
+
+  // Close help when clicking outside
+  if (helpOverlay) {
+    helpOverlay.addEventListener("click", (event) => {
+      if (event.target === helpOverlay) {
+        hideHelp();
+      }
+    });
+  }
+
   els.favoriteBtn.addEventListener("click", toggleFavorite);
   els.bookmarkBtn.addEventListener("click", toggleBookmark);
   els.settingsBtn.addEventListener("click", showSettings);
@@ -1248,6 +1545,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (els.themeToggleBtn) {
     els.themeToggleBtn.addEventListener("click", () => {
       settings.theme = settings.theme === "dark" ? "light" : "dark";
+      saveThemeToHomepage(settings.theme); // Sync to homepage
       applySettings();
       saveSettings();
     });
@@ -1270,11 +1568,27 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   if (els.prevStoryBtn) {
-    els.prevStoryBtn.addEventListener("click", () => goToStory(storyIndex - 1));
+    els.prevStoryBtn.addEventListener("click", () => {
+      // Use filtered sequence if available, otherwise use full catalog
+      const hasFilteredSequence = filteredStorySequence.length > 0;
+      if (hasFilteredSequence && filteredStoryIndex >= 0) {
+        goToStory(filteredStoryIndex - 1);
+      } else {
+        goToStory(storyIndex - 1);
+      }
+    });
   }
 
   if (els.nextStoryBtn) {
-    els.nextStoryBtn.addEventListener("click", () => goToStory(storyIndex + 1));
+    els.nextStoryBtn.addEventListener("click", () => {
+      // Use filtered sequence if available, otherwise use full catalog
+      const hasFilteredSequence = filteredStorySequence.length > 0;
+      if (hasFilteredSequence && filteredStoryIndex >= 0) {
+        goToStory(filteredStoryIndex + 1);
+      } else {
+        goToStory(storyIndex + 1);
+      }
+    });
   }
 
   els.settingsOverlay.addEventListener("click", (event) => {
@@ -1409,6 +1723,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if (typeof settings.rememberViewAll !== "boolean") {
       settings.rememberViewAll = false;
     }
+    
+    // Sync theme with homepage (viewer follows homepage theme)
+    syncThemeWithHomepage();
+    
     applySettings();
     buildCodeField();
     refreshHudMarks();
@@ -1426,6 +1744,10 @@ document.addEventListener("DOMContentLoaded", () => {
         showCorrupted("Story not found in catalog.");
         return;
       }
+
+      // Load filtered sequence from localStorage
+      filteredStorySequence = loadFilteredSequence();
+      updateFilteredStoryIndex();
 
       applyStoryEntry(storyEntry);
 

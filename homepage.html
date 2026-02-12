@@ -76,7 +76,7 @@
                                     data-filter="favorites"
                                     title="Favorites"
                                 >
-                                    ★
+                                    ⭐
                                 </button>
                                 <button
                                     class="filter-btn"
@@ -168,7 +168,7 @@
             <section class="grid" id="story-grid" data-layout="grid"></section>
 
             <p class="empty-state" id="empty-state">
-                No reports found. Use the Data Manager to add reports.
+                No reports available. Pin ⭐/📌 some reports to make them appear here.
             </p>
         </div>
 
@@ -268,7 +268,7 @@
                                     <div class="control-icon">📊</div>
                                     <div class="control-desc">
                                         <strong>Filter Matrix:</strong> Toggle
-                                        between All (🌐), Favorites (★), or
+                                        between All (🌐), Favorites (⭐), or
                                         Pinned (📌) data streams.
                                     </div>
                                 </div>
@@ -395,6 +395,22 @@
                                     restored on return visits.
                                 </li>
                             </ul>
+                        </div>
+
+                        <div class="help-section">
+                            <h3>⚠️ Data Management</h3>
+                            <div class="control-grid">
+                                <div class="control-item">
+                                    <div class="control-icon">🗑️</div>
+                                    <div class="control-desc">
+                                        <strong>Reset Reading Progress:</strong> Clear all bookmarks and reading timestamps. This will mark all reports as "New" and unread. This action cannot be undone.
+                                        <br><br>
+                                        <button id="reset-bookmarks-btn" class="modal-btn" type="button" style="background: linear-gradient(120deg, rgba(255,100,100,0.9), rgba(200,50,50,0.9)); color: white; border: none;">
+                                            🗑️ Reset All Bookmarks
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
