@@ -645,18 +645,45 @@
                             </ul>
                         </div>
 
+                        <!-- Reset Data Section -->
                         <div class="help-section">
-                            <h3>⚠️ Reset Data</h3>
-                            <div class="control-grid">
-                                <div class="control-item">
-                                    <div class="control-icon">🗑️</div>
-                                    <div class="control-desc">
-                                        <strong>Clear Bookmarks:</strong> Reset all reading progress. Reports will show as "New". Cannot be undone.
-                                        <br><br>
-                                        <button id="reset-bookmarks-btn" class="modal-btn" type="button" style="background: linear-gradient(120deg, rgba(255,100,100,0.9), rgba(200,50,50,0.9)); color: white; border: none;">
-                                            🗑️ Reset All Bookmarks
-                                        </button>
-                                    </div>
+                            <h3>🗑️ Reset Data</h3>
+                            <p style="font-size: 12px; color: var(--muted); margin-bottom: 12px;">⚠️ These actions cannot be undone. Use with caution.</p>
+                            <div class="reset-grid">
+                                <div class="reset-item">
+                                    <button type="button" class="reset-btn" data-reset="pin-favorite">
+                                        <span class="reset-btn-icon">⭐📌</span>
+                                        <span class="reset-btn-text">Reset Pin + Favorite</span>
+                                    </button>
+                                    <div class="reset-desc">Remove all pinned and favorited stories. Recent timestamps remain intact.</div>
+                                </div>
+                                <div class="reset-item">
+                                    <button type="button" class="reset-btn" data-reset="pin">
+                                        <span class="reset-btn-icon">📌</span>
+                                        <span class="reset-btn-text">Reset Pin Only</span>
+                                    </button>
+                                    <div class="reset-desc">Remove all pinned stories only. Favorites and timestamps preserved.</div>
+                                </div>
+                                <div class="reset-item">
+                                    <button type="button" class="reset-btn" data-reset="favorite">
+                                        <span class="reset-btn-icon">⭐</span>
+                                        <span class="reset-btn-text">Reset Favorite Only</span>
+                                    </button>
+                                    <div class="reset-desc">Remove all favorited stories only. Pins and timestamps preserved.</div>
+                                </div>
+                                <div class="reset-item">
+                                    <button type="button" class="reset-btn reset-btn-danger" data-reset="reading">
+                                        <span class="reset-btn-icon">📖</span>
+                                        <span class="reset-btn-text">Reset Reading Status</span>
+                                    </button>
+                                    <div class="reset-desc">Remove all pins, favorites, and timestamps. All posts become new/unread.</div>
+                                </div>
+                                <div class="reset-item">
+                                    <button type="button" class="reset-btn reset-btn-danger" data-reset="settings">
+                                        <span class="reset-btn-icon">⚙️</span>
+                                        <span class="reset-btn-text">Reset All Settings</span>
+                                    </button>
+                                    <div class="reset-desc">Reset colors, fonts, sizes, and all per-report settings to default.</div>
                                 </div>
                             </div>
                         </div>
@@ -843,7 +870,23 @@
             </div>
         </div>
 
+        <!-- Custom Confirmation Popup -->
+        <div id="confirm-overlay" class="confirm-overlay" hidden>
+            <div class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+                <div class="confirm-header">
+                    <span class="confirm-icon">⚠️</span>
+                    <h3 id="confirm-title" class="confirm-title">Confirm Reset</h3>
+                </div>
+                <p id="confirm-message" class="confirm-message">Are you sure you want to proceed?</p>
+                <div class="confirm-actions">
+                    <button type="button" id="confirm-cancel" class="confirm-btn confirm-btn-secondary">Cancel</button>
+                    <button type="button" id="confirm-ok" class="confirm-btn confirm-btn-danger">Reset</button>
+                </div>
+            </div>
+        </div>
+
         <script src="database/fonts.js"></script>
+        <script src="database/settings.js"></script>
         <script src="database/catalog.js"></script>
         <script src="js/homepage.js"></script>
     </body>

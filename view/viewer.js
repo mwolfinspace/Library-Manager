@@ -746,10 +746,10 @@ document.addEventListener("DOMContentLoaded", () => {
   function updateFavoriteButton() {
     const favorites = loadFavorites();
     if (storyId && favorites.has(storyId)) {
-      els.favoriteBtn.textContent = "★";
+      els.favoriteBtn.textContent = "⭐";
       els.favoriteBtn.classList.add("active");
     } else {
-      els.favoriteBtn.textContent = "☆";
+      els.favoriteBtn.textContent = "⭐";
       els.favoriteBtn.classList.remove("active");
     }
   }
@@ -1963,6 +1963,312 @@ document.addEventListener("DOMContentLoaded", () => {
     setStoryNavState();
     updateRecentViewTimestamp(); // Update timestamp for recent sorting
   }
+
+  // Reset Data Functionality
+  const resetButtons = document.querySelectorAll('.reset-btn');
+  const confirmOverlay = document.getElementById('confirm-overlay');
+  const confirmTitle = document.getElementById('confirm-title');
+  const confirmMessage = document.getElementById('confirm-message');
+  const confirmOk = document.getElementById('confirm-ok');
+  const confirmCancel = document.getElementById('confirm-cancel');
+  let pendingResetAction = null;
+
+  // Reset configuration
+  const resetConfig = {
+    'pin-favorite': {
+      title: 'Reset Pin + Favorite',
+      message: 'This will remove all pinned and favorited stories. Recent timestamps will remain intact. Are you sure?',
+      isDanger: false
+    },
+    'pin': {
+      title: 'Reset Pin Only',
+      message: 'This will remove all pinned stories. Favorites and timestamps will be preserved. Are you sure?',
+      isDanger: false
+    },
+    'favorite': {
+      title: 'Reset Favorite Only',
+      message: 'This will remove all favorited stories. Pins and timestamps will be preserved. Are you sure?',
+      isDanger: false
+    },
+    'reading': {
+      title: 'Reset Reading Status',
+      message: 'This will remove ALL pins, favorites, and timestamps. All posts will become new/unread. This action cannot be undone.',
+      isDanger: true
+    },
+    'settings': {
+      title: 'Reset All Settings',
+      message: 'This will reset all colors, fonts, sizes, and per-report settings to default. This action cannot be undone.',
+      isDanger: true
+    }
+  };
+
+  // Show custom confirmation popup
+  function showConfirmPopup(action) {
+    const config = resetConfig[action];
+    if (!config) return;
+
+    pendingResetAction = action;
+    confirmTitle.textContent = config.title;
+    confirmMessage.textContent = config.message;
+    
+    // Update button styling based on danger level
+    if (config.isDanger) {
+      confirmOk.classList.add('confirm-btn-danger');
+      confirmOk.classList.remove('confirm-btn-secondary');
+    } else {
+      confirmOk.classList.remove('confirm-btn-danger');
+      confirmOk.classList.add('confirm-btn-secondary');
+    }
+    
+    confirmOverlay.hidden = false;
+  }
+
+  // Hide confirmation popup
+  function hideConfirmPopup() {
+    confirmOverlay.hidden = true;
+    pendingResetAction = null;
+  }
+
+  // Execute reset action
+  function executeReset(action) {
+    switch (action) {
+      case 'pin-favorite':
+        resetPinAndFavorite();
+        break;
+      case 'pin':
+        resetPinOnly();
+        break;
+      case 'favorite':
+        resetFavoriteOnly();
+        break;
+      case 'reading':
+        resetReadingStatus();
+        break;
+      case 'settings':
+        resetAllSettings();
+        break;
+    }
+    
+    // Show success notification
+    showNotification(`✅ ${resetConfig[action].title} completed successfully`);
+  }
+
+  // Reset functions
+  function resetPinAndFavorite() {
+    // Remove all bookmarks (pins) but keep timestamps
+    const keys = Object.keys(localStorage);
+    keys.forEach(key => {
+      if (key.startsWith('bookmark:')) {
+        // Keep the key but remove pin status, preserve timestamp
+        const data = localStorage.getItem(key);
+        if (data) {
+          try {
+            const parsed = JSON.parse(data);
+            // Only remove if it has photoIndex (meaning it's a real bookmark, not just timestamp)
+            if (parsed.photoIndex !== undefined) {
+              localStorage.removeItem(key);
+            }
+          } catch (e) {
+            localStorage.removeItem(key);
+          }
+        }
+      }
+    });
+    
+    // Remove all favorites
+    localStorage.removeItem('favorites');
+    
+    // Update UI
+    updateBookmarkButton();
+    updateFavoriteButton();
+  }
+
+  function resetPinOnly() {
+    // Remove all bookmarks (pins) only
+    const keys = Object.keys(localStorage);
+    keys.forEach(key => {
+      if (key.startsWith('bookmark:')) {
+        const data = localStorage.getItem(key);
+        if (data) {
+          try {
+            const parsed = JSON.parse(data);
+            // Only remove if it has photoIndex (meaning it's a real bookmark)
+            if (parsed.photoIndex !== undefined) {
+              localStorage.removeItem(key);
+            }
+          } catch (e) {
+            localStorage.removeItem(key);
+          }
+        }
+      }
+    });
+    
+    // Update UI
+    updateBookmarkButton();
+  }
+
+  function resetFavoriteOnly() {
+    // Remove all favorites only
+    localStorage.removeItem('favorites');
+    
+    // Update UI
+    updateFavoriteButton();
+  }
+
+  function resetReadingStatus() {
+    // Remove all bookmarks (including timestamps)
+    const keys = Object.keys(localStorage);
+    keys.forEach(key => {
+      if (key.startsWith('bookmark:')) {
+        localStorage.removeItem(key);
+      }
+    });
+    
+    // Remove all favorites
+    localStorage.removeItem('favorites');
+    
+    // Remove all scroll positions
+    keys.forEach(key => {
+      if (key.includes(':scrollPosition')) {
+        localStorage.removeItem(key);
+      }
+    });
+    
+    // Remove all photo indices
+    keys.forEach(key => {
+      if (key.includes(':currentPhotoIndex')) {
+        localStorage.removeItem(key);
+      }
+    });
+    
+    // Remove zoom states
+    keys.forEach(key => {
+      if (key.includes('zoomLevel') || key.includes('translateX') || key.includes('translateY')) {
+        localStorage.removeItem(key);
+      }
+    });
+    
+    // Update UI
+    updateBookmarkButton();
+    updateFavoriteButton();
+  }
+
+  function resetAllSettings() {
+    // Reset viewer settings to default
+    settings = { ...DEFAULT_SETTINGS };
+    saveSettings();
+    applySettings();
+    
+    // Remove custom colors from homepage
+    localStorage.removeItem('customColors');
+    
+    // Remove homepage theme
+    localStorage.removeItem('homepageTheme');
+    
+    // Remove viewer panel settings
+    localStorage.removeItem('viewerPanelSettings');
+    
+    // Remove all per-report settings
+    const keys = Object.keys(localStorage);
+    keys.forEach(key => {
+      // Remove scroll positions
+      if (key.includes(':scrollPosition')) {
+        localStorage.removeItem(key);
+      }
+      // Remove photo indices
+      if (key.includes(':currentPhotoIndex')) {
+        localStorage.removeItem(key);
+      }
+      // Remove zoom states
+      if (key.includes(':zoomLevel') || key.includes(':translateX') || key.includes(':translateY')) {
+        localStorage.removeItem(key);
+      }
+    });
+    
+    // Reset zoom view
+    resetView();
+    
+    // Update UI
+    updateBookmarkButton();
+    updateFavoriteButton();
+  }
+
+  // Notification system
+  function showNotification(message) {
+    // Remove existing notification if any
+    const existing = document.querySelector('.reset-notification');
+    if (existing) {
+      existing.remove();
+    }
+    
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = 'reset-notification';
+    notification.textContent = message;
+    notification.style.cssText = `
+      position: fixed;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--panel);
+      color: var(--accent);
+      padding: 12px 24px;
+      border-radius: 999px;
+      border: 1px solid var(--accent);
+      font-size: 14px;
+      font-weight: 600;
+      z-index: 3000;
+      box-shadow: 0 8px 24px rgba(98, 247, 255, 0.25);
+      animation: slide-down 0.3s ease;
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+      notification.style.opacity = '0';
+      notification.style.transition = 'opacity 0.3s ease';
+      setTimeout(() => notification.remove(), 300);
+    }, 3000);
+  }
+
+  // Event listeners for reset buttons
+  resetButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      const action = button.dataset.reset;
+      showConfirmPopup(action);
+    });
+  });
+
+  // Confirmation popup event listeners
+  if (confirmCancel) {
+    confirmCancel.addEventListener('click', hideConfirmPopup);
+  }
+
+  if (confirmOk) {
+    confirmOk.addEventListener('click', () => {
+      if (pendingResetAction) {
+        executeReset(pendingResetAction);
+        hideConfirmPopup();
+      }
+    });
+  }
+
+  // Close confirmation on overlay click
+  if (confirmOverlay) {
+    confirmOverlay.addEventListener('click', (event) => {
+      if (event.target === confirmOverlay) {
+        hideConfirmPopup();
+      }
+    });
+  }
+
+  // Close confirmation on Escape key
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && confirmOverlay && !confirmOverlay.hidden) {
+      hideConfirmPopup();
+    }
+  });
 
   initialize();
 });

@@ -29,7 +29,7 @@
                         title="Previous image"
                         aria-label="Previous image"
                     >
-                        ◀️
+                        ◀
                     </button>
                     <button
                         id="zoom-out-btn"
@@ -65,8 +65,7 @@
                         title="Next image"
                         aria-label="Next image"
                     >
-                        ▶️
-                    </button>
+                        ▶ </button>
                     <span id="image-counter" class="image-counter">0 / 0</span>
                 </div>
             </div>
@@ -145,7 +144,7 @@
                     title="Favorite"
                     aria-label="Favorite"
                 >
-                    ☆
+                    ⭐
                 </button>
                 <button
                     id="bookmark-btn"
@@ -202,122 +201,153 @@
                 aria-labelledby="help-title"
             >
                 <div class="help-header">
-                    <h2 id="help-title">🎮 VIEWER SHORTCUTS</h2>
+                    <h2 id="help-title">🚀 VIEWER HELP</h2>
                     <button id="close-help" class="ghost" type="button">✕</button>
                 </div>
                 <div class="help-content">
-                    <!-- Keyboard Navigation Section - Pill Design -->
+                    <!-- Keyboard Shortcuts Section -->
                     <div class="help-section">
                         <h3>🎮 Keyboard Navigation</h3>
                         
                         <div class="shortcuts-category">
-                            <h4>📷 Image Navigation</h4>
+                            <h4>📷 Image Controls</h4>
                             <div class="shortcuts-pill-grid">
                                 <div class="shortcut-pill">
-                                    <span class="shortcut-pill-key">W / ↑</span>
-                                    <span class="shortcut-pill-desc">Pan up</span>
+                                    <span class="shortcut-pill-key">W/A/S/D</span>
+                                    <span class="shortcut-pill-desc">Pan Image</span>
                                 </div>
                                 <div class="shortcut-pill">
-                                    <span class="shortcut-pill-key">S / ↓</span>
-                                    <span class="shortcut-pill-desc">Pan down</span>
+                                    <span class="shortcut-pill-key">Q / -</span>
+                                    <span class="shortcut-pill-desc">Zoom Out</span>
                                 </div>
                                 <div class="shortcut-pill">
-                                    <span class="shortcut-pill-key">A / ←</span>
-                                    <span class="shortcut-pill-desc">Pan left</span>
+                                    <span class="shortcut-pill-key">E / =</span>
+                                    <span class="shortcut-pill-desc">Zoom In</span>
                                 </div>
                                 <div class="shortcut-pill">
-                                    <span class="shortcut-pill-key">D / →</span>
-                                    <span class="shortcut-pill-desc">Pan right</span>
+                                    <span class="shortcut-pill-key">1 / 0</span>
+                                    <span class="shortcut-pill-desc">Fit to View</span>
                                 </div>
+                            </div>
+                        </div>
+
+                        <div class="shortcuts-category">
+                            <h4>📖 Story Controls</h4>
+                            <div class="shortcuts-pill-grid">
                                 <div class="shortcut-pill">
                                     <span class="shortcut-pill-key">Shift + W/S</span>
-                                    <span class="shortcut-pill-desc">Scroll text</span>
+                                    <span class="shortcut-pill-desc">Scroll Text</span>
                                 </div>
-                                <div class="shortcut-pill">
-                                    <span class="shortcut-pill-key">Ctrl + ←</span>
-                                    <span class="shortcut-pill-desc">Prev story</span>
-                                </div>
-                                <div class="shortcut-pill">
-                                    <span class="shortcut-pill-key">Ctrl + →</span>
-                                    <span class="shortcut-pill-desc">Next story</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="shortcuts-category">
-                            <h4>🔍 Zoom Controls</h4>
-                            <div class="shortcuts-pill-grid">
-                                <div class="shortcut-pill">
-                                    <span class="shortcut-pill-key">- / Q</span>
-                                    <span class="shortcut-pill-desc">Zoom out</span>
-                                </div>
-                                <div class="shortcut-pill">
-                                    <span class="shortcut-pill-key">= / E</span>
-                                    <span class="shortcut-pill-desc">Zoom in</span>
-                                </div>
-                                <div class="shortcut-pill">
-                                    <span class="shortcut-pill-key">0 / 1</span>
-                                    <span class="shortcut-pill-desc">Fit to view</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="shortcuts-category">
-                            <h4>📝 Text Controls</h4>
-                            <div class="shortcuts-pill-grid">
                                 <div class="shortcut-pill">
                                     <span class="shortcut-pill-key">[</span>
-                                    <span class="shortcut-pill-desc">Font smaller</span>
+                                    <span class="shortcut-pill-desc">Font Size --</span>
                                 </div>
                                 <div class="shortcut-pill">
                                     <span class="shortcut-pill-key">]</span>
-                                    <span class="shortcut-pill-desc">Font larger</span>
+                                    <span class="shortcut-pill-desc">Font Size ++</span>
                                 </div>
                                 <div class="shortcut-pill">
-                                    <span class="shortcut-pill-key">{</span>
-                                    <span class="shortcut-pill-desc">Line spacing -</span>
-                                </div>
-                                <div class="shortcut-pill">
-                                    <span class="shortcut-pill-key">}</span>
-                                    <span class="shortcut-pill-desc">Line spacing +</span>
+                                    <span class="shortcut-pill-key">{ / }</span>
+                                    <span class="shortcut-pill-desc">Line Spacing</span>
                                 </div>
                             </div>
                         </div>
 
                         <div class="shortcuts-category">
-                            <h4>⚡ Quick Actions</h4>
+                            <h4>⚡ Global Actions</h4>
                             <div class="shortcuts-pill-grid">
                                 <div class="shortcut-pill">
+                                    <span class="shortcut-pill-key">Ctrl + ←/→</span>
+                                    <span class="shortcut-pill-desc">Prev/Next Story</span>
+                                </div>
+                                <div class="shortcut-pill">
                                     <span class="shortcut-pill-key">F</span>
-                                    <span class="shortcut-pill-desc">Toggle favorite</span>
+                                    <span class="shortcut-pill-desc">Toggle Favorite</span>
                                 </div>
                                 <div class="shortcut-pill">
                                     <span class="shortcut-pill-key">B</span>
-                                    <span class="shortcut-pill-desc">Toggle pin</span>
+                                    <span class="shortcut-pill-desc">Toggle Pin</span>
                                 </div>
                                 <div class="shortcut-pill">
                                     <span class="shortcut-pill-key">T</span>
-                                    <span class="shortcut-pill-desc">Toggle theme</span>
+                                    <span class="shortcut-pill-desc">Toggle Theme</span>
                                 </div>
                                 <div class="shortcut-pill">
-                                    <span class="shortcut-pill-key">?</span>
-                                    <span class="shortcut-pill-desc">Open settings</span>
+                                    <span class="shortcut-pill-key">S</span>
+                                    <span class="shortcut-pill-desc">Open Settings</span>
                                 </div>
                                 <div class="shortcut-pill">
-                                    <span class="shortcut-pill-key">SPACE</span>
-                                    <span class="shortcut-pill-desc">Blackout mode</span>
+                                    <span class="shortcut-pill-key">SPACEBAR</span>
+                                    <span class="shortcut-pill-desc">Blackout Mode</span>
                                 </div>
                                 <div class="shortcut-pill">
                                     <span class="shortcut-pill-key">ESC</span>
-                                    <span class="shortcut-pill-desc">Close modal</span>
+                                    <span class="shortcut-pill-desc">Close Modal</span>
                                 </div>
                             </div>
                         </div>
                         
                         <p style="font-size: 11px; color: var(--muted); margin-top: 12px; padding: 8px; background: rgba(98, 247, 255, 0.05); border-radius: 8px;">
-                            💡 <strong>Tip:</strong> Customize shortcuts in Settings → Shortcuts tab
+                            💡 <strong>Tip:</strong> Customize all shortcuts in the <strong>Settings → Shortcuts</strong> tab.
                         </p>
                     </div>
+
+                    <!-- System Controls Section -->
+                    <div class="help-section">
+                        <h3>⚙️ System Controls</h3>
+                        <div class="control-grid">
+                            <div class="control-item">
+                                <div class="control-icon">⟵ / ⟶</div>
+                                <div class="control-desc">
+                                    <strong>Navigate Stories:</strong> Move to the previous or next story in the sequence from the homepage.
+                                </div>
+                            </div>
+                            <div class="control-item">
+                                <div class="control-icon">➕ / ➖</div>
+                                <div class="control-desc">
+                                    <strong>Adjust Font:</strong> Increase or decrease the font size of the story text for comfortable reading.
+                                </div>
+                            </div>
+                             <div class="control-item">
+                                <div class="control-icon">⭐ / 📌</div>
+                                <div class="control-desc">
+                                    <strong>Favorite & Pin:</strong> Mark a story as a favorite or pin it for quick access later from the homepage.
+                                </div>
+                            </div>
+                            <div class="control-item">
+                                <div class="control-icon">🌙 / ☀️</div>
+                                <div class="control-desc">
+                                    <strong>Toggle Theme:</strong> Switch between the dark and light interface modes. Your preference is saved.
+                                </div>
+                            </div>
+                            <div class="control-item">
+                                <div class="control-icon">🏠</div>
+                                <div class="control-desc">
+                                    <strong>Return Home:</strong> Go back to the main story library on the homepage.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Blackout Mode Section -->
+                    <div class="help-section">
+                        <h3>🕶️ Blackout Mode</h3>
+                         <div class="control-grid">
+                            <div class="control-item">
+                                <div class="control-icon">SPACEBAR</div>
+                                <div class="control-desc">
+                                    <strong>Activate:</strong> Press the spacebar to enter a minimalist, distraction-free mode that displays only the time.
+                                </div>
+                            </div>
+                            <div class="control-item">
+                                <div class="control-icon">🔍</div>
+                                <div class="control-desc">
+                                    <strong>Google Search:</strong> While in Blackout Mode, you can type directly to search on Google. Press Enter to open the search in a new tab.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>
@@ -500,6 +530,21 @@
                         <div class="shortcuts" id="shortcut-list"></div>
                         <div class="keybinds" id="keybind-list"></div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Custom Confirmation Popup -->
+        <div id="confirm-overlay" class="confirm-overlay" hidden>
+            <div class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+                <div class="confirm-header">
+                    <span class="confirm-icon">⚠️</span>
+                    <h3 id="confirm-title" class="confirm-title">Confirm Reset</h3>
+                </div>
+                <p id="confirm-message" class="confirm-message">Are you sure you want to proceed?</p>
+                <div class="confirm-actions">
+                    <button type="button" id="confirm-cancel" class="confirm-btn confirm-btn-secondary">Cancel</button>
+                    <button type="button" id="confirm-ok" class="confirm-btn confirm-btn-danger">Reset</button>
                 </div>
             </div>
         </div>

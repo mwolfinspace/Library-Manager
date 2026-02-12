@@ -20,12 +20,33 @@ let stories = [];
 let activeFilter = "all";
 let activeLayout = "grid";
 let activeSort = "default";
-let titleSortDirection = "asc"; // 'asc' for A-Z, 'desc' for Z-A
+let sortDirection = "asc"; // 'asc' for A-Z, 'desc' for Z-A
 let codeRefreshTimer = null;
 let cursorRaf = null;
 let cursorX = 0.5;
 let cursorY = 0.45;
 let settingsCurrentTheme = "dark";
+
+function createRipple(event) {
+    const button = event.currentTarget;
+
+    const circle = document.createElement("span");
+    const diameter = Math.max(button.clientWidth, button.clientHeight);
+    const radius = diameter / 2;
+
+    circle.style.width = circle.style.height = `${diameter}px`;
+    circle.style.left = `${event.clientX - button.getBoundingClientRect().left - radius}px`;
+    circle.style.top = `${event.clientY - button.getBoundingClientRect().top - radius}px`;
+    circle.classList.add("ripple");
+
+    const ripple = button.getElementsByClassName("ripple")[0];
+
+    if (ripple) {
+        ripple.remove();
+    }
+
+    button.appendChild(circle);
+}
 
 // Default color definitions for both themes
 const DEFAULT_COLORS = {
@@ -236,22 +257,7 @@ function saveFavorites(favorites) {
   localStorage.setItem("favorites", JSON.stringify(Array.from(favorites)));
 }
 
-function loadSortPreference() {
-  try {
-    const raw = localStorage.getItem("homepageSort");
-    const sortData = raw
-      ? JSON.parse(raw)
-      : { type: "default", direction: "asc" };
-    return sortData;
-  } catch (error) {
-    return { type: "default", direction: "asc" };
-  }
-}
 
-function saveSortPreference(sortType, direction = "asc") {
-  const sortData = { type: sortType, direction: direction };
-  localStorage.setItem("homepageSort", JSON.stringify(sortData));
-}
 
 function saveBookmark(id, payload) {
   localStorage.setItem(`bookmark:${id}`, JSON.stringify(payload));
@@ -425,7 +431,7 @@ function sortByDisplayOrder(list) {
 function sortStories(list) {
   const sorted = [...list];
   if (activeSort === "title") {
-    const direction = titleSortDirection === "asc" ? 1 : -1;
+    const direction = sortDirection === "asc" ? 1 : -1;
     sorted.sort(
       (a, b) => storyTitle(a).localeCompare(storyTitle(b)) * direction,
     );
@@ -450,62 +456,47 @@ function sortStories(list) {
       return bTime - aTime; // Most recent first
     });
   } else if (activeSort === "priority") {
-    // Sort by priority: Favorite > Pinned > Normal, then by recent activity
+    const favorites = loadFavorites();
+    const pins = loadPins();
+
+    const getStoryRank = (story) => {
+      const isFavorite = favorites.has(story.id);
+      const isPinned = pins.has(story.id);
+
+      if (isPinned && isFavorite) return 0; // Pinned and Favorited
+      if (isFavorite) return 1;             // Favorited only
+      if (isPinned) return 2;                // Pinned only
+      return 3;                              // Normal (neither)
+    };
+
     sorted.sort((a, b) => {
-      const favorites = loadFavorites();
+      const rankA = getStoryRank(a);
+      const rankB = getStoryRank(b);
+
+      if (rankA !== rankB) {
+        return rankA - rankB;
+      }
+
+      // Secondary sort: Read > New, then by timestamp
       const aBookmark = getBookmark(a.id);
       const bBookmark = getBookmark(b.id);
 
-      const aIsFavorite = favorites.has(a.id);
-      const bIsFavorite = favorites.has(b.id);
-      // Use pinned status for priority grouping (separate from reading progress bookmarks)
-      const aIsPinned = isPinned(a.id);
-      const bIsPinned = isPinned(b.id);
-
-      // Priority: Favorite > Pinned > Normal
-      if (aIsFavorite !== bIsFavorite) {
-        return aIsFavorite ? -1 : 1;
-      }
-      if (aIsPinned !== bIsPinned) {
-        return aIsPinned ? -1 : 1;
+      // Group "Read" (has bookmark) before "New" (no bookmark)
+      if (!!aBookmark !== !!bBookmark) {
+        return !!aBookmark ? -1 : 1;
       }
 
-      // If same priority, sort by recent activity
-      // For favorites, we want them to stay at the top regardless of normal story views
-      // So we use a special timestamp logic:
-      // - Favorites: use a very high timestamp to keep them at top of their group
-      // - Pinned: use bookmark timestamp or updatedAt
-      // - Normal: use bookmark timestamp or updatedAt
-      let aTime, bTime;
-
-      if (aIsFavorite) {
-        // Favorites get a high priority timestamp to stay at top
-        aTime =
-          9999999999999 -
-          (aBookmark?.timestamp
-            ? new Date(aBookmark.timestamp).getTime()
-            : new Date(a.updatedAt || a.createdAt).getTime());
-      } else {
-        aTime = aBookmark?.timestamp
-          ? new Date(aBookmark.timestamp).getTime()
-          : new Date(a.updatedAt || a.createdAt).getTime();
-      }
-
-      if (bIsFavorite) {
-        // Favorites get a high priority timestamp to stay at top
-        bTime =
-          9999999999999 -
-          (bBookmark?.timestamp
-            ? new Date(bBookmark.timestamp).getTime()
-            : new Date(b.updatedAt || b.createdAt).getTime());
-      } else {
-        bTime = bBookmark?.timestamp
-          ? new Date(bBookmark.timestamp).getTime()
-          : new Date(b.updatedAt || b.createdAt).getTime();
-      }
-
-      return bTime - aTime;
+      // If same status (both read or both new), sort by time
+      const aTime = aBookmark ? new Date(aBookmark.timestamp).getTime() : new Date(a.createdAt || 0).getTime();
+      const bTime = bBookmark ? new Date(bBookmark.timestamp).getTime() : new Date(b.createdAt || 0).getTime();
+      
+      return bTime - aTime; // most recent first
     });
+
+    if (sortDirection === 'desc') {
+        sorted.reverse();
+    }
+
   } else {
     // Default sort is handled by sortByDisplayOrder
   }
@@ -672,7 +663,7 @@ function render() {
 
   const filtered = filterStories(stories, favorites, query);
   const sorted = sortStories(filtered);
-  const finalStories = sortByBookmark(sorted);
+  const finalStories = sorted;
 
   if (finalStories.length === 0) {
     emptyState.style.display = "block";
@@ -712,7 +703,7 @@ function render() {
     pinBtn.addEventListener("click", (event) => {
       event.preventDefault();
       const pins = loadPins();
-      if (isPinned(story.id)) {
+      if (pins.has(story.id)) {
         pins.delete(story.id);
       } else {
         pins.add(story.id);
@@ -730,12 +721,13 @@ function render() {
     }
     favoriteBtn.addEventListener("click", (event) => {
       event.preventDefault();
-      if (favorites.has(story.id)) {
-        favorites.delete(story.id);
+      const currentFavorites = loadFavorites();
+      if (currentFavorites.has(story.id)) {
+        currentFavorites.delete(story.id);
       } else {
-        favorites.add(story.id);
+        currentFavorites.add(story.id);
       }
-      saveFavorites(favorites);
+      saveFavorites(currentFavorites);
       render();
     });
 
@@ -748,6 +740,7 @@ function render() {
       const badge = document.createElement("div");
       badge.className = "badge new-badge";
       badge.textContent = "New";
+      badge.addEventListener("click", createRipple);
       content.appendChild(badge);
     }
 
@@ -773,6 +766,7 @@ function render() {
         pill.addEventListener("click", (event) => {
           event.preventDefault();
           event.stopPropagation();
+          createRipple(event);
           const currentSearch = searchInput.value.trim();
           // Check if tag already exists in search
           const existingTags = currentSearch.split(",").map(t => t.trim()).filter(t => t);
@@ -814,7 +808,7 @@ function saveFilterState() {
     search: searchInput.value.trim(),
     layout: activeLayout,
     sort: activeSort,
-    sortDirection: titleSortDirection,
+    sortDirection: sortDirection,
   };
   localStorage.setItem("homepageState", JSON.stringify(state));
 }
@@ -852,8 +846,8 @@ function applyFilterState(state) {
   // Apply sort
   if (state.sort) {
     activeSort = state.sort;
-    titleSortDirection = state.sortDirection || "asc";
-    applySortPreference({ type: activeSort, direction: titleSortDirection });
+    sortDirection = state.sortDirection || "asc";
+    applySortPreference({ type: activeSort, direction: sortDirection });
   }
 }
 
@@ -887,13 +881,23 @@ function applySortPreference(sortData) {
   }
 
   activeSort = sortData.type || "default";
-  titleSortDirection = sortData.direction || "asc";
+  sortDirection = sortData.direction || "asc";
 
   sortButtons.forEach((button) => {
     button.classList.toggle("active", button.dataset.sort === activeSort);
-    if (button.dataset.sort === "title" && activeSort === "title") {
-      button.textContent =
-        titleSortDirection === "asc" ? "Title A-Z" : "Title Z-A";
+    if (button.dataset.sort === "title") {
+      if (activeSort === 'title') {
+        button.textContent = sortDirection === "asc" ? "Title A-Z" : "Title Z-A";
+      } else {
+        button.textContent = "Title";
+      }
+    }
+    if (button.dataset.sort === "priority") {
+      if (activeSort === 'priority') {
+        button.textContent = sortDirection === "asc" ? "Priority ↓" : "Priority ↑";
+      } else {
+        button.textContent = "Priority";
+      }
     }
   });
 }
@@ -909,25 +913,20 @@ sortButtons.forEach((button) => {
   button.addEventListener("click", () => {
     const sortType = button.dataset.sort;
 
-    if (sortType === "title" && activeSort === "title") {
-      // Toggle title sort direction
-      titleSortDirection = titleSortDirection === "asc" ? "desc" : "asc";
-      button.textContent =
-        titleSortDirection === "asc" ? "Title A-Z" : "Title Z-A";
+    if (activeSort === sortType && (sortType === 'title' || sortType === 'priority')) {
+        sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
     } else {
-      // Reset title sort direction for new sort type
-      titleSortDirection = "asc";
-      sortButtons.forEach((btn) => {
-        if (btn.dataset.sort === "title") {
-          btn.textContent = "Title";
-        }
-      });
+        sortDirection = 'asc';
     }
-
-    sortButtons.forEach((btn) => btn.classList.remove("active"));
-    button.classList.add("active");
+    
     activeSort = sortType;
-    saveSortPreference(activeSort, titleSortDirection);
+
+    if (window.VIEWER_SETTINGS && window.VIEWER_SETTINGS.homepageSort) {
+      window.VIEWER_SETTINGS.homepageSort.type = activeSort;
+      window.VIEWER_SETTINGS.homepageSort.direction = sortDirection;
+    }
+    
+    applySortPreference({ type: activeSort, direction: sortDirection });
     render();
   });
 });
@@ -1053,9 +1052,9 @@ async function init() {
     const layoutToApply =
       savedState?.layout || localStorage.getItem("homepageLayout") || "grid";
     const sortToApply =
-      savedState?.sort || loadSortPreference()?.type || "default";
+      savedState?.sort || window.VIEWER_SETTINGS.homepageSort?.type || "default";
     const sortDirection =
-      savedState?.sortDirection || loadSortPreference()?.direction || "asc";
+      savedState?.sortDirection || window.VIEWER_SETTINGS.homepageSort?.direction || "asc";
 
     applyLayout(layoutToApply);
     applySortPreference({ type: sortToApply, direction: sortDirection });
@@ -1905,63 +1904,368 @@ document.addEventListener("DOMContentLoaded", () => {
   applyFontSizes();
 });
 
-// Reset all bookmarks functionality with confirmation dialog
-function resetAllBookmarks() {
-  // Count bookmarks before clearing
-  let bookmarkCount = 0;
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (key && key.startsWith("bookmark:")) {
-      bookmarkCount++;
-    }
+// ===== COMPREHENSIVE RESET DATA FUNCTIONALITY =====
+
+// Reset configuration
+const resetConfig = {
+  'pin-favorite': {
+    title: 'Reset Pin + Favorite',
+    message: 'This will remove all pinned and favorited stories. Recent timestamps will remain intact. Are you sure?',
+    isDanger: false
+  },
+  'pin': {
+    title: 'Reset Pin Only',
+    message: 'This will remove all pinned stories. Favorites and timestamps will be preserved. Are you sure?',
+    isDanger: false
+  },
+  'favorite': {
+    title: 'Reset Favorite Only',
+    message: 'This will remove all favorited stories. Pins and timestamps will be preserved. Are you sure?',
+    isDanger: false
+  },
+  'reading': {
+    title: 'Reset Reading Status',
+    message: 'This will remove ALL pins, favorites, and timestamps. All posts will become new/unread. This action cannot be undone.',
+    isDanger: true
+  },
+  'settings': {
+    title: 'Reset All Settings',
+    message: 'This will reset all colors, fonts, sizes, and per-report settings to default. This action cannot be undone.',
+    isDanger: true
   }
+};
 
-  if (bookmarkCount === 0) {
-    alert("No bookmarks to reset. All reports are already marked as 'New'.");
-    return;
-  }
+let pendingResetAction = null;
 
-  // Show confirmation dialog
-  const confirmed = confirm(
-    `⚠️ WARNING: Reset Reading Progress\n\n` +
-    `You are about to clear ${bookmarkCount} bookmark(s).\n\n` +
-    `This will:\n` +
-    `• Remove all reading progress timestamps\n` +
-    `• Mark all reports as "New" and unread\n` +
-    `• This action CANNOT be undone\n\n` +
-    `Are you sure you want to continue?\n\n` +
-    `Click "OK" to reset all bookmarks, or "Cancel" to keep your progress.`
-  );
+// Show custom confirmation popup
+function showConfirmPopup(action) {
+  const config = resetConfig[action];
+  if (!config) return;
 
-  if (confirmed) {
-    // Clear all bookmark entries
-    const keysToRemove = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith("bookmark:")) {
-        keysToRemove.push(key);
-      }
-    }
+  const confirmOverlay = document.getElementById('confirm-overlay');
+  const confirmTitle = document.getElementById('confirm-title');
+  const confirmMessage = document.getElementById('confirm-message');
+  const confirmOk = document.getElementById('confirm-ok');
 
-    keysToRemove.forEach(key => localStorage.removeItem(key));
+  if (!confirmOverlay || !confirmTitle || !confirmMessage || !confirmOk) return;
 
-    // Re-render to show "New" badges
-    render();
-
-    // Show success message
-    alert(`✅ Success!\n\n${bookmarkCount} bookmark(s) have been cleared.\nAll reports are now marked as "New".`);
-
-    console.log(`Reset ${bookmarkCount} bookmarks`);
+  pendingResetAction = action;
+  confirmTitle.textContent = config.title;
+  confirmMessage.textContent = config.message;
+  
+  // Update button styling based on danger level
+  if (config.isDanger) {
+    confirmOk.classList.add('confirm-btn-danger');
+    confirmOk.classList.remove('confirm-btn-secondary');
   } else {
-    console.log("Bookmark reset cancelled by user");
+    confirmOk.classList.remove('confirm-btn-danger');
+    confirmOk.classList.add('confirm-btn-secondary');
+  }
+  
+  confirmOverlay.hidden = false;
+}
+
+// Hide confirmation popup
+function hideConfirmPopup() {
+  const confirmOverlay = document.getElementById('confirm-overlay');
+  if (confirmOverlay) {
+    confirmOverlay.hidden = true;
+  }
+  pendingResetAction = null;
+}
+
+// Execute reset action
+function executeReset(action) {
+  // Execute the reset
+  switch (action) {
+    case 'pin-favorite':
+      resetPinAndFavorite();
+      break;
+    case 'pin':
+      resetPinOnly();
+      break;
+    case 'favorite':
+      resetFavoriteOnly();
+      break;
+    case 'reading':
+      resetReadingStatus();
+      break;
+    case 'settings':
+      resetAllSettings();
+      break;
+  }
+  
+  // Show reboot screen and reload
+  showRebootScreen(action);
+}
+
+// Reset functions
+function resetPinAndFavorite() {
+  // Remove all pins
+  localStorage.removeItem('pinned');
+  
+  // Remove all favorites
+  localStorage.removeItem('favorites');
+}
+
+function resetPinOnly() {
+  // Remove all pins only
+  localStorage.removeItem('pinned');
+}
+
+function resetFavoriteOnly() {
+  // Remove all favorites only
+  localStorage.removeItem('favorites');
+}
+
+function resetReadingStatus() {
+  // Remove all bookmarks (including timestamps)
+  const keys = Object.keys(localStorage);
+  keys.forEach(key => {
+    if (key.startsWith('bookmark:')) {
+      localStorage.removeItem(key);
+    }
+  });
+  
+  // Remove all favorites
+  localStorage.removeItem('favorites');
+  
+  // Remove all pins
+  localStorage.removeItem('pinned');
+}
+
+function resetAllSettings() {
+  // Remove custom colors
+  localStorage.removeItem('customColors');
+  
+  // Remove font settings
+  localStorage.removeItem('fontFamily');
+  localStorage.removeItem('homepageFontSizes');
+  
+  // Remove theme
+  localStorage.removeItem('homepageTheme');
+  
+  // Remove keybinds
+  localStorage.removeItem('homepageKeybinds');
+  
+  // Remove panel settings
+  localStorage.removeItem('panelSettings');
+  
+  // Remove filter state
+  localStorage.removeItem('homepageState');
+  
+  // Remove layout
+  localStorage.removeItem('homepageLayout');
+  
+  // Remove viewer settings (synced)
+  localStorage.removeItem('viewerSettings');
+  localStorage.removeItem('viewerPanelSettings');
+  
+  // Re-apply defaults
+  applyColors();
+  applyFont("'Share Tech Mono', monospace");
+  applyTheme('dark');
+  
+  // Reset font size inputs
+  const baseInput = document.getElementById("base-font-size");
+  const headerInput = document.getElementById("header-font-size");
+  const buttonInput = document.getElementById("button-font-size");
+  const cardInput = document.getElementById("card-font-size");
+  const customFontInput = document.getElementById("custom-font");
+  const fontSelect = document.getElementById("font-select");
+
+  if (baseInput) {
+    baseInput.value = 14;
+    updateRangeValue(baseInput);
+  }
+  if (headerInput) {
+    headerInput.value = 26;
+    updateRangeValue(headerInput);
+  }
+  if (buttonInput) {
+    buttonInput.value = 12;
+    updateRangeValue(buttonInput);
+  }
+  if (cardInput) {
+    cardInput.value = 13;
+    updateRangeValue(cardInput);
+  }
+  if (customFontInput) {
+    customFontInput.value = "";
+  }
+  if (fontSelect) {
+    fontSelect.value = "'Share Tech Mono', monospace";
   }
 }
 
-// Attach reset button listener
-const resetBookmarksBtn = document.getElementById("reset-bookmarks-btn");
-if (resetBookmarksBtn) {
-  resetBookmarksBtn.addEventListener("click", resetAllBookmarks);
+// Notification system
+function showNotification(message) {
+  // Remove existing notification if any
+  const existing = document.querySelector('.reset-notification');
+  if (existing) {
+    existing.remove();
+  }
+  
+  // Create notification element
+  const notification = document.createElement('div');
+  notification.className = 'reset-notification';
+  notification.textContent = message;
+  notification.style.cssText = `
+    position: fixed;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--panel);
+    color: var(--accent);
+    padding: 12px 24px;
+    border-radius: 999px;
+    border: 1px solid var(--accent);
+    font-size: 14px;
+    font-weight: 600;
+    z-index: 3000;
+    box-shadow: 0 8px 24px rgba(98, 247, 255, 0.25);
+    animation: slide-down 0.3s ease;
+  `;
+  
+  document.body.appendChild(notification);
+  
+  // Remove after 3 seconds
+  setTimeout(() => {
+    notification.style.opacity = '0';
+    notification.style.transition = 'opacity 0.3s ease';
+    setTimeout(() => notification.remove(), 300);
+  }, 3000);
 }
+
+// ===== SYSTEM REBOOT SCREEN =====
+
+function showRebootScreen(resetType) {
+  // Create reboot overlay
+  const rebootOverlay = document.createElement('div');
+  rebootOverlay.id = 'reboot-overlay';
+  rebootOverlay.className = 'reboot-overlay';
+  
+  const resetTitles = {
+    'pin-favorite': 'Resetting Pins & Favorites',
+    'pin': 'Resetting Pins',
+    'favorite': 'Resetting Favorites',
+    'reading': 'Resetting Reading Status',
+    'settings': 'Resetting All Settings'
+  };
+  
+  rebootOverlay.innerHTML = `
+    <div class="reboot-content">
+      <div class="reboot-icon">🔄</div>
+      <div class="reboot-title">${resetTitles[resetType] || 'System Reset'}</div>
+      <div class="reboot-subtitle">Please wait while the system restarts...</div>
+      <div class="reboot-progress-container">
+        <div class="reboot-progress-bar" id="reboot-progress-bar"></div>
+      </div>
+      <div class="reboot-status" id="reboot-status">Initializing...</div>
+      <div class="reboot-binary" id="reboot-binary">0101010101010101</div>
+    </div>
+  `;
+  
+  document.body.appendChild(rebootOverlay);
+  
+  // Animate progress bar
+  const progressBar = document.getElementById('reboot-progress-bar');
+  const statusText = document.getElementById('reboot-status');
+  const binaryText = document.getElementById('reboot-binary');
+  
+  const statusMessages = [
+    'Clearing local storage...',
+    'Resetting user preferences...',
+    'Reinitializing system...',
+    'Loading fresh state...',
+    'Restarting interface...'
+  ];
+  
+  let progress = 0;
+  const totalDuration = 3000; // 3 seconds
+  const updateInterval = 50; // Update every 50ms
+  const increment = 100 / (totalDuration / updateInterval);
+  
+  const progressInterval = setInterval(() => {
+    progress += increment;
+    
+    // Update progress bar
+    if (progressBar) {
+      progressBar.style.width = `${Math.min(progress, 100)}%`;
+    }
+    
+    // Update status message based on progress
+    const messageIndex = Math.floor((progress / 100) * statusMessages.length);
+    if (statusText && messageIndex < statusMessages.length) {
+      statusText.textContent = statusMessages[messageIndex];
+    }
+    
+    // Update binary text randomly
+    if (binaryText && Math.random() > 0.3) {
+      binaryText.textContent = Array(16).fill(0).map(() => Math.random() > 0.5 ? '1' : '0').join('');
+    }
+    
+    if (progress >= 100) {
+      clearInterval(progressInterval);
+      
+      // Final status
+      if (statusText) {
+        statusText.textContent = 'System ready. Reloading...';
+      }
+      
+      // Reload the page after a brief delay
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+    }
+  }, updateInterval);
+}
+
+// Initialize reset buttons and confirmation popup
+document.addEventListener('DOMContentLoaded', () => {
+  // Reset buttons
+  const resetButtons = document.querySelectorAll('.reset-btn');
+  resetButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      const action = button.dataset.reset;
+      showConfirmPopup(action);
+    });
+  });
+
+  // Confirmation popup event listeners
+  const confirmCancel = document.getElementById('confirm-cancel');
+  const confirmOk = document.getElementById('confirm-ok');
+  const confirmOverlay = document.getElementById('confirm-overlay');
+
+  if (confirmCancel) {
+    confirmCancel.addEventListener('click', hideConfirmPopup);
+  }
+
+  if (confirmOk) {
+    confirmOk.addEventListener('click', () => {
+      if (pendingResetAction) {
+        executeReset(pendingResetAction);
+        hideConfirmPopup();
+      }
+    });
+  }
+
+  // Close confirmation on overlay click
+  if (confirmOverlay) {
+    confirmOverlay.addEventListener('click', (event) => {
+      if (event.target === confirmOverlay) {
+        hideConfirmPopup();
+      }
+    });
+  }
+
+  // Close confirmation on Escape key
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && confirmOverlay && !confirmOverlay.hidden) {
+      hideConfirmPopup();
+    }
+  });
+});
 
 // Function to save current color values as new defaults
 // Call this once to update DEFAULT_COLORS with current custom colors
@@ -2296,7 +2600,6 @@ const KeyboardNavigation = {
         btn.textContent = 'Title';
       }
     });
-    saveSortPreference(activeSort, titleSortDirection);
     render();
     const labels = { 'default': 'Default', 'title': 'By Title', 'recent': 'Recent', 'priority': 'Priority' };
     this.showModeIndicator(`📊 ${labels[sortName]}`);
