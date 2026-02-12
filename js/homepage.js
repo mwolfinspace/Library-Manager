@@ -1368,21 +1368,98 @@ function renderColorGrid(theme) {
 }
 
 function rgbToHex(color) {
-  // If already hex, return it
+  // If already hex, return it (handle both 6-digit and 8-digit hex)
   if (color.startsWith("#")) {
+    // If it's already an 8-digit hex with alpha, return as-is
+    if (color.length === 9) {
+      return color;
+    }
+    // If it's a 6-digit hex, return as-is
+    if (color.length === 7) {
+      return color;
+    }
+    // If it's a 3-digit hex, expand it
+    if (color.length === 4) {
+      const r = color[1];
+      const g = color[2];
+      const b = color[3];
+      return `#${r}${r}${g}${g}${b}${b}`;
+    }
     return color;
   }
 
-  // If rgba/rgb, convert to hex
-  const match = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-  if (match) {
-    const r = parseInt(match[1]).toString(16).padStart(2, "0");
-    const g = parseInt(match[2]).toString(16).padStart(2, "0");
-    const b = parseInt(match[3]).toString(16).padStart(2, "0");
-    return "#" + r + g + b;
+  // Parse rgba/rgb with optional alpha
+  const rgbaMatch = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+  if (rgbaMatch) {
+    const r = parseInt(rgbaMatch[1]).toString(16).padStart(2, "0");
+    const g = parseInt(rgbaMatch[2]).toString(16).padStart(2, "0");
+    const b = parseInt(rgbaMatch[3]).toString(16).padStart(2, "0");
+    
+    // Handle alpha if present
+    if (rgbaMatch[4] !== undefined) {
+      const alpha = parseFloat(rgbaMatch[4]);
+      const a = Math.round(alpha * 255).toString(16).padStart(2, "0");
+      return `#${r}${g}${b}${a}`.toLowerCase();
+    }
+    
+    return `#${r}${g}${b}`.toLowerCase();
   }
 
   return "#000000";
+}
+
+// Convert hex to rgba for CSS variables (for gradients and complex values)
+function hexToRgba(hex, defaultAlpha = 1) {
+  // Remove # if present
+  hex = hex.replace("#", "");
+  
+  // Handle 8-digit hex (with alpha)
+  if (hex.length === 8) {
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    const a = parseInt(hex.substring(6, 8), 16) / 255;
+    return `rgba(${r}, ${g}, ${b}, ${a.toFixed(2)})`;
+  }
+  
+  // Handle 6-digit hex
+  if (hex.length === 6) {
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${defaultAlpha})`;
+  }
+  
+  // Handle 3-digit hex
+  if (hex.length === 3) {
+    const r = parseInt(hex[0] + hex[0], 16);
+    const g = parseInt(hex[1] + hex[1], 16);
+    const b = parseInt(hex[2] + hex[2], 16);
+    return `rgba(${r}, ${g}, ${b}, ${defaultAlpha})`;
+  }
+  
+  return hex;
+}
+
+// Convert gradient with rgba values to use hex values
+function convertGradientToHex(gradient) {
+  if (!gradient || !gradient.includes("rgba")) {
+    return gradient;
+  }
+  
+  // Replace all rgba values in the gradient with hex
+  return gradient.replace(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/g, (match, r, g, b, a) => {
+    const red = parseInt(r).toString(16).padStart(2, "0");
+    const green = parseInt(g).toString(16).padStart(2, "0");
+    const blue = parseInt(b).toString(16).padStart(2, "0");
+    
+    if (a !== undefined) {
+      const alpha = Math.round(parseFloat(a) * 255).toString(16).padStart(2, "0");
+      return `#${red}${green}${blue}${alpha}`.toLowerCase();
+    }
+    
+    return `#${red}${green}${blue}`.toLowerCase();
+  });
 }
 
 function openSettings() {
@@ -1416,6 +1493,7 @@ function initDragging() {
 
   const header = settingsPanel.querySelector(".settings-header");
   let isDragging = false;
+  let isResizing = false;
   let startX = 0;
   let startY = 0;
   let startPanelX = 0;
@@ -1506,6 +1584,28 @@ function initDragging() {
     }
   });
 
+  // Track resize operations to prevent accidental closing
+  settingsPanel.addEventListener("mousedown", (e) => {
+    // Check if clicking on the resize handle area (bottom-right corner)
+    const rect = settingsPanel.getBoundingClientRect();
+    const isResizeHandle = 
+      e.clientX > rect.right - 20 && 
+      e.clientY > rect.bottom - 20;
+    
+    if (isResizeHandle) {
+      isResizing = true;
+    }
+  });
+
+  document.addEventListener("mouseup", () => {
+    if (isResizing) {
+      // Delay clearing the flag to prevent the click event from firing
+      setTimeout(() => {
+        isResizing = false;
+      }, 100);
+    }
+  });
+
   // Save size when panel is resized via resize handle
   const resizeObserver = new ResizeObserver(() => {
     // Debounce the save to avoid excessive writes
@@ -1531,10 +1631,226 @@ function initDragging() {
     }
     savePanelSettings();
   });
+
+  // Store the flag on the panel element so the click handler can access it
+  settingsPanel.isResizing = () => isResizing;
+}
+
+// Tab switching functionality
+function initSettingsTabs() {
+  const tabButtons = Array.from(settingsPanel.querySelectorAll(".tab-btn"));
+  const tabPanels = Array.from(settingsPanel.querySelectorAll(".tab-panel"));
+
+  tabButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const tabId = button.dataset.tab;
+
+      // Update button states
+      tabButtons.forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.tab === tabId);
+        btn.setAttribute("aria-selected", btn.dataset.tab === tabId ? "true" : "false");
+      });
+
+      // Update panel visibility
+      tabPanels.forEach((panel) => {
+        const isActive = panel.dataset.tabPanel === tabId;
+        panel.classList.toggle("active", isActive);
+        panel.hidden = !isActive;
+      });
+    });
+  });
+}
+
+// Quick font button functionality
+function initQuickFontButtons() {
+  const quickFontBtns = Array.from(settingsPanel.querySelectorAll(".quick-font-btn"));
+  const fontSelect = document.getElementById("font-select");
+
+  quickFontBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const fontFamily = btn.dataset.font;
+      if (fontSelect) {
+        // Find matching option or set custom
+        const options = Array.from(fontSelect.options);
+        const matchingOption = options.find(opt => opt.value === fontFamily);
+        if (matchingOption) {
+          fontSelect.value = fontFamily;
+        } else {
+          // Set as custom font
+          const customFontInput = document.getElementById("custom-font");
+          if (customFontInput) {
+            customFontInput.value = fontFamily;
+          }
+        }
+        // Apply the font
+        saveFont(fontFamily);
+        applyFont(fontFamily);
+      }
+    });
+  });
+}
+
+// Font size controls
+function initFontSizeControls() {
+  const fontSizeInputs = {
+    base: document.getElementById("base-font-size"),
+    header: document.getElementById("header-font-size"),
+    button: document.getElementById("button-font-size"),
+    card: document.getElementById("card-font-size"),
+  };
+
+  // Load saved font sizes
+  const savedSizes = loadFontSizes();
+  Object.keys(fontSizeInputs).forEach((key) => {
+    const input = fontSizeInputs[key];
+    if (input && savedSizes[key]) {
+      input.value = savedSizes[key];
+      updateRangeValue(input);
+    }
+  });
+
+  // Add event listeners
+  Object.keys(fontSizeInputs).forEach((key) => {
+    const input = fontSizeInputs[key];
+    if (input) {
+      input.addEventListener("input", () => {
+        updateRangeValue(input);
+        saveFontSize(key, input.value);
+        applyFontSizes();
+      });
+    }
+  });
+}
+
+function updateRangeValue(input) {
+  const valueSpan = input.parentElement.querySelector(".range-value");
+  if (valueSpan) {
+    valueSpan.textContent = input.value + "px";
+  }
+}
+
+function loadFontSizes() {
+  try {
+    const raw = localStorage.getItem("homepageFontSizes");
+    return raw ? JSON.parse(raw) : {
+      base: 14,
+      header: 26,
+      button: 12,
+      card: 13,
+    };
+  } catch (error) {
+    return {
+      base: 14,
+      header: 26,
+      button: 12,
+      card: 13,
+    };
+  }
+}
+
+function saveFontSize(key, value) {
+  const sizes = loadFontSizes();
+  sizes[key] = parseInt(value, 10);
+  localStorage.setItem("homepageFontSizes", JSON.stringify(sizes));
+}
+
+function applyFontSizes() {
+  const sizes = loadFontSizes();
+  const root = document.documentElement;
+
+  // Apply CSS variables for font sizes
+  root.style.setProperty("--font-size-base", sizes.base + "px");
+  root.style.setProperty("--font-size-header", sizes.header + "px");
+  root.style.setProperty("--font-size-button", sizes.button + "px");
+  root.style.setProperty("--font-size-card", sizes.card + "px");
+
+  // Apply to elements
+  document.body.style.fontSize = sizes.base + "px";
+
+  // Update hero header
+  const heroHeader = document.querySelector(".hero h1");
+  if (heroHeader) {
+    heroHeader.style.fontSize = sizes.header + "px";
+  }
+
+  // Update buttons
+  const buttons = document.querySelectorAll(".filter-btn, .layout-btn, .sort-btn, .theme-toggle, .help-btn");
+  buttons.forEach((btn) => {
+    btn.style.fontSize = sizes.button + "px";
+  });
+
+  // Update cards
+  const cards = document.querySelectorAll(".card-title, .card-desc");
+  cards.forEach((card) => {
+    card.style.fontSize = sizes.card + "px";
+  });
+}
+
+// Custom font input
+function initCustomFontInput() {
+  const customFontInput = document.getElementById("custom-font");
+  if (customFontInput) {
+    customFontInput.addEventListener("change", () => {
+      const font = customFontInput.value.trim();
+      if (font) {
+        saveFont(font);
+        applyFont(font);
+      }
+    });
+  }
+}
+
+// Reset fonts
+function resetFonts() {
+  localStorage.removeItem("fontFamily");
+  localStorage.removeItem("homepageFontSizes");
+
+  // Reset inputs to defaults
+  const baseInput = document.getElementById("base-font-size");
+  const headerInput = document.getElementById("header-font-size");
+  const buttonInput = document.getElementById("button-font-size");
+  const cardInput = document.getElementById("card-font-size");
+  const customFontInput = document.getElementById("custom-font");
+
+  if (baseInput) {
+    baseInput.value = 14;
+    updateRangeValue(baseInput);
+  }
+  if (headerInput) {
+    headerInput.value = 26;
+    updateRangeValue(headerInput);
+  }
+  if (buttonInput) {
+    buttonInput.value = 12;
+    updateRangeValue(buttonInput);
+  }
+  if (cardInput) {
+    cardInput.value = 13;
+    updateRangeValue(cardInput);
+  }
+  if (customFontInput) {
+    customFontInput.value = "";
+  }
+
+  // Reset to default font
+  const defaultFont = "'Share Tech Mono', monospace";
+  const fontSelect = document.getElementById("font-select");
+  if (fontSelect) {
+    fontSelect.value = defaultFont;
+  }
+  saveFont(defaultFont);
+  applyFont(defaultFont);
+  applyFontSizes();
 }
 
 if (settingsBtn) {
-  settingsBtn.addEventListener("click", openSettings);
+  settingsBtn.addEventListener("click", () => {
+    openSettings();
+    initSettingsTabs();
+    initQuickFontButtons();
+    initFontSizeControls();
+    initCustomFontInput();
+  });
 }
 
 if (settingsClose) {
@@ -1543,6 +1859,10 @@ if (settingsClose) {
 
 if (settingsPanel) {
   settingsPanel.addEventListener("click", (e) => {
+    // Don't close if we're currently resizing
+    if (settingsPanel.isResizing && settingsPanel.isResizing()) {
+      return;
+    }
     if (e.target === settingsPanel) {
       closeSettings();
     }
@@ -1567,11 +1887,22 @@ if (resetColorsBtn) {
   });
 }
 
+// Reset fonts button
+const resetFontsBtn = document.getElementById("reset-fonts");
+if (resetFontsBtn) {
+  resetFontsBtn.addEventListener("click", resetFonts);
+}
+
 // Close settings with Escape key
 window.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && settingsPanel && !settingsPanel.hidden) {
     closeSettings();
   }
+});
+
+// Apply saved font sizes on load
+document.addEventListener("DOMContentLoaded", () => {
+  applyFontSizes();
 });
 
 // Reset all bookmarks functionality with confirmation dialog

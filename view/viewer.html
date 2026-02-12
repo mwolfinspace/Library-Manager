@@ -280,86 +280,81 @@
             </div>
         </div>
 
-        <div class="settings-overlay" id="settings-overlay" hidden>
-            <div
-                class="settings-modal"
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="settings-title"
-            >
-                <div class="settings-header">
-                    <h2 id="settings-title">Viewer Settings</h2>
-                    <button id="close-settings" class="ghost" type="button">
-                        Close
-                    </button>
-                </div>
-                <div class="settings-tabs" role="tablist">
-                    <button
-                        class="tab-btn active"
-                        data-tab="appearance"
-                        type="button"
-                        role="tab"
-                        aria-selected="true"
-                    >
-                        Appearance
-                    </button>
-                    <button
-                        class="tab-btn"
-                        data-tab="reading"
-                        type="button"
-                        role="tab"
-                        aria-selected="false"
-                    >
-                        Reading
-                    </button>
-                    <button
-                        class="tab-btn"
-                        data-tab="input"
-                        type="button"
-                        role="tab"
-                        aria-selected="false"
-                    >
-                        Input
-                    </button>
-                    <button
-                        class="tab-btn"
-                        data-tab="shortcuts"
-                        type="button"
-                        role="tab"
-                        aria-selected="false"
-                    >
-                        Shortcuts
-                    </button>
-                </div>
+        <div class="draggable-panel" id="settings-panel" hidden>
+            <div class="settings-header">
+                <h3>⚙️ Viewer Settings</h3>
+                <button
+                    class="settings-close"
+                    id="settings-close"
+                    type="button"
+                    aria-label="Close settings"
+                >
+                    ✕
+                </button>
+            </div>
+            <div class="settings-tabs" role="tablist">
+                <button
+                    class="tab-btn active"
+                    data-tab="appearance"
+                    type="button"
+                    role="tab"
+                    aria-selected="true"
+                >
+                    🎨 Appearance
+                </button>
+                <button
+                    class="tab-btn"
+                    data-tab="reading"
+                    type="button"
+                    role="tab"
+                    aria-selected="false"
+                >
+                    📖 Reading
+                </button>
+                <button
+                    class="tab-btn"
+                    data-tab="input"
+                    type="button"
+                    role="tab"
+                    aria-selected="false"
+                >
+                    ⌨️ Input
+                </button>
+                <button
+                    class="tab-btn"
+                    data-tab="shortcuts"
+                    type="button"
+                    role="tab"
+                    aria-selected="false"
+                >
+                    🔗 Shortcuts
+                </button>
+            </div>
+            <div class="settings-content">
                 <div
                     class="tab-panel active"
                     data-tab-panel="appearance"
                     role="tabpanel"
                 >
-                    <div class="settings-grid">
-                        <label>
-                            Theme
-                            <select id="theme-select">
-                                <option value="dark">Dark</option>
-                                <option value="light">Light</option>
-                            </select>
-                        </label>
+                    <div class="settings-section">
+                        <h4>Theme</h4>
+                        <select id="theme-select" class="font-select">
+                            <option value="dark">🌙 Dark</option>
+                            <option value="light">☀️ Light</option>
+                        </select>
+                    </div>
 
-                        <label class="full">
-                            Story Font
-                            <select id="font-family">
-                                <option value="tech">Share Tech Mono</option>
-                                <option value="orbitron">Orbitron</option>
-                                <option value="vt323">VT323</option>
-                                <option value="system-mono">System Mono</option>
-                                <option value="system-sans">System Sans</option>
-                                <option value="system-serif">
-                                    System Serif
-                                </option>
-                            </select>
-                        </label>
-
-                        <label class="full">
+                    <div class="settings-section">
+                        <h4>Story Font</h4>
+                        <select id="font-family" class="font-select">
+                            <option value="tech">Share Tech Mono</option>
+                            <option value="orbitron">Orbitron</option>
+                            <option value="vt323">VT323</option>
+                            <option value="system-mono">System Mono</option>
+                            <option value="system-sans">System Sans</option>
+                            <option value="system-serif">System Serif</option>
+                        </select>
+                        <label class="full custom-font-label">
                             Custom Font (optional)
                             <input
                                 type="text"
@@ -376,47 +371,47 @@
                     role="tabpanel"
                     hidden
                 >
-                    <div class="settings-grid">
-                        <label>
-                            Font Size
-                            <input
-                                type="range"
-                                id="font-size"
-                                min="14"
-                                max="26"
-                                step="1"
-                            />
-                        </label>
+                    <div class="settings-section">
+                        <h4>Font Size</h4>
+                        <input
+                            type="range"
+                            id="font-size"
+                            min="14"
+                            max="26"
+                            step="1"
+                        />
+                        <span class="range-value" id="font-size-value">18px</span>
+                    </div>
 
-                        <label>
-                            Line Spacing
-                            <input
-                                type="range"
-                                id="line-spacing"
-                                min="1.2"
-                                max="2.2"
-                                step="0.1"
-                            />
-                        </label>
+                    <div class="settings-section">
+                        <h4>Line Spacing</h4>
+                        <input
+                            type="range"
+                            id="line-spacing"
+                            min="1.2"
+                            max="2.2"
+                            step="0.1"
+                        />
+                        <span class="range-value" id="line-spacing-value">1.6</span>
+                    </div>
 
-                        <label>
-                            Scroll Step
-                            <select id="scroll-step">
-                                <option value="20">20 px</option>
-                                <option value="40">40 px</option>
-                                <option value="60">60 px</option>
-                                <option value="80">80 px</option>
-                            </select>
-                        </label>
+                    <div class="settings-section">
+                        <h4>Scroll Step</h4>
+                        <select id="scroll-step" class="font-select">
+                            <option value="20">20 px</option>
+                            <option value="40">40 px</option>
+                            <option value="60">60 px</option>
+                            <option value="80">80 px</option>
+                        </select>
+                    </div>
 
-                        <label>
-                            Zoom Step
-                            <select id="zoom-step">
-                                <option value="0.05">0.05</option>
-                                <option value="0.1">0.1</option>
-                                <option value="0.2">0.2</option>
-                            </select>
-                        </label>
+                    <div class="settings-section">
+                        <h4>Zoom Step</h4>
+                        <select id="zoom-step" class="font-select">
+                            <option value="0.05">0.05</option>
+                            <option value="0.1">0.1</option>
+                            <option value="0.2">0.2</option>
+                        </select>
                     </div>
                 </div>
 
@@ -426,26 +421,25 @@
                     role="tabpanel"
                     hidden
                 >
-                    <div class="settings-grid">
-                        <label>
-                            Keyboard Mode
-                            <select id="keyboard-mode">
-                                <option value="default">Default</option>
-                                <option value="left">One-Hand Left</option>
-                                <option value="right">One-Hand Right</option>
-                            </select>
-                        </label>
+                    <div class="settings-section">
+                        <h4>Keyboard Mode</h4>
+                        <select id="keyboard-mode" class="font-select">
+                            <option value="default">Default</option>
+                            <option value="left">One-Hand Left</option>
+                            <option value="right">One-Hand Right</option>
+                        </select>
+                    </div>
 
+                    <div class="settings-section">
+                        <h4>Options</h4>
                         <label class="checkbox">
                             <input type="checkbox" id="pan-keys" />
                             Enable Pan Keys (WASD / Arrows)
                         </label>
-
                         <label class="checkbox">
                             <input type="checkbox" id="remember-zoom" />
                             Remember Zoom Per Story
                         </label>
-
                         <label class="checkbox">
                             <input type="checkbox" id="remember-view-all" />
                             Remember View Across All Stories
@@ -459,8 +453,11 @@
                     role="tabpanel"
                     hidden
                 >
-                    <div class="shortcuts" id="shortcut-list"></div>
-                    <div class="keybinds" id="keybind-list"></div>
+                    <div class="settings-section">
+                        <h4>Keyboard Shortcuts</h4>
+                        <div class="shortcuts" id="shortcut-list"></div>
+                        <div class="keybinds" id="keybind-list"></div>
+                    </div>
                 </div>
             </div>
         </div>

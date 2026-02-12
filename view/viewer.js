@@ -91,8 +91,8 @@ document.addEventListener("DOMContentLoaded", () => {
     fontDownBtn: document.getElementById("font-down-btn"),
     prevStoryBtn: document.getElementById("prev-story-btn"),
     nextStoryBtn: document.getElementById("next-story-btn"),
-    settingsOverlay: document.getElementById("settings-overlay"),
-    closeSettings: document.getElementById("close-settings"),
+    settingsPanel: document.getElementById("settings-panel"),
+    closeSettings: document.getElementById("settings-close"),
     tabButtons: Array.from(document.querySelectorAll(".tab-btn")),
     tabPanels: Array.from(document.querySelectorAll(".tab-panel")),
     themeSelect: document.getElementById("theme-select"),
@@ -950,13 +950,147 @@ document.addEventListener("DOMContentLoaded", () => {
     localStorage.setItem(`bookmark:${storyId}`, JSON.stringify(payload));
   }
 
+  // Panel dragging and resize state
+  let isPanelDragging = false;
+  let isPanelResizing = false;
+  let panelStartX = 0;
+  let panelStartY = 0;
+  let panelStartLeft = 0;
+  let panelStartTop = 0;
+
+  function loadPanelSettings() {
+    if (!els.settingsPanel) return;
+    const saved = localStorage.getItem("viewerPanelSettings");
+    if (saved) {
+      try {
+        const settings = JSON.parse(saved);
+        if (settings.left) els.settingsPanel.style.left = settings.left;
+        if (settings.top) els.settingsPanel.style.top = settings.top;
+        if (settings.width) els.settingsPanel.style.width = settings.width;
+        if (settings.height) els.settingsPanel.style.height = settings.height;
+      } catch (e) {
+        console.error("Failed to load panel settings", e);
+      }
+    }
+  }
+
+  function savePanelSettings() {
+    if (!els.settingsPanel) return;
+    const panelSettings = {
+      left: els.settingsPanel.style.left,
+      top: els.settingsPanel.style.top,
+      width: els.settingsPanel.style.width,
+      height: els.settingsPanel.style.height,
+    };
+    localStorage.setItem("viewerPanelSettings", JSON.stringify(panelSettings));
+  }
+
+  function initPanelDragging() {
+    if (!els.settingsPanel) return;
+    
+    const header = els.settingsPanel.querySelector(".settings-header");
+    if (!header) return;
+
+    // Load saved panel position/size
+    loadPanelSettings();
+
+    // Mouse down on header - start dragging
+    header.addEventListener("mousedown", (e) => {
+      isPanelDragging = true;
+      panelStartX = e.clientX;
+      panelStartY = e.clientY;
+      const rect = els.settingsPanel.getBoundingClientRect();
+      panelStartLeft = rect.left;
+      panelStartTop = rect.top;
+      els.settingsPanel.classList.add("dragging");
+    });
+
+    // Track resize operations
+    els.settingsPanel.addEventListener("mousedown", (e) => {
+      const rect = els.settingsPanel.getBoundingClientRect();
+      const isResizeHandle = 
+        e.clientX > rect.right - 20 && 
+        e.clientY > rect.bottom - 20;
+      
+      if (isResizeHandle) {
+        isPanelResizing = true;
+      }
+    });
+
+    // Mouse move - handle dragging
+    document.addEventListener("mousemove", (e) => {
+      if (!isPanelDragging) return;
+
+      const deltaX = e.clientX - panelStartX;
+      const deltaY = e.clientY - panelStartY;
+
+      const newLeft = panelStartLeft + deltaX;
+      const newTop = panelStartTop + deltaY;
+
+      els.settingsPanel.style.left =
+        Math.max(0, Math.min(newLeft, window.innerWidth - els.settingsPanel.offsetWidth)) + "px";
+      els.settingsPanel.style.top =
+        Math.max(0, Math.min(newTop, window.innerHeight - els.settingsPanel.offsetHeight)) + "px";
+    });
+
+    // Mouse up - stop dragging/resizing
+    document.addEventListener("mouseup", () => {
+      if (isPanelDragging) {
+        isPanelDragging = false;
+        els.settingsPanel.classList.remove("dragging");
+        savePanelSettings();
+      }
+      if (isPanelResizing) {
+        // Delay clearing the flag to prevent click event from firing
+        setTimeout(() => {
+          isPanelResizing = false;
+        }, 100);
+        savePanelSettings();
+      }
+    });
+
+    // Save size when panel is resized via resize handle
+    const resizeObserver = new ResizeObserver(() => {
+      clearTimeout(els.settingsPanel.resizeTimeout);
+      els.settingsPanel.resizeTimeout = setTimeout(() => {
+        savePanelSettings();
+      }, 100);
+    });
+    resizeObserver.observe(els.settingsPanel);
+
+    // Also save on window resize to ensure position stays valid
+    window.addEventListener("resize", () => {
+      const rect = els.settingsPanel.getBoundingClientRect();
+      const maxX = window.innerWidth - rect.width;
+      const maxY = window.innerHeight - rect.height;
+
+      if (rect.left > maxX) {
+        els.settingsPanel.style.left = Math.max(0, maxX) + "px";
+      }
+      if (rect.top > maxY) {
+        els.settingsPanel.style.top = Math.max(0, maxY) + "px";
+      }
+      savePanelSettings();
+    });
+
+    // Store the flag on the panel element so the click handler can access it
+    els.settingsPanel.isResizing = () => isPanelResizing;
+  }
+
   function showSettings() {
-    els.settingsOverlay.hidden = false;
+    if (!els.settingsPanel) return;
+    els.settingsPanel.hidden = false;
     setActiveTab("appearance");
+    // Initialize dragging if not already done
+    if (!els.settingsPanel.dataset.draggingInitialized) {
+      initPanelDragging();
+      els.settingsPanel.dataset.draggingInitialized = "true";
+    }
   }
 
   function hideSettings() {
-    els.settingsOverlay.hidden = true;
+    if (!els.settingsPanel) return;
+    els.settingsPanel.hidden = true;
   }
 
   function renderShortcutList() {
@@ -1179,7 +1313,12 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    if (els.settingsOverlay && !els.settingsOverlay.hidden) {
+    if (els.settingsPanel && !els.settingsPanel.hidden) {
+      // Don't process keys if we're resizing
+      if (els.settingsPanel.isResizing && els.settingsPanel.isResizing()) {
+        return;
+      }
+      
       if (bindingTarget) {
         event.preventDefault();
         const pressed = normalizeKey(event.key);
@@ -1492,7 +1631,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const helpOverlay = document.getElementById("help-overlay");
       if (
         (els.storyPanel && els.storyPanel.contains(event.target)) ||
-        (els.settingsOverlay && !els.settingsOverlay.hidden) ||
+        (els.settingsPanel && !els.settingsPanel.hidden) ||
         (helpOverlay && !helpOverlay.hidden)
       ) {
         return;
@@ -1655,11 +1794,17 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  els.settingsOverlay.addEventListener("click", (event) => {
-    if (event.target === els.settingsOverlay) {
-      hideSettings();
-    }
-  });
+  if (els.settingsPanel) {
+    els.settingsPanel.addEventListener("click", (event) => {
+      // Don't close if we're currently resizing
+      if (els.settingsPanel.isResizing && els.settingsPanel.isResizing()) {
+        return;
+      }
+      if (event.target === els.settingsPanel) {
+        hideSettings();
+      }
+    });
+  }
 
   els.themeSelect.addEventListener("change", () => {
     settings.theme = els.themeSelect.value;

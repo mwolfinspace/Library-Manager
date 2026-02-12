@@ -198,7 +198,7 @@
 
         <div class="draggable-panel" id="settings-panel" hidden>
             <div class="settings-header">
-                <h2>Settings</h2>
+                <h3>⚙️ Settings</h3>
                 <button
                     class="settings-close"
                     id="settings-close"
@@ -208,29 +208,119 @@
                     ✕
                 </button>
             </div>
+            <div class="settings-tabs" role="tablist">
+                <button
+                    class="tab-btn active"
+                    data-tab="font"
+                    type="button"
+                    role="tab"
+                    aria-selected="true"
+                >
+                    📝 Font
+                </button>
+                <button
+                    class="tab-btn"
+                    data-tab="color"
+                    type="button"
+                    role="tab"
+                    aria-selected="false"
+                >
+                    🎨 Color
+                </button>
+            </div>
             <div class="settings-content">
-                <div class="settings-section font-section">
-                    <h3>Font Family</h3>
-                    <select id="font-select" class="font-select"></select>
-                </div>
+                <!-- Font Tab -->
+                <div
+                    class="tab-panel active"
+                    data-tab-panel="font"
+                    role="tabpanel"
+                >
+                    <div class="settings-section">
+                        <h4>Quick Font Apply</h4>
+                        <div class="quick-font-buttons">
+                            <button type="button" class="quick-font-btn" data-font="'Share Tech Mono', monospace">🖥️ Tech Mono</button>
+                            <button type="button" class="quick-font-btn" data-font="'Orbitron', sans-serif">🚀 Orbitron</button>
+                            <button type="button" class="quick-font-btn" data-font="'VT323', monospace">⌨️ VT323</button>
+                            <button type="button" class="quick-font-btn" data-font="'Space Mono', monospace">🌌 Space Mono</button>
+                            <button type="button" class="quick-font-btn" data-font="'Roboto Mono', monospace">🤖 Roboto Mono</button>
+                            <button type="button" class="quick-font-btn" data-font="'IBM Plex Mono', monospace">💻 IBM Plex</button>
+                            <button type="button" class="quick-font-btn" data-font="'Quantico', sans-serif">🔢 Quantico</button>
+                            <button type="button" class="quick-font-btn" data-font="system-ui, sans-serif">🌐 System UI</button>
+                        </div>
+                    </div>
 
-                <div class="settings-section color-section">
-                    <h3>Color Customization</h3>
-                    <div class="theme-tabs">
-                        <button class="theme-tab active" data-theme="dark">
-                            Dark Mode
-                        </button>
-                        <button class="theme-tab" data-theme="light">
-                            Light Mode
+                    <div class="settings-section">
+                        <h4>Font Family</h4>
+                        <select id="font-select" class="font-select"></select>
+                        <label class="full custom-font-label">
+                            Custom Font
+                            <input
+                                type="text"
+                                id="custom-font"
+                                placeholder="e.g. 'Fira Code', monospace"
+                            />
+                        </label>
+                    </div>
+
+                    <div class="settings-section">
+                        <h4>Font Sizes</h4>
+                        <div class="font-size-grid">
+                            <label>
+                                Base Size
+                                <input type="range" id="base-font-size" min="10" max="24" step="1" value="14">
+                                <span class="range-value">14px</span>
+                            </label>
+                            <label>
+                                Headers
+                                <input type="range" id="header-font-size" min="16" max="48" step="2" value="26">
+                                <span class="range-value">26px</span>
+                            </label>
+                            <label>
+                                Buttons
+                                <input type="range" id="button-font-size" min="10" max="20" step="1" value="12">
+                                <span class="range-value">12px</span>
+                            </label>
+                            <label>
+                                Cards
+                                <input type="range" id="card-font-size" min="10" max="24" step="1" value="13">
+                                <span class="range-value">13px</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <button id="reset-fonts" class="settings-reset-btn">
+                            Reset Fonts to Default
                         </button>
                     </div>
-                    <div class="color-grid" id="color-grid"></div>
                 </div>
 
-                <div class="settings-section">
-                    <button id="reset-colors" class="settings-reset-btn">
-                        Reset to Defaults
-                    </button>
+                <!-- Color Tab -->
+                <div
+                    class="tab-panel"
+                    data-tab-panel="color"
+                    role="tabpanel"
+                    hidden
+                >
+                    <div class="settings-section color-section">
+                        <h4>Theme Mode</h4>
+                        <div class="theme-tabs">
+                            <button class="theme-tab active" data-theme="dark">
+                                🌙 Dark
+                            </button>
+                            <button class="theme-tab" data-theme="light">
+                                ☀️ Light
+                            </button>
+                        </div>
+                        <h4>Color Variables</h4>
+                        <div class="color-grid" id="color-grid"></div>
+                    </div>
+
+                    <div class="settings-section">
+                        <button id="reset-colors" class="settings-reset-btn">
+                            Reset Colors to Default
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

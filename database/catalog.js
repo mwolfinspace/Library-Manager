@@ -163,6 +163,71 @@ window.REPORT_CATALOG = [
     "createdAt": "2026-02-11T07:49:45.544Z",
     "updatedAt": "2026-02-11T07:49:45.544Z",
     "storyText": "Doodle for beautifulpanda20 (https://www.furaffinity.net/user/beautifulpanda20)"
+  },
+  {
+    "id": "r20260212-081642",
+    "reportNumber": 8,
+    "title": "Take The Lead!",
+    "description": "He ready for a walk!",
+    "tags": [
+      "furry",
+      "doodle",
+      "collar",
+      "leather",
+      "fox",
+      "harness"
+    ],
+    "cover": "img-scr/r20260212-081642_001.jpg",
+    "coverPosition": "58% 10%",
+    "images": [
+      "img-scr/r20260212-081642_001.jpg"
+    ],
+    "story": "story/r20260212-081642.md",
+    "createdAt": "2026-02-12T01:16:42.777Z",
+    "updatedAt": "2026-02-12T01:17:22.313Z",
+    "storyText": "He ready for a walk!"
+  },
+  {
+    "id": "r20260212-082326",
+    "reportNumber": 9,
+    "title": "Jik",
+    "description": "A green wolfy.",
+    "tags": [
+      "wolf",
+      "furry",
+      "doodle",
+      "gift"
+    ],
+    "cover": "img-scr/r20260212-082326_001.jpg",
+    "coverPosition": "51% 10%",
+    "images": [
+      "img-scr/r20260212-082326_001.jpg"
+    ],
+    "story": "story/r20260212-082326.md",
+    "createdAt": "2026-02-12T01:23:26.567Z",
+    "updatedAt": "2026-02-12T01:23:26.567Z",
+    "storyText": "Doodle for jikerdor (https://www.furaffinity.net/user/jikerdor)"
+  },
+  {
+    "id": "r20260212-083042",
+    "reportNumber": 10,
+    "title": "Take A Ride?",
+    "description": "A good vibing screen.",
+    "tags": [
+      "dog",
+      "vibing",
+      "doodle",
+      "casual"
+    ],
+    "cover": "img-scr/r20260212-083042_001.jpg",
+    "coverPosition": "59% 15%",
+    "images": [
+      "img-scr/r20260212-083042_001.jpg"
+    ],
+    "story": "story/r20260212-083042.md",
+    "createdAt": "2026-02-12T01:30:42.072Z",
+    "updatedAt": "2026-02-12T01:30:42.072Z",
+    "storyText": "A doodle for my doggy friend."
   }
 ];
 window.VIEWER_SETTINGS = {

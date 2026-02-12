@@ -65,7 +65,7 @@ body[data-theme="light"] {
     --bg-2: #f8fbff;
     --panel: rgba(255, 255, 255, 0.88);
     --panel-2: rgba(255, 255, 255, 0.95);
-    --accent: #0aa6c7;
+    --accent: #0052a3;
     --accent-2: #3b5bff;
     --shadow: rgba(12, 22, 38, 0.2);
     --grid: rgba(10, 166, 199, 0.15);
@@ -1255,13 +1255,14 @@ body[data-theme="light"] .image-controls:hover {
 
 .search-example {
     display: grid;
-    grid-template-columns: 140px 1fr;
+    grid-template-columns: minmax(100px, auto) 1fr;
     gap: 12px;
-    align-items: center;
+    align-items: start;
     padding: 8px 12px;
     background: rgba(8, 14, 24, 0.3);
     border-radius: 8px;
     border: 1px solid var(--keybind-border);
+    overflow: hidden;
 }
 
 .search-query {
@@ -1272,12 +1273,19 @@ body[data-theme="light"] .image-controls:hover {
     padding: 4px 8px;
     border-radius: 6px;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
 }
 
 .search-desc {
     font-size: 12px;
     color: var(--ink);
     opacity: 0.85;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    min-width: 0;
 }
 
 .search-tip {
@@ -1479,19 +1487,20 @@ body[data-theme="light"] .search-tip {
 }
 
 .keybind-group-title {
-    margin: 0 0 10px;
+    margin: 0 0 16px;
     font-size: 13px;
     color: var(--accent);
     text-transform: uppercase;
     letter-spacing: 0.08em;
     font-weight: 600;
     border-bottom: 1px solid var(--keybind-border);
-    padding-bottom: 8px;
+    padding-bottom: 10px;
 }
 
 .keybind-group-items {
     display: grid;
     gap: 8px;
+    padding-top: 4px;
 }
 
 .keybind-instructions {
@@ -1742,4 +1751,281 @@ body[data-theme="light"] .restore-fullscreen-btn:hover {
     box-shadow:
         0 12px 32px rgba(58, 93, 181, 0.35),
         0 0 0 1px rgba(58, 93, 181, 0.4);
+}
+
+/* Settings Panel Styles - Draggable Panel like Homepage */
+.draggable-panel {
+    position: fixed;
+    top: 2vh;
+    left: 2vw;
+    width: 96vw;
+    min-width: 300px;
+    max-width: 98vw;
+    background: var(--panel);
+    border: 1px solid var(--button-border);
+    border-radius: 20px;
+    box-shadow: 0 10px 30px var(--shadow);
+    z-index: 1000;
+    height: 96vh;
+    min-height: 280px;
+    max-height: 98vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    resize: both;
+    touch-action: none;
+}
+
+/* Wide screens (16:9, 16:10) - use more horizontal space */
+@media (min-aspect-ratio: 16/10) {
+    .draggable-panel {
+        top: 2vh;
+        left: 3vw;
+        width: 94vw;
+        height: 96vh;
+    }
+}
+
+/* Ultra-wide screens (21:9) */
+@media (min-aspect-ratio: 21/9) {
+    .draggable-panel {
+        top: 2vh;
+        left: 5vw;
+        width: 90vw;
+        height: 96vh;
+    }
+}
+
+/* Portrait/tall screens */
+@media (max-aspect-ratio: 3/4) {
+    .draggable-panel {
+        top: 1vh;
+        left: 1vw;
+        width: 98vw;
+        height: 98vh;
+    }
+}
+
+.draggable-panel.dragging {
+    cursor: grabbing;
+}
+
+/* Settings Header - Smaller and consistent */
+.settings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--button-border);
+    gap: 12px;
+    cursor: grab;
+    user-select: none;
+    flex-shrink: 0;
+    background: rgba(98, 247, 255, 0.05);
+    border-radius: 20px 20px 0 0;
+}
+
+.draggable-panel.dragging .settings-header {
+    cursor: grabbing;
+}
+
+.settings-header h3 {
+    margin: 0;
+    font-family: "Orbitron", "Share Tech Mono", "Consolas", monospace;
+    letter-spacing: 0.04em;
+    font-size: 14px;
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.settings-close {
+    border-radius: 999px;
+    border: 1px solid var(--button-border);
+    background: transparent;
+    color: var(--ink);
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.settings-close:hover {
+    background: var(--button-bg);
+    border-color: var(--accent);
+    box-shadow: 0 0 8px rgba(98, 247, 255, 0.2);
+}
+
+/* Settings Tabs - Windows 10 style underline */
+.settings-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    padding: 0 16px;
+    border-bottom: 1px solid var(--button-border);
+    flex-shrink: 0;
+    background: rgba(98, 247, 255, 0.03);
+}
+
+.tab-btn {
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    border-radius: 0;
+    padding: 12px 20px;
+    cursor: pointer;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    transition: all 0.2s ease;
+    position: relative;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -1px;
+}
+
+.tab-btn:hover {
+    color: var(--ink);
+    background: rgba(98, 247, 255, 0.05);
+}
+
+.tab-btn.active {
+    background: transparent;
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+    box-shadow: none;
+}
+
+.tab-btn.active::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--accent);
+    box-shadow: 0 0 8px rgba(98, 247, 255, 0.5);
+}
+
+/* Tab Panels */
+.tab-panel {
+    display: none;
+    padding: 16px;
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+.tab-panel.active {
+    display: block;
+}
+
+.tab-panel[hidden] {
+    display: none;
+}
+
+.settings-content {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    overflow: hidden;
+}
+
+/* Settings Sections */
+.settings-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.settings-section:last-child {
+    margin-bottom: 0;
+}
+
+.settings-section h4 {
+    margin: 0;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    font-weight: 600;
+    border-bottom: 1px solid var(--button-border);
+    padding-bottom: 6px;
+}
+
+/* Font Select */
+.font-select {
+    padding: 8px 10px;
+    border-radius: 10px;
+    border: 1px solid var(--field-border);
+    background: var(--field-bg);
+    color: var(--field-ink);
+    font-size: 13px;
+    width: 100%;
+}
+
+/* Custom Font Input */
+.custom-font-label {
+    margin-top: 8px;
+}
+
+.custom-font-label input {
+    padding: 8px 10px;
+    border-radius: 10px;
+    border: 1px solid var(--field-border);
+    background: var(--field-bg);
+    color: var(--field-ink);
+    font-size: 13px;
+    width: 100%;
+    font-family: inherit;
+}
+
+/* Range Value Display */
+.range-value {
+    font-size: 11px;
+    color: var(--accent);
+    font-family: monospace;
+    text-align: right;
+    margin-top: 4px;
+}
+
+/* Checkbox styling */
+.checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--ink);
+    cursor: pointer;
+}
+
+.checkbox input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+/* Light theme adjustments */
+body[data-theme="light"] .draggable-panel {
+    box-shadow: 0 10px 30px var(--shadow);
+}
+
+body[data-theme="light"] .settings-header {
+    background: rgba(10, 166, 199, 0.05);
+}
+
+body[data-theme="light"] .settings-tabs {
+    background: rgba(10, 166, 199, 0.03);
+}
+
+body[data-theme="light"] .tab-btn:hover {
+    background: rgba(10, 166, 199, 0.05);
+}
+
+/* Hide old settings overlay styles */
+.settings-overlay {
+    display: none;
+}
+
+.settings-modal {
+    display: none;
 }

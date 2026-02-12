@@ -1218,23 +1218,23 @@ body[data-theme="light"] .modal-btn:hover {
         grid-template-columns: 1fr;
     }
 }
-/* Settings Panel Styles - Adaptive for all screen ratios */
+/* Settings Panel Styles - Consistent with viewer */
 .draggable-panel {
     position: fixed;
-    top: 5vh;
-    left: 5vw;
-    width: 90vw;
-    min-width: 320px;
-    max-width: 95vw;
+    top: 2vh;
+    left: 2vw;
+    width: 96vw;
+    min-width: 300px;
+    max-width: 98vw;
     background: var(--panel);
     border: 1px solid var(--btn-border);
-    border-radius: 12px;
+    border-radius: 20px;
     box-shadow: 0 10px 30px rgba(2, 6, 12, 0.4);
     z-index: 25;
-    height: 90vh;
-    min-height: 300px;
-    max-height: 95vh;
-    overflow: auto;
+    height: 96vh;
+    min-height: 280px;
+    max-height: 98vh;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     resize: both;
@@ -1244,30 +1244,30 @@ body[data-theme="light"] .modal-btn:hover {
 /* Wide screens (16:9, 16:10) - use more horizontal space */
 @media (min-aspect-ratio: 16/10) {
     .draggable-panel {
-        top: 5vh;
-        left: 10vw;
-        width: 80vw;
-        height: 90vh;
+        top: 2vh;
+        left: 3vw;
+        width: 94vw;
+        height: 96vh;
     }
 }
 
 /* Ultra-wide screens (21:9) */
 @media (min-aspect-ratio: 21/9) {
     .draggable-panel {
-        top: 5vh;
-        left: 15vw;
-        width: 70vw;
-        height: 90vh;
+        top: 2vh;
+        left: 5vw;
+        width: 90vw;
+        height: 96vh;
     }
 }
 
 /* Portrait/tall screens */
 @media (max-aspect-ratio: 3/4) {
     .draggable-panel {
-        top: 2vh;
-        left: 2vw;
-        width: 96vw;
-        height: 96vh;
+        top: 1vh;
+        left: 1vw;
+        width: 98vw;
+        height: 98vh;
     }
 }
 
@@ -1279,165 +1279,318 @@ body[data-theme="light"] .draggable-panel {
     cursor: grabbing;
 }
 
+/* Settings Header - Smaller and consistent */
 .settings-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 16px;
+    padding: 12px 16px;
     border-bottom: 1px solid var(--btn-border);
     gap: 12px;
     cursor: grab;
     user-select: none;
     flex-shrink: 0;
+    background: rgba(98, 247, 255, 0.05);
+    border-radius: 20px 20px 0 0;
 }
 
 .draggable-panel.dragging .settings-header {
     cursor: grabbing;
 }
 
-.settings-header h2 {
+.settings-header h3 {
     margin: 0;
     font-family: "Orbitron", "Share Tech Mono", "Consolas", monospace;
     letter-spacing: 0.04em;
-    font-size: 18px;
-    color: var(--ink);
-}
-
-.settings-close {
-    border-radius: 8px;
-    border: 1px solid var(--btn-border);
-    background: rgba(255, 255, 255, 0.05);
-    color: var(--ink);
-    width: 32px;
-    height: 32px;
-    cursor: pointer;
-    font-size: 16px;
-    transition:
-        transform 0.15s ease,
-        box-shadow 0.2s ease;
-    flex-shrink: 0;
-}
-
-.settings-close:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 0 8px rgba(98, 247, 255, 0.15);
-}
-
-.settings-content {
-    padding: 16px;
-    display: flex;
-    flex-direction: row;
-    gap: 24px;
-    flex-wrap: wrap;
-    align-items: flex-start;
-    flex-grow: 1;
-    overflow-y: auto;
-}
-
-.settings-section {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    flex: 1;
-    min-width: 280px;
-}
-
-.settings-section.font-section {
-    min-width: 450px;
-}
-
-.settings-section.color-section {
-    flex: 0 1 calc(100% - 24px);
-    min-width: 100%;
-}
-
-.settings-section h3 {
-    margin: 0;
-    font-size: 13px;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
+    font-size: 14px;
     color: var(--accent);
     font-weight: 600;
 }
 
+.settings-close {
+    border-radius: 999px;
+    border: 1px solid var(--btn-border);
+    background: transparent;
+    color: var(--ink);
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.settings-close:hover {
+    background: var(--btn);
+    border-color: var(--accent);
+    box-shadow: 0 0 8px rgba(98, 247, 255, 0.2);
+}
+
+/* Settings Tabs - Windows 10 style underline */
+.settings-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    padding: 0 16px;
+    border-bottom: 1px solid var(--btn-border);
+    flex-shrink: 0;
+    background: rgba(98, 247, 255, 0.03);
+}
+
+.tab-btn {
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    border-radius: 0;
+    padding: 12px 20px;
+    cursor: pointer;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    transition: all 0.2s ease;
+    position: relative;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -1px;
+}
+
+.tab-btn:hover {
+    color: var(--ink);
+    background: rgba(98, 247, 255, 0.05);
+}
+
+.tab-btn.active {
+    background: transparent;
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+    box-shadow: none;
+}
+
+.tab-btn.active::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--accent);
+    box-shadow: 0 0 8px rgba(98, 247, 255, 0.5);
+}
+
+/* Tab Panels */
+.tab-panel {
+    display: none;
+    padding: 16px;
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+.tab-panel.active {
+    display: block;
+}
+
+.tab-panel[hidden] {
+    display: none;
+}
+
+.settings-content {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    overflow: hidden;
+}
+
+/* Settings Sections */
+.settings-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.settings-section:last-child {
+    margin-bottom: 0;
+}
+
+.settings-section h4 {
+    margin: 0;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    font-weight: 600;
+    border-bottom: 1px solid var(--btn-border);
+    padding-bottom: 6px;
+}
+
+/* Quick Font Buttons */
+.quick-font-buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 8px;
+}
+
+.quick-font-btn {
+    padding: 8px 12px;
+    border: 1px solid var(--btn-border);
+    background: var(--btn);
+    color: var(--ink);
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s ease;
+    text-align: left;
+}
+
+.quick-font-btn:hover {
+    border-color: var(--accent);
+    background: rgba(98, 247, 255, 0.1);
+    box-shadow: 0 0 8px rgba(98, 247, 255, 0.2);
+    transform: translateY(-1px);
+}
+
+.quick-font-btn:active {
+    transform: translateY(0);
+}
+
+/* Font Select */
 .font-select {
     padding: 8px 10px;
     border-radius: 10px;
     border: 1px solid var(--btn-border);
     background: var(--btn);
     color: var(--ink);
-    font-size: 14px;
+    font-size: 13px;
     width: 100%;
 }
 
+/* Custom Font Input */
+.custom-font-label {
+    margin-top: 8px;
+}
+
+.custom-font-label input {
+    padding: 8px 10px;
+    border-radius: 10px;
+    border: 1px solid var(--btn-border);
+    background: var(--btn);
+    color: var(--ink);
+    font-size: 13px;
+    width: 100%;
+    font-family: inherit;
+}
+
+/* Font Size Grid */
+.font-size-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.font-size-grid label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.font-size-grid input[type="range"] {
+    width: 100%;
+    cursor: pointer;
+}
+
+.range-value {
+    font-size: 11px;
+    color: var(--accent);
+    font-family: monospace;
+    text-align: right;
+}
+
+/* Theme Tabs */
 .theme-tabs {
     display: flex;
     gap: 8px;
-    border-bottom: 1px solid var(--btn-border);
+    margin-bottom: 12px;
 }
 
 .theme-tab {
     flex: 1;
-    border: none;
-    background: transparent;
+    border: 1px solid var(--btn-border);
+    background: var(--btn);
     color: var(--muted);
-    padding: 10px 8px;
+    padding: 8px 12px;
     cursor: pointer;
     font-size: 12px;
-    border-bottom: 2px solid transparent;
+    border-radius: 10px;
     transition: all 0.2s ease;
 }
 
 .theme-tab:hover {
     color: var(--ink);
+    border-color: var(--accent);
 }
 
 .theme-tab.active {
-    color: var(--accent);
-    border-bottom-color: var(--accent);
+    background: var(--accent);
+    color: #041017;
+    border-color: var(--accent);
 }
 
+/* Color Grid */
 .color-grid {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 12px;
-    width: 100%;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+    max-height: 55vh;
+    overflow-y: auto;
+    padding-right: 8px;
 }
 
 .color-item {
     display: flex;
     flex-direction: column;
     gap: 6px;
+    padding: 10px;
+    background: rgba(98, 247, 255, 0.03);
+    border-radius: 10px;
+    border: 1px solid var(--btn-border);
+    min-width: 0; /* Allow shrinking */
 }
 
 .color-label {
-    font-size: 11px;
+    font-size: 10px;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: var(--muted);
     font-weight: 500;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
 }
 
 .color-label-desc {
-    font-size: 10px;
+    font-size: 9px;
     color: var(--muted);
     opacity: 0.7;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .color-input-wrapper {
     display: flex;
     gap: 8px;
-    align-items: center;
+    align-items: flex-start;
+    flex-wrap: wrap;
 }
 
 .color-picker-btn {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     border: 1px solid var(--btn-border);
     border-radius: 6px;
     cursor: pointer;
     padding: 2px;
     background: white;
+    flex-shrink: 0;
 }
 
 .color-picker-btn:hover {
@@ -1463,19 +1616,22 @@ body[data-theme="light"] .color-picker-btn:hover {
 
 .color-value {
     flex: 1;
-    font-size: 10px;
+    font-size: 9px;
     font-family: monospace;
     color: var(--muted);
-    padding: 6px 8px;
+    padding: 4px 6px;
     background: rgba(255, 255, 255, 0.05);
     border-radius: 4px;
     border: 1px solid var(--btn-border);
     word-break: break-all;
+    overflow-wrap: anywhere;
+    min-width: 0;
+    line-height: 1.4;
 }
 
 .gradient-preview {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     border: 1px solid var(--btn-border);
     border-radius: 6px;
     flex-shrink: 0;
@@ -1483,15 +1639,18 @@ body[data-theme="light"] .color-picker-btn:hover {
 
 .gradient-text-input {
     flex: 1;
-    font-size: 10px;
+    font-size: 9px;
     font-family: monospace;
     color: var(--ink);
-    padding: 6px 8px;
+    padding: 4px 6px;
     background: rgba(255, 255, 255, 0.05);
     border-radius: 4px;
     border: 1px solid var(--btn-border);
     word-break: break-all;
+    overflow-wrap: anywhere;
     transition: border-color 0.2s ease;
+    min-width: 0;
+    line-height: 1.4;
 }
 
 .gradient-text-input:focus {
@@ -1505,8 +1664,9 @@ body[data-theme="light"] .gradient-text-input:focus {
     box-shadow: 0 0 6px var(--accent);
 }
 
+/* Reset Buttons */
 .settings-reset-btn {
-    border-radius: 8px;
+    border-radius: 10px;
     border: 1px solid var(--btn-border);
     background: linear-gradient(
         120deg,
@@ -1520,6 +1680,7 @@ body[data-theme="light"] .gradient-text-input:focus {
     letter-spacing: 0.03em;
     transition: all 0.2s ease;
     width: 100%;
+    margin-top: 8px;
 }
 
 .settings-reset-btn:hover {
