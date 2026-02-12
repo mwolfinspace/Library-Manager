@@ -1,4 +1,172 @@
-﻿const grid = document.getElementById("story-grid");
+﻿
+// ===== DATABASE INITIALIZATION =====
+let databaseInitialized = false;
+
+async function initDatabase() {
+  if (databaseInitialized && window.DATABASE_SETTINGS?.db) return;
+  
+  await window.DATABASE_SETTINGS.init();
+  databaseInitialized = true;
+  
+  // Sync VIEWER_SETTINGS with database for viewer compatibility
+  const vs = window.DATABASE_SETTINGS.getViewerSettings();
+  window.VIEWER_SETTINGS = { ...window.VIEWER_SETTINGS, ...vs };
+}
+
+// ===== SETTINGS WRAPPER FUNCTIONS =====
+// ALL settings use DATABASE_SETTINGS (file-based) - NO localStorage!
+// Works across all browsers when you export/import
+
+// Colors
+function loadSettings() {
+  if (window.DATABASE_SETTINGS?.db?.colors) {
+    return window.DATABASE_SETTINGS.db.colors;
+  }
+  return { dark: {}, light: {} };
+}
+
+function saveSettings(settings) {
+  if (window.DATABASE_SETTINGS?.db) {
+    window.DATABASE_SETTINGS.db.colors = settings;
+  }
+}
+
+// Font
+function loadFont() {
+  const dbSettings = window.DATABASE_SETTINGS?.getSettings();
+  return dbSettings?.fontFamily || "'Share Tech Mono', monospace";
+}
+
+function saveFont(font) {
+  window.DATABASE_SETTINGS?.setSettings({ fontFamily: font });
+}
+
+// Panel settings
+function loadPanelSettings() {
+  const dbSettings = window.DATABASE_SETTINGS?.getSettings();
+  if (dbSettings?.panelPosition) {
+    return {
+      left: dbSettings.panelPosition.left,
+      top: dbSettings.panelPosition.top,
+      width: dbSettings.panelPosition.width,
+      height: dbSettings.panelPosition.height
+    };
+  }
+  return null;
+}
+
+function savePanelSettings(settings) {
+  window.DATABASE_SETTINGS?.setSettings({ panelPosition: settings });
+}
+
+// Favorites - use DATABASE directly
+function loadFavorites() {
+  const favs = window.DATABASE_SETTINGS?.getFavorites() || [];
+  return new Set(favs);
+}
+
+function saveFavorites(favorites) {
+  const arr = Array.from(favorites);
+  // Clear all and re-add
+  const current = window.DATABASE_SETTINGS?.getData() || {};
+  window.DATABASE_SETTINGS?.setData({ favorites: arr });
+}
+
+// Pins - use DATABASE directly
+function loadPins() {
+  const pins = window.DATABASE_SETTINGS?.getPins() || [];
+  return new Set(pins);
+}
+
+function savePins(pins) {
+  const arr = Array.from(pins);
+  window.DATABASE_SETTINGS?.setData({ pinned: arr });
+}
+
+// Bookmarks - use DATABASE directly
+function saveBookmark(id, payload) {
+  window.DATABASE_SETTINGS?.saveBookmark(id, payload);
+}
+
+function removeBookmark(id) {
+  window.DATABASE_SETTINGS?.removeBookmark(id);
+}
+
+function getBookmark(id) {
+  return window.DATABASE_SETTINGS?.getBookmark(id) || null;
+}
+
+// Filter state
+function loadFilterState() {
+  const dbSettings = window.DATABASE_SETTINGS?.getSettings();
+  return dbSettings?.filterState || null;
+}
+
+function saveFilterState(state) {
+  window.DATABASE_SETTINGS?.setSettings({ filterState: state });
+}
+
+// Font sizes
+function loadFontSizes() {
+  const dbSettings = window.DATABASE_SETTINGS?.getSettings();
+  return dbSettings?.fontSizes || {
+    base: 14,
+    header: 26,
+    button: 12,
+    card: 13,
+  };
+}
+
+function saveFontSize(key, value) {
+  const sizes = loadFontSizes();
+  sizes[key] = parseInt(value, 10);
+  window.DATABASE_SETTINGS?.setSettings({ fontSizes: sizes });
+}
+
+// Theme
+function loadTheme() {
+  const dbSettings = window.DATABASE_SETTINGS?.getSettings();
+  return dbSettings?.theme || "dark";
+}
+
+function saveTheme(theme) {
+  window.DATABASE_SETTINGS?.setSettings({ theme });
+}
+
+// Skip preferences
+function loadSkipPreferences() {
+  const dbSettings = window.DATABASE_SETTINGS?.getSettings();
+  return dbSettings?.skipPreferences || { skipAgeVerify: false, skipWelcome: false };
+}
+
+function saveSkipPreferences(prefs) {
+  window.DATABASE_SETTINGS?.setSettings({ skipPreferences: prefs });
+}
+
+// Keybinds
+function loadKeybinds() {
+  const dbSettings = window.DATABASE_SETTINGS?.getSettings();
+  return dbSettings?.keybinds || {};
+}
+
+function saveKeybinds(keybinds) {
+  window.DATABASE_SETTINGS?.setSettings({ keybinds });
+}
+
+// Layout
+function loadLayout() {
+  const dbSettings = window.DATABASE_SETTINGS?.getSettings();
+  return dbSettings?.filterState?.layout || "grid";
+}
+
+function saveLayout(layout) {
+  const fs = window.DATABASE_SETTINGS?.getSettings().filterState || {};
+  window.DATABASE_SETTINGS?.setSettings({ filterState: { ...fs, layout } });
+}
+
+// ===== OLD FUNCTIONS KEPT FOR REFERENCE BUT USING DATABASE NOW =====
+
+const grid = document.getElementById("story-grid");
 const emptyState = document.getElementById("empty-state");
 const searchInput = document.getElementById("search-input");
 const themeToggle = document.getElementById("theme-toggle");
@@ -944,7 +1112,105 @@ window.addEventListener("storage", (event) => {
   }
 });
 
-async function init() {
+// ===== NEW LOADING FLOW =====
+// Age verification → Loading screen (heavy) → Welcome → Homepage
+
+// Start the application - check age verification FIRST
+async function startApp() {
+  // Check age verification first
+  if (!shouldSkipAgeVerify()) {
+    // Show age verification immediately (no loading yet)
+    showAgeVerificationForStartup();
+    return;
+  }
+
+  // Age verified, now start loading heavy resources
+  startLoadingScreen();
+}
+
+// Age verification for startup (shows immediately, no loading)
+function showAgeVerificationForStartup() {
+  const overlay = document.getElementById('age-verify-overlay');
+  if (!overlay) {
+    console.error('Age verify overlay not found!');
+    return;
+  }
+  
+  overlay.hidden = false;
+  console.log('Age verification overlay shown');
+  
+  // Handle Yes button - start loading after verification
+  // Note: We do NOT save to localStorage here
+  // The skip preference is ONLY controlled by the Settings toggle
+  // Clicking Yes works for this session only (F5 will show popup again)
+  const yesBtn = document.getElementById('age-yes');
+  if (yesBtn) {
+    // Clone and replace to remove any existing handlers
+    const newYesBtn = yesBtn.cloneNode(true);
+    yesBtn.parentNode.replaceChild(newYesBtn, yesBtn);
+    newYesBtn.addEventListener('click', handleYesClick);
+    console.log('Yes button handler attached');
+  } else {
+    console.error('Yes button not found!');
+  }
+  
+  // Handle No button
+  const noBtn = document.getElementById('age-no');
+  if (noBtn) {
+    const newNoBtn = noBtn.cloneNode(true);
+    noBtn.parentNode.replaceChild(newNoBtn, noBtn);
+    newNoBtn.addEventListener('click', handleNoClick);
+    console.log('No button handler attached');
+  } else {
+    console.error('No button not found!');
+  }
+  
+  // Emergency keyboard bypass - press 'Y' to bypass
+  const bypassHandler = (e) => {
+    if (e.key.toLowerCase() === 'y') {
+      console.log('Age verify bypassed via keyboard');
+      overlay.hidden = true;
+      startLoadingScreen();
+      document.removeEventListener('keydown', bypassHandler);
+    }
+  };
+  document.addEventListener('keydown', bypassHandler, { once: true });
+  
+  // Also remove handler when overlay is hidden
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.target.hidden === true) {
+        document.removeEventListener('keydown', bypassHandler);
+        observer.disconnect();
+      }
+    });
+  });
+  observer.observe(overlay, { attributes: true, attributeFilter: ['hidden'] });
+}
+
+// Register global function for inline onclick handler
+window.startAgeVerifiedLoading = function() {
+  console.log('Age verified, starting loading...');
+  startLoadingScreen();
+};
+
+function handleYesClick() {
+  console.log('Yes button clicked');
+  const overlay = document.getElementById('age-verify-overlay');
+  if (overlay) {
+    overlay.style.display = 'none';
+    overlay.setAttribute('data-age-verify', 'false');
+  }
+  startLoadingScreen();
+}
+
+function handleNoClick() {
+  console.log('No button clicked');
+  document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#03050b;color:#e8f1ff;font-family:sans-serif;text-align:center;padding:20px;"><div><h1>Access Denied</h1><p>You must be 18 or older to access this archive.</p><p style="margin-top:20px;font-size:12px;color:#e8f1ff66;">If this is a mistake, <button onclick="localStorage.removeItem(\'skipPreferences\');location.reload();" style="background:transparent;border:1px solid #e8f1ff;color:#e8f1ff;padding:8px 16px;cursor:pointer;">Reset & Reload</button></p></div></div>';
+}
+
+// Start the loading screen and load all heavy resources
+async function startLoadingScreen() {
   const loader = {
     overlay: document.getElementById("loader-overlay"),
     progressBar: document.getElementById("progress-bar"),
@@ -952,8 +1218,8 @@ async function init() {
     logo: document.querySelector(".loader-logo"),
   };
 
-  const page = document.querySelector(".page");
-  if (page) page.style.opacity = "0";
+  // Show loader
+  if (loader.overlay) loader.overlay.hidden = false;
 
   function updateProgress(percent) {
     if (loader.progressBar) loader.progressBar.style.width = `${percent}%`;
@@ -1073,9 +1339,13 @@ async function init() {
     setTimeout(() => {
       if (loader.overlay) {
         loader.overlay.style.opacity = "0";
-        if (page) page.style.opacity = "1";
         loader.overlay.addEventListener("transitionend", () => {
           if (loader.overlay) loader.overlay.hidden = true;
+          // Show the page content
+          const page = document.querySelector(".page");
+          if (page) page.hidden = false;
+          // Show startup screens (welcome) after loader fades out
+          initStartupScreens();
         });
       }
     }, 250);
@@ -1086,9 +1356,12 @@ async function init() {
   }
 }
 
-window.addEventListener("DOMContentLoaded", (event) => {
-  init();
-
+// Keep init as the entry point but change flow
+async function init() {
+  console.log('=== INIT CALLED ===');
+  startApp();
+  
+  // Modal tabs initialization (was inside DOMContentLoaded)
   const modalTabs = document.querySelectorAll("#help-modal .modal-tab");
   const modalTabContents = document.querySelectorAll(
     "#help-modal .modal-tab-content",
@@ -1108,7 +1381,15 @@ window.addEventListener("DOMContentLoaded", (event) => {
       }
     });
   });
-});
+}
+
+// Call init immediately since script is at end of body
+if (document.readyState === 'loading') {
+  window.addEventListener('DOMContentLoaded', init);
+} else {
+  // DOM already ready, call init now
+  init();
+}
 
 if (themeToggle) {
   themeToggle.addEventListener("click", () => {
@@ -1849,6 +2130,7 @@ if (settingsBtn) {
     initQuickFontButtons();
     initFontSizeControls();
     initCustomFontInput();
+    initInputSettings();
   });
 }
 
@@ -1904,6 +2186,116 @@ document.addEventListener("DOMContentLoaded", () => {
   applyFontSizes();
 });
 
+// ===== AGE VERIFICATION & WELCOME SCREEN =====
+
+// Skip preferences storage
+function loadSkipPreferences() {
+  try {
+    const raw = localStorage.getItem('skipPreferences');
+    if (!raw) {
+      return { skipAgeVerify: false, skipWelcome: false };
+    }
+    
+    // Try to parse the JSON
+    const prefs = JSON.parse(raw);
+    
+    // Validate the structure - if corrupted, reset to defaults
+    if (typeof prefs !== 'object' || prefs === null || 
+        typeof prefs.skipAgeVerify !== 'boolean' || 
+        typeof prefs.skipWelcome !== 'boolean') {
+      console.warn('Corrupted skipPreferences detected, resetting to defaults');
+      saveSkipPreferences({ skipAgeVerify: false, skipWelcome: false });
+      return { skipAgeVerify: false, skipWelcome: false };
+    }
+    
+    return prefs;
+  } catch (error) {
+    // JSON parse failed - data is corrupted
+    console.warn('Failed to parse skipPreferences, resetting to defaults:', error);
+    localStorage.removeItem('skipPreferences');
+    return { skipAgeVerify: false, skipWelcome: false };
+  }
+}
+
+function saveSkipPreferences(prefs) {
+  localStorage.setItem('skipPreferences', JSON.stringify(prefs));
+}
+
+function shouldSkipAgeVerify() {
+  return loadSkipPreferences().skipAgeVerify;
+}
+
+function shouldSkipWelcome() {
+  return loadSkipPreferences().skipWelcome;
+}
+
+// Age Verification Screen (called from initStartupScreens for consistency)
+function showAgeVerification() {
+  showAgeVerificationForStartup();
+}
+
+// Welcome Screen
+function showWelcomeScreen() {
+  const overlay = document.getElementById('welcome-overlay');
+  if (!overlay) return;
+  
+  overlay.hidden = false;
+  
+  // Handle OK button
+  const okBtn = document.getElementById('welcome-ok');
+  const skipCheckbox = document.getElementById('welcome-skip-checkbox');
+  
+  if (okBtn) {
+    okBtn.onclick = () => {
+      // Save skip preference if checkbox is checked
+      if (skipCheckbox && skipCheckbox.checked) {
+        const prefs = loadSkipPreferences();
+        prefs.skipWelcome = true;
+        saveSkipPreferences(prefs);
+      }
+      overlay.hidden = true;
+    };
+  }
+}
+
+// Initialize startup screens
+function initStartupScreens() {
+  // Only show welcome screen (age verification is shown at startup, not here)
+  // The age verification skip preference is controlled by the Settings toggle
+  // - Default (toggle unchecked): show age verify on every reload
+  // - Toggle checked: skip age verification permanently
+  
+  if (!shouldSkipWelcome()) {
+    showWelcomeScreen();
+  }
+}
+
+// Initialize settings panel toggles
+function initInputSettings() {
+  const skipAgeToggle = document.getElementById('skip-age-verify');
+  const skipWelcomeToggle = document.getElementById('skip-welcome');
+  
+  const prefs = loadSkipPreferences();
+  
+  if (skipAgeToggle) {
+    skipAgeToggle.checked = prefs.skipAgeVerify;
+    skipAgeToggle.addEventListener('change', () => {
+      const newPrefs = loadSkipPreferences();
+      newPrefs.skipAgeVerify = skipAgeToggle.checked;
+      saveSkipPreferences(newPrefs);
+    });
+  }
+  
+  if (skipWelcomeToggle) {
+    skipWelcomeToggle.checked = prefs.skipWelcome;
+    skipWelcomeToggle.addEventListener('change', () => {
+      const newPrefs = loadSkipPreferences();
+      newPrefs.skipWelcome = skipWelcomeToggle.checked;
+      saveSkipPreferences(newPrefs);
+    });
+  }
+}
+
 // ===== COMPREHENSIVE RESET DATA FUNCTIONALITY =====
 
 // Reset configuration
@@ -1930,7 +2322,7 @@ const resetConfig = {
   },
   'settings': {
     title: 'Reset All Settings',
-    message: 'This will reset all colors, fonts, sizes, and per-report settings to default. This action cannot be undone.',
+    message: 'This will reset all colors, fonts, sizes, startup screens, and all per-report settings to default. This action cannot be undone.',
     isDanger: true
   }
 };
@@ -2060,6 +2452,9 @@ function resetAllSettings() {
   // Remove viewer settings (synced)
   localStorage.removeItem('viewerSettings');
   localStorage.removeItem('viewerPanelSettings');
+  
+  // Remove skip preferences (age verify and welcome screen)
+  localStorage.removeItem('skipPreferences');
   
   // Re-apply defaults
   applyColors();
@@ -3255,9 +3650,77 @@ const KeybindManager = {
 };
 
 // Initialize all keyboard navigation systems
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   KeyboardNavigation.init();
   SettingsPanelKeyboardNav.init();
   HelpModalKeyboardNav.init();
   KeybindManager.init();
+  
+  // Initialize database system
+  await initDatabase();
+  
+  // Setup import/export functionality
+  setupDatabaseImportExport();
 });
+
+// Database import/export functionality
+function setupDatabaseImportExport() {
+  const exportBtn = document.getElementById('db-export-btn');
+  const importInput = document.getElementById('db-import-input');
+  const statusEl = document.getElementById('db-import-status');
+  
+  if (exportBtn) {
+    exportBtn.addEventListener('click', () => {
+      if (window.DATABASE_SETTINGS) {
+        window.DATABASE_SETTINGS.downloadExport();
+        if (statusEl) {
+          statusEl.textContent = 'Settings exported successfully!';
+          statusEl.style.color = 'var(--accent-2)';
+          setTimeout(() => {
+            statusEl.textContent = '';
+          }, 3000);
+        }
+      }
+    });
+  }
+  
+  if (importInput) {
+    importInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        try {
+          const jsonString = event.target.result;
+          if (window.DATABASE_SETTINGS) {
+            const result = window.DATABASE_SETTINGS.import(jsonString, false); // Replace entirely
+            if (result.success) {
+              if (statusEl) {
+                statusEl.textContent = 'Settings imported successfully! Reloading...';
+                statusEl.style.color = 'var(--accent-2)';
+              }
+              // Reload page after successful import
+              setTimeout(() => {
+                window.location.reload();
+              }, 1500);
+            } else {
+              if (statusEl) {
+                statusEl.textContent = 'Import failed: ' + result.error;
+                statusEl.style.color = '#ff6b6b';
+              }
+            }
+          }
+        } catch (error) {
+          if (statusEl) {
+            statusEl.textContent = 'Import failed: Invalid file format';
+            statusEl.style.color = '#ff6b6b';
+          }
+        }
+        // Reset input
+        importInput.value = '';
+      };
+      reader.readAsText(file);
+    });
+  }
+}

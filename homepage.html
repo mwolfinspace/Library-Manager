@@ -8,7 +8,79 @@
         <link rel="stylesheet" href="css/fonts.css" />
     </head>
     <body data-theme="dark">
-        <div id="loader-overlay">
+        <!-- Age Verification Screen (shows FIRST, very lightweight) -->
+        <div id="age-verify-overlay" class="age-verify-overlay" data-age-verify="true">
+            <div class="age-verify-content">
+                <div class="age-verify-icon">🔞</div>
+                <h2 class="age-verify-title">Age Verification Required</h2>
+                <p class="age-verify-message">
+                    This archive contains mature content.<br>
+                    You must be 18 years or older to access.
+                </p>
+                <p class="age-verify-question">Are you over 18?</p>
+                <div class="age-verify-actions">
+                    <button type="button" id="age-yes" class="age-btn age-btn-yes" onclick="handleAgeYes(event)">
+                        <span class="age-btn-icon">✓</span>
+                        <span>Yes, I'm 18+</span>
+                    </button>
+                    <button type="button" id="age-no" class="age-btn age-btn-no" onclick="handleAgeNo(event)">
+                        <span class="age-btn-icon">✕</span>
+                        <span>No, I'm under 18</span>
+                    </button>
+                </div>
+                <p class="age-verify-note">
+                    By clicking "Yes", you confirm that you are of legal age to view this content.
+                </p>
+                <p style="font-size: 11px; color: #e8f1ff66; margin-top: 12px;">
+                    Press <strong>Y</strong> to bypass if stuck
+                </p>
+            </div>
+        </div>
+
+        <!-- Global inline handlers for age verification -->
+        <script>
+            // Global handlers for age verification buttons
+            window.handleAgeYes = function(e) {
+                if (e) e.preventDefault();
+                console.log('Age Yes clicked (inline handler)');
+                var overlay = document.getElementById('age-verify-overlay');
+                if (overlay) {
+                    overlay.style.display = 'none';
+                    overlay.setAttribute('data-age-verify', 'false');
+                }
+                // Start loading - call the global function
+                if (typeof window.startAgeVerifiedLoading === 'function') {
+                    window.startAgeVerifiedLoading();
+                } else {
+                    // Fallback: reload page with bypass flag
+                    localStorage.setItem('ageVerifyBypass', Date.now().toString());
+                    location.reload();
+                }
+            };
+            
+            window.handleAgeNo = function(e) {
+                if (e) e.preventDefault();
+                console.log('Age No clicked - closing tab');
+                // Close the tab - works in most browsers
+                window.close();
+                // Fallback: if window.close() doesn't work, show a message
+                setTimeout(function() {
+                    document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#03050b;color:#e8f1ff;font-family:sans-serif;text-align:center;padding:20px;"><div><h1>Access Denied</h1><p>You must be 18 or older to access this archive.</p><p style="margin-top:20px;font-size:12px;color:#e8f1ff66;">You can close this tab manually.</p></div></div>';
+                }, 100);
+            };
+            
+            // Keyboard bypass - press Y to bypass age verification
+            document.addEventListener('keydown', function(e) {
+                var overlay = document.getElementById('age-verify-overlay');
+                if (overlay && overlay.style.display !== 'none' && e.key.toLowerCase() === 'y') {
+                    console.log('Age bypass via Y key');
+                    handleAgeYes(e);
+                }
+            });
+        </script>
+
+        <!-- Loading Screen (shows AFTER age verification passes) -->
+        <div id="loader-overlay" class="loader-overlay" hidden>
             <div class="loader-content">
                 <div class="loader-logo">XEDRYK ARCHIVE</div>
                 <div class="progress-bar-container">
@@ -19,8 +91,9 @@
                 </div>
             </div>
         </div>
-        <div class="code-field" aria-hidden="true"></div>
-        <div class="page">
+
+        <!-- Main Page Content (hidden until loading completes) -->
+        <div class="page" hidden>
             <header class="hero">
                 <div class="hero-left">
                     <p class="eyebrow">Xedryk's Archive</p>
@@ -229,6 +302,15 @@
                 </button>
                 <button
                     class="tab-btn"
+                    data-tab="input"
+                    type="button"
+                    role="tab"
+                    aria-selected="false"
+                >
+                    🖱️ Input
+                </button>
+                <button
+                    class="tab-btn"
                     data-tab="shortcuts"
                     type="button"
                     role="tab"
@@ -329,6 +411,75 @@
                         <button id="reset-colors" class="settings-reset-btn">
                             Reset Colors to Default
                         </button>
+                    </div>
+                </div>
+
+                <!-- Input Tab -->
+                <div
+                    class="tab-panel"
+                    data-tab-panel="input"
+                    role="tabpanel"
+                    hidden
+                >
+                    <div class="settings-section">
+                        <h4>Startup Screens</h4>
+                        <p class="settings-description" style="font-size: 12px; color: var(--muted); margin-bottom: 16px;">
+                            Control which screens appear when loading the archive. These settings are saved to your browser.
+                        </p>
+                        
+                        <div class="toggle-list">
+                            <label class="toggle-item">
+                                <div class="toggle-info">
+                                    <span class="toggle-icon">🔞</span>
+                                    <div class="toggle-text">
+                                        <strong>Skip Age Verification</strong>
+                                        <span class="toggle-desc">Skip the 18+ check on every page reload. Verification will NOT appear after refreshing (F5).</span>
+                                    </div>
+                                </div>
+                                <div class="toggle-switch">
+                                    <input type="checkbox" id="skip-age-verify" class="toggle-input">
+                                    <span class="toggle-slider"></span>
+                                </div>
+                            </label>
+
+                            <label class="toggle-item">
+                                <div class="toggle-info">
+                                    <span class="toggle-icon">👋</span>
+                                    <div class="toggle-text">
+                                        <strong>Skip Welcome Screen</strong>
+                                        <span class="toggle-desc">Don't show the welcome guide for new users</span>
+                                    </div>
+                                </div>
+                                <div class="toggle-switch">
+                                    <input type="checkbox" id="skip-welcome" class="toggle-input">
+                                    <span class="toggle-slider"></span>
+                                </div>
+                            </label>
+                        </div>
+
+                        <div class="settings-note" style="margin-top: 20px; padding: 12px; background: rgba(98, 247, 255, 0.05); border-radius: 8px; border: 1px solid rgba(98, 247, 255, 0.1);">
+                            <p style="font-size: 11px; color: var(--muted); margin: 0;">
+                                💡 <strong>Tip:</strong> Age verification shows on every F5 reload by default. Toggle ON to permanently skip it. Use "Reset All Settings" to make it appear again.
+                            </p>
+                        </div>
+
+                        <!-- Database Import/Export -->
+                        <div class="settings-section" style="margin-top: 24px; border-top: 1px solid rgba(98, 247, 255, 0.1); padding-top: 20px;">
+                            <h4 style="margin-bottom: 12px; color: var(--accent);">💾 Database Import/Export</h4>
+                            <p class="settings-description" style="font-size: 12px; color: var(--muted); margin-bottom: 16px;">
+                                Export all your settings, favorites, pins, and reading progress to a file. Import on another computer to restore everything.
+                            </p>
+                            <div class="import-export-buttons" style="display: flex; gap: 12px; flex-wrap: wrap;">
+                                <button type="button" id="db-export-btn" class="settings-btn-primary" style="background: var(--accent); color: #000; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                                    📤 Export Settings
+                                </button>
+                                <label type="button" class="settings-btn-secondary" style="background: transparent; color: var(--accent); border: 1px solid var(--accent); padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; display: inline-block;">
+                                    📥 Import Settings
+                                    <input type="file" id="db-import-input" accept=".json" style="display: none;">
+                                </label>
+                            </div>
+                            <p id="db-import-status" style="font-size: 11px; color: var(--muted); margin-top: 12px;"></p>
+                        </div>
                     </div>
                 </div>
 
@@ -637,12 +788,20 @@
                         <div class="help-section">
                             <h3>🔧 Features</h3>
                             <ul class="advanced-list">
+                                <li><strong>🔞 Age Verification:</strong> 18+ age check on first visit. Can be disabled in Settings → Input tab.</li>
+                                <li><strong>👋 Welcome Screen:</strong> Guide for new users showing help button and search bar. Can be disabled in Settings → Input tab.</li>
                                 <li><strong>📌 Pin System:</strong> Pin reports for quick access. Pinned items get priority sorting.</li>
                                 <li><strong>🔖 Bookmarks:</strong> Auto-saves reading position. Resume where you left off.</li>
                                 <li><strong>⭐ Favorites:</strong> Star reports for filtering and top priority.</li>
                                 <li><strong>🔍 Real-time Search:</strong> Instant filtering with tag support.</li>
                                 <li><strong>📐 Responsive:</strong> Auto-adjusts layout for any screen size.</li>
+                                <li><strong>⚙️ Settings Panel:</strong> Draggable panel with Font, Color, Input, and Shortcuts tabs.</li>
+                                <li><strong>🎨 Customization:</strong> Full control over fonts, colors, and keyboard shortcuts.</li>
+                                <li><strong>🗑️ Reset Options:</strong> Multiple reset levels from pins/favorites to complete fresh start.</li>
                             </ul>
+                            <p style="font-size: 11px; color: var(--muted); margin-top: 12px; padding: 8px; background: rgba(98, 247, 255, 0.05); border-radius: 8px;">
+                                💡 <strong>Tip:</strong> Use "Reset All Settings" when preparing the archive for a new user. This will clear all preferences and show age verification + welcome screen on next load.
+                            </p>
                         </div>
 
                         <!-- Reset Data Section -->
@@ -885,9 +1044,49 @@
             </div>
         </div>
 
+        <!-- Welcome Screen -->
+        <div id="welcome-overlay" class="welcome-overlay" hidden>
+            <div class="welcome-content">
+                <div class="welcome-icon">👋</div>
+                <h2 class="welcome-title">Welcome to Xedryk Archive</h2>
+                <p class="welcome-message">
+                    Thank you for visiting! Here's a quick guide to get you started:
+                </p>
+                <div class="welcome-features">
+                    <div class="welcome-feature">
+                        <span class="welcome-feature-icon">❓</span>
+                        <div class="welcome-feature-text">
+                            <strong>Help Button</strong> - Press this for keyboard shortcuts, search tips, and all features guide
+                        </div>
+                    </div>
+                    <div class="welcome-feature">
+                        <span class="welcome-feature-icon">🔍</span>
+                        <div class="welcome-feature-text">
+                            <strong>Search Bar</strong> - Find reports by title, tags, or description. Supports advanced operators!
+                        </div>
+                    </div>
+                    <div class="welcome-feature">
+                        <span class="welcome-feature-icon">⚙️</span>
+                        <div class="welcome-feature-text">
+                            <strong>Settings</strong> - Customize fonts, colors, and keyboard shortcuts
+                        </div>
+                    </div>
+                </div>
+                <div class="welcome-checkbox">
+                    <label class="welcome-checkbox-label">
+                        <input type="checkbox" id="welcome-skip-checkbox">
+                        <span class="welcome-checkbox-text">Don't show this welcome screen again</span>
+                    </label>
+                </div>
+                <button type="button" id="welcome-ok" class="welcome-ok-btn">
+                    <span>Got it! Let's explore</span>
+                    <span class="welcome-ok-icon">🚀</span>
+                </button>
+            </div>
+        </div>
+
         <script src="database/fonts.js"></script>
         <script src="database/settings.js"></script>
         <script src="database/catalog.js"></script>
         <script src="js/homepage.js"></script>
     </body>
-</html>
