@@ -3373,37 +3373,45 @@ body[data-theme="light"] .reboot-status {
     justify-content: center;
     z-index: 10000;
     backdrop-filter: blur(8px);
+    overflow: hidden;
 }
 
 .age-verify-content {
     text-align: center;
     color: var(--ink);
-    max-width: 90vw;
-    width: 480px;
-    padding: clamp(24px, 5vw, 40px);
+    width: 100%;
+    height: 100%;
+    max-width: 100vw;
+    max-height: 100vh;
+    padding: 2vh 4vw;
     background: var(--panel);
-    border-radius: 24px;
-    border: 1px solid var(--btn-border);
-    box-shadow: 0 32px 64px var(--shadow);
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
     animation: age-verify-slide-in 0.4s ease;
     word-wrap: break-word;
     overflow-wrap: break-word;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5vh;
 }
 
 @keyframes age-verify-slide-in {
     from {
         opacity: 0;
-        transform: translateY(-30px) scale(0.95);
+        transform: scale(0.98);
     }
     to {
         opacity: 1;
-        transform: translateY(0) scale(1);
+        transform: scale(1);
     }
 }
 
 .age-verify-icon {
-    font-size: clamp(48px, 10vw, 72px);
-    margin-bottom: 16px;
+    font-size: clamp(64px, 12vh, 120px);
+    margin-bottom: 1vh;
     display: block;
     animation: pulse 2s ease-in-out infinite;
 }
@@ -3415,55 +3423,61 @@ body[data-theme="light"] .reboot-status {
 
 .age-verify-title {
     font-family: "Orbitron", "Share Tech Mono", monospace;
-    font-size: clamp(20px, 4vw, 28px);
-    font-weight: 600;
+    font-size: clamp(28px, 6vh, 56px);
+    font-weight: 700;
     color: var(--accent);
-    margin-bottom: 12px;
+    margin: 0;
     letter-spacing: 0.03em;
     word-wrap: break-word;
     overflow-wrap: break-word;
-    line-height: 1.3;
+    line-height: 1.2;
 }
 
 .age-verify-message {
-    font-size: clamp(13px, 2.5vw, 15px);
+    font-size: clamp(18px, 3.5vh, 32px);
     color: var(--muted);
-    line-height: 1.6;
-    margin-bottom: 20px;
+    line-height: 1.5;
+    margin: 0;
     word-wrap: break-word;
     overflow-wrap: break-word;
+    max-width: 90vw;
+}
+
+.age-verify-message strong {
+    color: var(--ink);
+    font-weight: 700;
 }
 
 .age-verify-question {
-    font-size: clamp(15px, 3vw, 18px);
-    font-weight: 600;
+    font-size: clamp(24px, 5vh, 48px);
+    font-weight: 700;
     color: var(--ink);
-    margin-bottom: 20px;
+    margin: 1vh 0;
     word-wrap: break-word;
     overflow-wrap: break-word;
 }
 
 .age-verify-actions {
     display: flex;
-    gap: 12px;
+    gap: clamp(16px, 4vw, 48px);
     justify-content: center;
     flex-wrap: wrap;
-    margin-bottom: 16px;
+    margin: 1vh 0;
 }
 
 .age-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    padding: 12px 24px;
-    min-width: 120px;
-    max-width: 100%;
+    gap: 12px;
+    padding: clamp(16px, 3vh, 28px) clamp(32px, 6vw, 64px);
+    min-width: clamp(160px, 25vw, 280px);
+    max-width: 90vw;
     border-radius: 999px;
-    border: 2px solid;
+    border: 3px solid;
     font-family: inherit;
-    font-size: clamp(13px, 2.5vw, 15px);
-    font-weight: 600;
+    font-size: clamp(18px, 3.5vh, 36px);
+    font-weight: 700;
     cursor: pointer;
     transition: all 0.2s ease;
     white-space: normal;
@@ -3482,8 +3496,8 @@ body[data-theme="light"] .reboot-status {
 .age-btn-yes:hover {
     background: linear-gradient(120deg, rgba(141, 255, 123, 0.35), rgba(98, 247, 255, 0.25));
     border-color: #8dff7b;
-    box-shadow: 0 0 20px rgba(141, 255, 123, 0.3);
-    transform: translateY(-2px);
+    box-shadow: 0 0 30px rgba(141, 255, 123, 0.4);
+    transform: translateY(-3px) scale(1.02);
 }
 
 .age-btn-no {
@@ -3495,24 +3509,32 @@ body[data-theme="light"] .reboot-status {
 .age-btn-no:hover {
     background: linear-gradient(120deg, rgba(255, 100, 100, 0.3), rgba(255, 150, 100, 0.2));
     border-color: #ff9999;
-    box-shadow: 0 0 20px rgba(255, 100, 100, 0.3);
-    transform: translateY(-2px);
+    box-shadow: 0 0 30px rgba(255, 100, 100, 0.4);
+    transform: translateY(-3px) scale(1.02);
 }
 
 .age-btn-icon {
-    font-size: 18px;
+    font-size: clamp(20px, 3vh, 32px);
 }
 
 .age-verify-note {
-    font-size: 11px;
+    font-size: clamp(14px, 2vh, 20px);
     color: var(--muted);
-    opacity: 0.8;
+    opacity: 0.9;
+    margin: 0;
+    max-width: 80vw;
+}
+
+.age-verify-bypass {
+    font-size: clamp(12px, 1.5vh, 16px);
+    color: var(--muted);
+    opacity: 0.6;
+    margin-top: 1vh;
 }
 
 /* Light theme age verification */
 body[data-theme="light"] .age-verify-content {
-    background: #ffffff;
-    border-color: rgba(11, 18, 32, 0.15);
+    background: var(--panel);
 }
 
 body[data-theme="light"] .age-verify-title {
@@ -3527,7 +3549,7 @@ body[data-theme="light"] .age-btn-yes {
 
 body[data-theme="light"] .age-btn-yes:hover {
     background: linear-gradient(120deg, rgba(10, 166, 199, 0.25), rgba(59, 91, 255, 0.2));
-    box-shadow: 0 0 20px rgba(10, 166, 199, 0.2);
+    box-shadow: 0 0 30px rgba(10, 166, 199, 0.3);
 }
 
 body[data-theme="light"] .age-btn-no {
@@ -3538,7 +3560,51 @@ body[data-theme="light"] .age-btn-no {
 
 body[data-theme="light"] .age-btn-no:hover {
     background: linear-gradient(120deg, rgba(200, 50, 50, 0.2), rgba(200, 80, 50, 0.15));
-    box-shadow: 0 0 20px rgba(200, 50, 50, 0.15);
+    box-shadow: 0 0 30px rgba(200, 50, 50, 0.2);
+}
+
+/* Responsive adjustments for age verification */
+@media (max-aspect-ratio: 3/4) {
+    /* Portrait mode - stack buttons vertically */
+    .age-verify-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .age-btn {
+        width: 80vw;
+        max-width: 400px;
+    }
+}
+
+@media (max-height: 500px) {
+    /* Very short screens - reduce gaps */
+    .age-verify-content {
+        gap: 1vh;
+        padding: 1vh 4vw;
+    }
+    
+    .age-verify-icon {
+        font-size: clamp(40px, 8vh, 64px);
+        margin-bottom: 0.5vh;
+    }
+    
+    .age-verify-title {
+        font-size: clamp(20px, 5vh, 32px);
+    }
+    
+    .age-verify-message {
+        font-size: clamp(14px, 3vh, 20px);
+    }
+    
+    .age-verify-question {
+        font-size: clamp(18px, 4vh, 28px);
+    }
+    
+    .age-btn {
+        padding: 12px 24px;
+        font-size: clamp(14px, 3vh, 20px);
+    }
 }
 
 /* ===== WELCOME SCREEN ===== */

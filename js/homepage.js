@@ -1115,8 +1115,26 @@ window.addEventListener("storage", (event) => {
 // ===== NEW LOADING FLOW =====
 // Age verification → Loading screen (heavy) → Welcome → Homepage
 
+// Initialize theme early - before showing age verification
+// This ensures the age verification uses the correct theme (saved or system)
+function initThemeEarly() {
+  const stored = localStorage.getItem("homepageTheme");
+  if (stored) {
+    applyTheme(stored);
+    return;
+  }
+  // Check system preference
+  const prefersLight =
+    window.matchMedia &&
+    window.matchMedia("(prefers-color-scheme: light)").matches;
+  applyTheme(prefersLight ? "light" : "dark");
+}
+
 // Start the application - check age verification FIRST
 async function startApp() {
+  // Initialize theme FIRST so age verification has correct theme
+  initThemeEarly();
+  
   // Check age verification first
   if (!shouldSkipAgeVerify()) {
     // Show age verification immediately (no loading yet)
