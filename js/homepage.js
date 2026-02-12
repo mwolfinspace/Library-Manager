@@ -1878,18 +1878,6 @@ function initDragging() {
     }
   });
 
-  // Touch support
-  header.addEventListener("touchstart", (e) => {
-    if (e.touches.length === 1) {
-      isDragging = true;
-      startX = e.touches[0].clientX;
-      startY = e.touches[0].clientY;
-      const rect = settingsPanel.getBoundingClientRect();
-      startPanelX = rect.left;
-      startPanelY = rect.top;
-      settingsPanel.classList.add("dragging");
-    }
-  });
 
   document.addEventListener(
     "touchmove",
