@@ -16,6 +16,7 @@
     bookmark: ["b"],
     favorite: ["f"],
     blackout: ["space"],
+    goToGallery: ["2", "/"],
   },
   left: {
     prev: ["a"],
@@ -34,6 +35,7 @@
     bookmark: ["b"],
     favorite: ["f"],
     blackout: ["space"],
+    goToGallery: ["2", "/"],
   },
   right: {
     prev: ["j"],
@@ -52,6 +54,7 @@
     bookmark: ["b"],
     favorite: ["f"],
     blackout: ["space"],
+    goToGallery: ["2", "/"],
   },
 };
 
@@ -1155,90 +1158,59 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     const profile = KEY_PROFILES[settings.keyboardMode] || KEY_PROFILES.default;
 
-    // Group related bindings together - includes all customizable actions
-    const bindingGroups = [
-      {
-        category: "Image Navigation",
-        bindings: [
-          { action: "prev", label: "Prev image", keys: profile.prev },
-          { action: "next", label: "Next image", keys: profile.next },
-        ],
-      },
-      {
-        category: "Pan Image",
-        bindings: [
-          { action: "panUp", label: "Pan up", keys: ["w", "arrowup"] },
-          { action: "panDown", label: "Pan down", keys: ["s", "arrowdown"] },
-          { action: "panLeft", label: "Pan left", keys: ["a", "arrowleft"] },
-          { action: "panRight", label: "Pan right", keys: ["d", "arrowright"] },
-        ],
-      },
-      {
-        category: "Story Navigation",
-        bindings: [
-          { action: "prevStory", label: "Prev story", keys: ["ctrl+arrowleft", "pageup"] },
-          { action: "nextStory", label: "Next story", keys: ["ctrl+arrowright", "pagedown"] },
-          { action: "scrollUp", label: "Scroll up", keys: profile.scrollUp },
-          { action: "scrollDown", label: "Scroll down", keys: profile.scrollDown },
-        ],
-      },
-      {
-        category: "Zoom Controls",
-        bindings: [
-          { action: "zoomOut", label: "Zoom out", keys: profile.zoomOut },
-          { action: "zoomIn", label: "Zoom in", keys: profile.zoomIn },
-          { action: "fit", label: "Fit view", keys: profile.fit },
-        ],
-      },
-      {
-        category: "Text Adjustment",
-        bindings: [
-          { action: "fontDown", label: "Font size down", keys: profile.fontDown },
-          { action: "fontUp", label: "Font size up", keys: profile.fontUp },
-          { action: "lineDown", label: "Line spacing down", keys: profile.lineDown },
-          { action: "lineUp", label: "Line spacing up", keys: profile.lineUp },
-        ],
-      },
-      {
-        category: "Interface Actions",
-        bindings: [
-          { action: "favorite", label: "Favorite", keys: profile.favorite },
-          { action: "bookmark", label: "Pin Story", keys: profile.bookmark },
-          { action: "toggleTheme", label: "Toggle theme", keys: profile.toggleTheme },
-          { action: "toggleSettings", label: "Toggle settings", keys: profile.toggleSettings },
-          { action: "blackout", label: "Blackout screen", keys: profile.blackout },
-        ],
-      },
+    // All bindings sorted by category but rendered as tag-like pills
+    const allBindings = [
+      // Image Navigation
+      { action: "prev", label: "Previous image", keys: profile.prev, category: "nav" },
+      { action: "next", label: "Next image", keys: profile.next, category: "nav" },
+      // Pan Image
+      { action: "panUp", label: "Pan image up", keys: ["w", "arrowup"], category: "pan" },
+      { action: "panDown", label: "Pan image down", keys: ["s", "arrowdown"], category: "pan" },
+      { action: "panLeft", label: "Pan image left", keys: ["a", "arrowleft"], category: "pan" },
+      { action: "panRight", label: "Pan image right", keys: ["d", "arrowright"], category: "pan" },
+      // Story Navigation
+      { action: "prevStory", label: "Previous story", keys: ["ctrl+arrowleft", "pageup"], category: "story" },
+      { action: "nextStory", label: "Next story", keys: ["ctrl+arrowright", "pagedown"], category: "story" },
+      { action: "scrollUp", label: "Scroll story up", keys: profile.scrollUp, category: "story" },
+      { action: "scrollDown", label: "Scroll story down", keys: profile.scrollDown, category: "story" },
+      // Zoom Controls
+      { action: "zoomOut", label: "Zoom out", keys: profile.zoomOut, category: "zoom" },
+      { action: "zoomIn", label: "Zoom in", keys: profile.zoomIn, category: "zoom" },
+      { action: "fit", label: "Fit to view", keys: profile.fit, category: "zoom" },
+      // Text Adjustment
+      { action: "fontDown", label: "Decrease font size", keys: profile.fontDown, category: "text" },
+      { action: "fontUp", label: "Increase font size", keys: profile.fontUp, category: "text" },
+      { action: "lineDown", label: "Decrease line spacing", keys: profile.lineDown, category: "text" },
+      { action: "lineUp", label: "Increase line spacing", keys: profile.lineUp, category: "text" },
+      // Interface Actions
+      { action: "favorite", label: "Toggle favorite", keys: profile.favorite, category: "ui" },
+      { action: "bookmark", label: "Pin this story", keys: profile.bookmark, category: "ui" },
+      { action: "toggleTheme", label: "Toggle dark/light theme", keys: profile.toggleTheme, category: "ui" },
+      { action: "toggleSettings", label: "Open settings panel", keys: profile.toggleSettings, category: "ui" },
+      { action: "blackout", label: "Blackout screen mode", keys: profile.blackout, category: "ui" },
+      { action: "goToGallery", label: "Back to gallery", keys: profile.goToGallery, category: "ui" },
     ];
 
-    let content = '<div class="keybind-grid">';
+    let content = '<div class="keybind-tags-container">';
 
-    bindingGroups.forEach((group) => {
-      content += `<div class="keybind-group">`;
-      content += `<h4 class="keybind-group-title">${group.category}</h4>`;
-      content += `<div class="keybind-group-items">`;
+    allBindings.forEach((binding) => {
+      const currentKey = formatBinding(binding.action, binding.keys) || "—";
+      const active = bindingTarget === binding.action;
+      const activeClass = active ? " active" : "";
+      const activeLabel = active ? " press key..." : "";
 
-      group.bindings.forEach((binding) => {
-        const currentKey = formatBinding(binding.action, binding.keys) || "—";
-        const active = bindingTarget === binding.action;
-        const activeLabel = active ? " (press key)" : "";
-
-        content += `
-          <div class="keybind-row${active ? " active" : ""}" data-action="${binding.action}">
-            <span class="keybind-label">${binding.label}</span>
-            <span class="keybind-key">${currentKey}${activeLabel}</span>
-            <button type="button" class="keybind-assign-btn" data-bind="${binding.action}">Assign</button>
-          </div>
-        `;
-      });
-
-      content += `</div>`;
-      content += `</div>`;
+      content += `
+        <div class="keybind-tag${activeClass}" data-action="${binding.action}" data-category="${binding.category}">
+          <span class="keybind-tag-label">${binding.label}</span>
+          <span class="keybind-tag-key">${currentKey}${activeLabel}</span>
+          <button type="button" class="keybind-tag-assign" data-bind="${binding.action}" title="Click then press a key to assign">Assign</button>
+        </div>
+      `;
     });
 
     content += "</div>";
 
-    els.keybindList.innerHTML = `<div class="keybind-instructions">Click <strong>Assign</strong> then press a key. Backspace to clear.</div>${content}`;
+    els.keybindList.innerHTML = `<div class="keybind-instructions">Click <strong>Assign</strong> then press a key. <strong>Backspace</strong> to clear. <strong>Esc</strong> to cancel.</div>${content}`;
 
     els.keybindList.querySelectorAll("button[data-bind]").forEach((button) => {
       button.addEventListener("click", () => {
@@ -1368,6 +1340,22 @@ document.addEventListener("DOMContentLoaded", () => {
     if (keyMatches(profile.blackout, key, "blackout")) {
       event.preventDefault();
       toggleBlackout();
+      return;
+    }
+
+    if (keyMatches(profile.goToGallery, key, "goToGallery")) {
+      event.preventDefault();
+      // Navigate back to gallery/homepage
+      const params = new URLSearchParams(window.location.search);
+      const from = params.get("from");
+      if (from) {
+        const safe = from.replace(/[^a-zA-Z0-9._-]/g, "");
+        const backUrl = safe.startsWith("http") || safe.startsWith("/") ? safe : `../${safe}`;
+        const separator = backUrl.includes("?") ? "&" : "?";
+        window.location.href = `${backUrl}${separator}from=viewer`;
+      } else {
+        window.location.href = "../homepage.html?from=viewer";
+      }
       return;
     }
 
@@ -1794,17 +1782,8 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  if (els.settingsPanel) {
-    els.settingsPanel.addEventListener("click", (event) => {
-      // Don't close if we're currently resizing
-      if (els.settingsPanel.isResizing && els.settingsPanel.isResizing()) {
-        return;
-      }
-      if (event.target === els.settingsPanel) {
-        hideSettings();
-      }
-    });
-  }
+  // Note: Settings panel no longer closes on background click
+  // Users should use the X button or Escape key to close
 
   els.themeSelect.addEventListener("change", () => {
     settings.theme = els.themeSelect.value;

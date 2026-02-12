@@ -333,6 +333,12 @@ body.blackout-active .image-layer {
     letter-spacing: 0.05em;
 }
 
+/* Light mode: use darker ink color for better contrast */
+body[data-theme="light"] .eyebrow {
+    color: var(--ink);
+    opacity: 0.85;
+}
+
 .story-meta {
     margin: 0;
     color: var(--ink);
@@ -1304,14 +1310,40 @@ body[data-theme="light"] .search-example {
 }
 
 body[data-theme="light"] .search-query {
-    background: rgba(28, 139, 118, 0.15);
-    color: var(--accent-2);
+    background: rgba(240, 240, 240, 0.9);
+    color: var(--ink);
+    border: 1px solid rgba(11, 18, 32, 0.2);
 }
 
 body[data-theme="light"] .search-tip {
-    background: rgba(28, 139, 118, 0.08);
-    border-color: rgba(28, 139, 118, 0.2);
-    color: var(--accent-2);
+    background: rgba(240, 240, 240, 0.9);
+    border-color: rgba(11, 18, 32, 0.2);
+    color: var(--ink);
+}
+
+/* Help popup light mode fixes */
+body[data-theme="light"] .help-section h3 {
+    color: var(--ink);
+}
+
+body[data-theme="light"] .shortcut-category h4 {
+    color: var(--ink);
+    border-bottom-color: rgba(11, 18, 32, 0.2);
+}
+
+body[data-theme="light"] .shortcut-keys {
+    background: rgba(240, 240, 240, 0.9);
+    color: var(--ink);
+    border: 1px solid rgba(11, 18, 32, 0.2);
+}
+
+body[data-theme="light"] .help-footer {
+    color: var(--ink);
+    border-top-color: rgba(11, 18, 32, 0.2);
+}
+
+body[data-theme="light"] .help-header {
+    border-bottom-color: rgba(11, 18, 32, 0.2);
 }
 
 @media (max-width: 600px) {
@@ -1462,170 +1494,241 @@ body[data-theme="light"] .search-tip {
     background: var(--control-hover);
 }
 
-/* Keybind row layout for better spacing */
-.keybind-row > span:first-child {
+/* Keybind Tags Container - Flex wrap layout like tags */
+.keybind-tags-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+    width: 100%;
+    align-content: flex-start;
+}
+
+/* Individual Keybind Tag - Pill style */
+.keybind-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: var(--keybind-bg);
+    border: 1px solid var(--keybind-border);
+    transition: all 0.2s ease;
+    cursor: default;
+    flex: 0 0 auto;
+    max-width: 100%;
+}
+
+.keybind-tag:hover {
+    background: rgba(88, 242, 201, 0.1);
+    border-color: rgba(88, 242, 201, 0.4);
+    transform: translateY(-1px);
+}
+
+.keybind-tag.active {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(88, 242, 201, 0.3), 0 0 12px rgba(88, 242, 201, 0.2);
+    background: rgba(88, 242, 201, 0.15);
+    animation: keybind-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes keybind-pulse {
+    0%, 100% { box-shadow: 0 0 0 2px rgba(88, 242, 201, 0.3), 0 0 12px rgba(88, 242, 201, 0.2); }
+    50% { box-shadow: 0 0 0 3px rgba(88, 242, 201, 0.5), 0 0 18px rgba(88, 242, 201, 0.35); }
+}
+
+/* Keybind Label - Description text */
+.keybind-tag-label {
+    font-size: 12px;
+    color: var(--ink);
+    opacity: 0.9;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    min-width: 0;
+    max-width: 200px;
+    flex-shrink: 1;
 }
 
-/* New grouped keybindings layout */
-.keybind-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 12px;
-    margin-top: 12px;
-    width: 100%;
-}
-
-.keybind-group {
-    background: var(--keybind-bg);
-    border: 1px solid var(--keybind-border);
-    border-radius: 12px;
-    padding: 12px;
-}
-
-.keybind-group-title {
-    margin: 0 0 16px;
-    font-size: 13px;
+/* Keybind Key Pill - Shows current key */
+.keybind-tag-key {
+    font-size: 11px;
     color: var(--accent);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    font-weight: 600;
-    border-bottom: 1px solid var(--keybind-border);
-    padding-bottom: 10px;
+    font-family: "Share Tech Mono", monospace;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--keybind-key-bg);
+    border: 1px solid var(--keybind-border);
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
-.keybind-group-items {
-    display: grid;
-    gap: 8px;
-    padding-top: 4px;
+.keybind-tag.active .keybind-tag-key {
+    background: rgba(88, 242, 201, 0.25);
+    color: var(--ink);
+    border-color: var(--accent);
 }
 
+/* Assign Button */
+.keybind-tag-assign {
+    border: 1px solid var(--button-border);
+    background: transparent;
+    color: var(--button-ink);
+    border-radius: 999px;
+    padding: 2px 10px;
+    cursor: pointer;
+    font-size: 11px;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    font-family: inherit;
+}
+
+.keybind-tag-assign:hover {
+    background: var(--control-hover);
+    border-color: var(--accent);
+    transform: scale(1.05);
+}
+
+.keybind-tag.active .keybind-tag-assign {
+    background: var(--accent);
+    color: var(--bg);
+    border-color: var(--accent);
+}
+
+/* Instructions */
 .keybind-instructions {
     opacity: 0.8;
     margin-bottom: 12px;
     font-size: 12px;
     color: var(--muted);
+    line-height: 1.5;
 }
 
 .keybind-instructions strong {
     color: var(--accent);
 }
 
-/* Compact keybind row styling */
-.keybind-row {
-    display: grid;
-    grid-template-columns: 1fr auto auto;
-    gap: 8px;
-    align-items: center;
-    padding: 6px 8px;
-    border-radius: 8px;
-    background: rgba(8, 14, 24, 0.3);
-    transition: background 0.2s ease;
-    min-width: 0;
-}
-
-.keybind-row:hover {
-    background: rgba(88, 242, 201, 0.1);
-}
-
-.keybind-row.active {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 1px rgba(88, 242, 201, 0.3);
-    background: rgba(88, 242, 201, 0.08);
-}
-
-.keybind-label {
-    font-size: 12px;
+/* Light theme - better contrast for all text */
+body[data-theme="light"] .keybind-instructions strong {
     color: var(--ink);
-    opacity: 0.85;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font-weight: 600;
 }
 
-.keybind-assign-btn {
-    border: 1px solid var(--button-border);
-    background: transparent;
-    color: var(--button-ink);
-    border-radius: 999px;
-    padding: 3px 8px;
-    cursor: pointer;
-    font-size: 11px;
-    white-space: nowrap;
-    min-width: fit-content;
-    transition: all 0.2s ease;
+body[data-theme="light"] .keybind-instructions {
+    color: var(--ink);
+    opacity: 0.7;
 }
 
-.keybind-assign-btn:hover {
-    background: var(--control-hover);
-    transform: scale(1.05);
+/* Light theme adjustments - use dark ink color for readability */
+body[data-theme="light"] .keybind-tag {
+    background: var(--keybind-bg);
+    border-color: var(--keybind-border);
 }
 
-/* Responsive adjustments for keybindings */
+body[data-theme="light"] .keybind-tag:hover {
+    background: rgba(10, 166, 199, 0.1);
+    border-color: rgba(10, 166, 199, 0.4);
+}
+
+body[data-theme="light"] .keybind-tag.active {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(10, 166, 199, 0.3), 0 0 12px rgba(10, 166, 199, 0.2);
+    background: rgba(10, 166, 199, 0.15);
+}
+
+/* Key pill in light mode - use dark text for readability */
+body[data-theme="light"] .keybind-tag-key {
+    background: rgba(240, 240, 240, 0.9);
+    border-color: rgba(11, 18, 32, 0.3);
+    color: var(--ink);
+    font-weight: 600;
+}
+
+body[data-theme="light"] .keybind-tag.active .keybind-tag-key {
+    background: rgba(10, 166, 199, 0.25);
+    color: var(--ink);
+    border-color: var(--accent);
+}
+
+/* Assign button in light mode */
+body[data-theme="light"] .keybind-tag-assign {
+    border-color: rgba(11, 18, 32, 0.3);
+    color: var(--ink);
+}
+
+body[data-theme="light"] .keybind-tag-assign:hover {
+    background: rgba(10, 166, 199, 0.15);
+    border-color: var(--accent);
+    color: var(--ink);
+}
+
+body[data-theme="light"] .keybind-tag.active .keybind-tag-assign {
+    background: var(--accent);
+    color: var(--bg);
+    border-color: var(--accent);
+}
+
+/* Label text in light mode */
+body[data-theme="light"] .keybind-tag-label {
+    color: var(--ink);
+    opacity: 0.9;
+}
+
+/* Responsive adjustments for keybind tags */
 @media (max-width: 720px) {
-    .shortcuts-grid {
-        grid-template-columns: 1fr;
+    .keybind-tags-container {
+        gap: 6px;
     }
-
-    .keybind-grid {
-        grid-template-columns: 1fr;
+    
+    .keybind-tag {
+        padding: 5px 8px;
+        gap: 4px;
     }
-
-    .keybind-group,
-    .shortcut-category {
-        padding: 10px;
+    
+    .keybind-tag-label {
+        font-size: 11px;
+        max-width: 150px;
     }
-
-    .keybind-group-title,
-    .shortcut-category h4 {
-        font-size: 12px;
+    
+    .keybind-tag-key {
+        font-size: 10px;
+        padding: 2px 6px;
+    }
+    
+    .keybind-tag-assign {
+        font-size: 10px;
+        padding: 2px 8px;
     }
 }
 
-/* Wide screens (16:10, 16:9, etc.) - optimize horizontal space */
+/* Wide screens - more compact layout */
 @media (min-aspect-ratio: 16/10) {
-    .shortcuts-grid {
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    .keybind-tags-container {
         gap: 10px;
     }
-
-    .keybind-grid {
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 10px;
+    
+    .keybind-tag {
+        padding: 7px 12px;
     }
-
-    .settings-modal {
-        max-width: 85%;
+    
+    .keybind-tag-label {
+        max-width: 250px;
     }
 }
 
 /* Ultra-wide screens */
 @media (min-aspect-ratio: 21/9) {
-    .shortcuts-grid {
-        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    }
-
-    .keybind-grid {
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    }
-
-    .settings-modal {
-        max-width: 80%;
+    .keybind-tag-label {
+        max-width: 300px;
     }
 }
 
 /* Tall screens (portrait mode) */
 @media (max-aspect-ratio: 4/5) {
-    .shortcuts-grid,
-    .keybind-grid {
-        max-height: 50vh;
-    }
-
-    .settings-modal {
-        max-height: 85vh;
+    .keybind-tags-container {
+        max-height: 55vh;
+        overflow-y: auto;
+        padding-right: 4px;
     }
 }
 
@@ -1823,6 +1926,7 @@ body[data-theme="light"] .restore-fullscreen-btn:hover {
     flex-shrink: 0;
     background: rgba(98, 247, 255, 0.05);
     border-radius: 20px 20px 0 0;
+    margin-bottom: 0;
 }
 
 .draggable-panel.dragging .settings-header {
@@ -1865,6 +1969,7 @@ body[data-theme="light"] .restore-fullscreen-btn:hover {
     border-bottom: 1px solid var(--button-border);
     flex-shrink: 0;
     background: rgba(98, 247, 255, 0.03);
+    margin-top: 0;
 }
 
 .tab-btn {
@@ -2013,12 +2118,36 @@ body[data-theme="light"] .settings-header {
     background: rgba(10, 166, 199, 0.05);
 }
 
+body[data-theme="light"] .settings-header h3 {
+    color: var(--ink);
+}
+
 body[data-theme="light"] .settings-tabs {
     background: rgba(10, 166, 199, 0.03);
 }
 
+body[data-theme="light"] .tab-btn {
+    color: var(--muted);
+}
+
 body[data-theme="light"] .tab-btn:hover {
     background: rgba(10, 166, 199, 0.05);
+    color: var(--ink);
+}
+
+body[data-theme="light"] .tab-btn.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+}
+
+body[data-theme="light"] .settings-section h4 {
+    color: var(--ink);
+    border-bottom-color: rgba(11, 18, 32, 0.2);
+}
+
+body[data-theme="light"] .range-value {
+    color: var(--ink);
+    font-weight: 600;
 }
 
 /* Hide old settings overlay styles */
