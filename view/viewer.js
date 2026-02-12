@@ -864,6 +864,18 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // Update blackout resume text with current keybind
+  function updateBlackoutResumeText() {
+    const resumeKeyEl = document.getElementById('blackout-resume-key');
+    if (resumeKeyEl) {
+      const profile = KEY_PROFILES[settings.keyboardMode] || KEY_PROFILES.default;
+      const custom = settings.customBindings && settings.customBindings.blackout;
+      const blackoutKey = custom || (profile.blackout && profile.blackout[0]) || 'space';
+      const keyDisplay = blackoutKey === 'space' ? 'spacebar' : blackoutKey.toUpperCase();
+      resumeKeyEl.textContent = keyDisplay;
+    }
+  }
+
   function toggleBlackout() {
     if (!els.blackout) return;
     const willShow = els.blackout.hidden;
@@ -1916,6 +1928,7 @@ document.addEventListener("DOMContentLoaded", () => {
     syncThemeWithHomepage();
     
     applySettings();
+    updateBlackoutResumeText(); // Update blackout key text with current keybind
     buildCodeField();
     refreshHudMarks();
     initBlackoutSearch(); // Initialize blackout search functionality

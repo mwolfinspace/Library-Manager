@@ -784,6 +784,16 @@ function stopBlackoutTimer() {
   }
 }
 
+// Update blackout resume text with current keybind
+function updateBlackoutResumeText() {
+  const resumeKeyEl = document.getElementById('blackout-resume-key');
+  if (resumeKeyEl) {
+    const blackoutKey = KeybindManager.getKeyFor('blackout');
+    const keyDisplay = blackoutKey === ' ' ? 'spacebar' : blackoutKey.toUpperCase();
+    resumeKeyEl.textContent = keyDisplay;
+  }
+}
+
 function toggleBlackout() {
   if (!blackout) {
     return;
@@ -1365,6 +1375,8 @@ async function startLoadingScreen() {
         loader.overlay.style.opacity = "0";
         loader.overlay.addEventListener("transitionend", () => {
           if (loader.overlay) loader.overlay.hidden = true;
+          // Remove no-scroll class to restore scrolling on homepage
+          document.body.classList.remove("no-scroll");
           // Show the page content
           const page = document.querySelector(".page");
           if (page) page.hidden = false;
@@ -1553,6 +1565,7 @@ function performBlackoutSearch(query) {
   }
 }
 
+// Handle keyboard shortcuts - check blackout keybind first
 window.addEventListener("keydown", (event) => {
   // If search is focused, only handle Escape to unfocus
   if (isSearchFocused) {
@@ -1567,7 +1580,10 @@ window.addEventListener("keydown", (event) => {
   if (isEditableTarget(event.target)) {
     return;
   }
-  if (event.code === "Space" || event.key === " ") {
+
+  // Check if the pressed key matches the blackout keybind
+  const blackoutKey = KeybindManager.getKeyFor('blackout');
+  if (event.key.toLowerCase() === blackoutKey.toLowerCase()) {
     event.preventDefault();
     toggleBlackout();
   }
@@ -3898,8 +3914,9 @@ const KeybindManager = {
   setupResetButton() {
     const resetBtn = document.getElementById('reset-keybinds');
     if (resetBtn) {
-      resetBtn.addEventListener('click', () => {
-        if (confirm('Reset all keybinds to default?')) {
+      resetBtn.addEventListener('click', async () => {
+        const confirmed = await PopupSystem.confirm('Reset all keybinds to default?', 'Reset Keybinds');
+        if (confirmed) {
           this.resetToDefaults();
           KeyboardNavigation.showModeIndicator('🔄 Keybinds reset to default');
         }
@@ -3914,10 +3931,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   KeyboardNavigation.init();
   SettingsPanelKeyboardNav.init();
   HelpModalKeyboardNav.init();
+  
+  // Initialize database system FIRST (needed for keybinds)
+  await initDatabase();
+  
+  // Now initialize keybinds (database is ready)
   KeybindManager.init();
   
-  // Initialize database system
-  await initDatabase();
+  // Update blackout resume text with current keybind
+  updateBlackoutResumeText();
   
   // Initialize import/export functionality
   setupImportExport();
@@ -4135,8 +4157,9 @@ const SecretStats = {
     setupResetButton() {
         const resetBtn = document.getElementById('reset-stats');
         if (resetBtn) {
-            resetBtn.addEventListener('click', () => {
-                if (confirm('Reset all statistics? This cannot be undone.')) {
+            resetBtn.addEventListener('click', async () => {
+                const confirmed = await PopupSystem.confirm('Reset all statistics? This cannot be undone.', 'Reset Statistics');
+                if (confirmed) {
                     localStorage.removeItem('secretStats');
                     location.reload();
                 }
@@ -4283,6 +4306,174 @@ const SecretStats = {
 document.addEventListener('DOMContentLoaded', () => {
     // ... existing code ...
     SecretStats.init();
+});
+
+// ===== CUSTOM POPUP SYSTEM (Alert, Confirm, Prompt) =====
+// Replaces browser alert(), confirm(), prompt() with custom styled popups
+
+const PopupSystem = {
+    overlay: null,
+    modal: null,
+    resolveCallback: null,
+
+    init() {
+        // Create popup elements if they don't exist
+        if (!document.getElementById('custom-popup-overlay')) {
+            this.overlay = document.createElement('div');
+            this.overlay.id = 'custom-popup-overlay';
+            this.overlay.className = 'custom-popup-overlay';
+            this.overlay.hidden = true;
+            this.overlay.innerHTML = `
+                <div class="custom-popup-modal" id="custom-popup-modal">
+                    <div class="custom-popup-header" id="custom-popup-header">
+                        <span class="custom-popup-icon" id="custom-popup-icon">ℹ️</span>
+                        <h3 class="custom-popup-title" id="custom-popup-title">Confirm</h3>
+                    </div>
+                    <p class="custom-popup-message" id="custom-popup-message"></p>
+                    <input type="text" class="custom-popup-input" id="custom-popup-input" hidden>
+                    <div class="custom-popup-actions" id="custom-popup-actions"></div>
+                </div>
+            `;
+            document.body.appendChild(this.overlay);
+        }
+        this.overlay = document.getElementById('custom-popup-overlay');
+        this.modal = document.getElementById('custom-popup-modal');
+    },
+
+    show(options) {
+        return new Promise((resolve) => {
+            if (!this.overlay) this.init();
+
+            const {
+                title = 'Confirm',
+                message = '',
+                icon = 'ℹ️',
+                showInput = false,
+                inputPlaceholder = '',
+                inputValue = '',
+                buttons = [
+                    { text: 'Cancel', action: 'cancel', variant: 'secondary' },
+                    { text: 'OK', action: 'ok', variant: 'primary' }
+                ],
+                defaultAction = 'cancel',
+                escapeCloses = true
+            } = options;
+
+            // Set content
+            document.getElementById('custom-popup-icon').textContent = icon;
+            document.getElementById('custom-popup-title').textContent = title;
+            document.getElementById('custom-popup-message').textContent = message;
+
+            // Handle input
+            const input = document.getElementById('custom-popup-input');
+            if (showInput) {
+                input.hidden = false;
+                input.placeholder = inputPlaceholder;
+                input.value = inputValue;
+                input.focus();
+                setTimeout(() => input.select(), 10);
+            } else {
+                input.hidden = true;
+            }
+
+            // Create buttons
+            const actionsContainer = document.getElementById('custom-popup-actions');
+            actionsContainer.innerHTML = '';
+
+            buttons.forEach((btn, index) => {
+                const button = document.createElement('button');
+                button.className = `custom-popup-btn custom-popup-btn-${btn.variant || 'secondary'}`;
+                button.textContent = btn.text;
+                if (btn.action === defaultAction) {
+                    button.autofocus = true;
+                }
+                button.addEventListener('click', () => {
+                    const inputValue = showInput ? input.value : null;
+                    resolve({ action: btn.action, value: inputValue });
+                    this.hide();
+                });
+                actionsContainer.appendChild(button);
+            });
+
+            // Store resolve callback
+            this.resolveCallback = resolve;
+
+            // Show overlay
+            this.overlay.hidden = false;
+            document.body.classList.add('no-scroll');
+
+            // Focus default button after animation
+            setTimeout(() => {
+                const defaultBtn = actionsContainer.querySelector(`[autofocus]`) || actionsContainer.firstChild;
+                if (defaultBtn) defaultBtn.focus();
+            }, 50);
+
+            // Handle escape key
+            const escHandler = (e) => {
+                if (e.key === 'Escape' && escapeCloses) {
+                    document.removeEventListener('keydown', escHandler);
+                    if (this.resolveCallback) {
+                        resolve({ action: 'cancel', value: showInput ? input.value : null });
+                        this.hide();
+                    }
+                }
+            };
+            document.addEventListener('keydown', escHandler, { once: true });
+        });
+    },
+
+    hide() {
+        if (this.overlay) {
+            this.overlay.hidden = true;
+            document.body.classList.remove('no-scroll');
+            this.resolveCallback = null;
+        }
+    },
+
+    // Convenience methods
+    alert(message, title = 'Info') {
+        return this.show({
+            title,
+            message,
+            icon: 'ℹ️',
+            buttons: [{ text: 'OK', action: 'ok', variant: 'primary' }],
+            defaultAction: 'ok'
+        });
+    },
+
+    confirm(message, title = 'Confirm') {
+        return this.show({
+            title,
+            message,
+            icon: '⚠️',
+            buttons: [
+                { text: 'Cancel', action: 'cancel', variant: 'secondary' },
+                { text: 'OK', action: 'ok', variant: 'primary' }
+            ],
+            defaultAction: 'cancel'
+        }).then(result => result.action === 'ok');
+    },
+
+    prompt(message, defaultValue = '', title = 'Input', placeholder = '') {
+        return this.show({
+            title,
+            message,
+            icon: '💬',
+            showInput: true,
+            inputPlaceholder: placeholder,
+            inputValue: defaultValue,
+            buttons: [
+                { text: 'Cancel', action: 'cancel', variant: 'secondary' },
+                { text: 'OK', action: 'ok', variant: 'primary' }
+            ],
+            defaultAction: 'cancel'
+        }).then(result => result.action === 'ok' ? result.value : null);
+    }
+};
+
+// Initialize popup system on DOM ready
+document.addEventListener('DOMContentLoaded', () => {
+    PopupSystem.init();
 });
 
 // ===== LOCALSTORAGE EXPORT/IMPORT SYSTEM =====
