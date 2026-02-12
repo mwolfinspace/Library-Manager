@@ -2010,3 +2010,338 @@ function saveCurrentColorsAsDefaults() {
     }
   }
 })();
+
+// ===== KEYBOARD NAVIGATION SYSTEM =====
+
+const KeyboardNavigation = {
+  // Navigation state
+  mode: 'cards', // 'cards' or 'controls'
+  focusedCardIndex: -1,
+  focusedControlIndex: -1,
+  isSearchFocused: false,
+  cards: [],
+  controls: [],
+  
+  // Control elements order (for shift+nav)
+  controlSelectors: [
+    '#search-input',
+    '.filter-btn[data-filter="all"]',
+    '.filter-btn[data-filter="favorites"]',
+    '.filter-btn[data-filter="bookmarks"]',
+    '.layout-btn[data-layout="grid"]',
+    '.layout-btn[data-layout="list"]',
+    '.layout-btn[data-layout="compact"]',
+    '.layout-btn[data-layout="spotlight"]',
+    '.sort-btn[data-sort="default"]',
+    '.sort-btn[data-sort="title"]',
+    '.sort-btn[data-sort="recent"]',
+    '.sort-btn[data-sort="priority"]',
+    '#theme-toggle',
+    '#settings-btn',
+    '#help-btn'
+  ],
+
+  init() {
+    this.updateElements();
+    this.setupEventListeners();
+    this.createModeIndicator();
+  },
+
+  updateElements() {
+    // Get all visible story cards
+    this.cards = Array.from(document.querySelectorAll('.story-card'));
+    
+    // Get all control elements that exist
+    this.controls = this.controlSelectors
+      .map(selector => document.querySelector(selector))
+      .filter(el => el && el.offsetParent !== null); // Only visible elements
+  },
+
+  createModeIndicator() {
+    const indicator = document.createElement('div');
+    indicator.className = 'keyboard-mode-indicator';
+    indicator.id = 'keyboard-mode-indicator';
+    indicator.innerHTML = '🎮 Keyboard Nav Active';
+    document.body.appendChild(indicator);
+  },
+
+  showModeIndicator(text, isActive = false) {
+    const indicator = document.getElementById('keyboard-mode-indicator');
+    if (indicator) {
+      indicator.textContent = text;
+      indicator.classList.add('visible');
+      if (isActive) {
+        indicator.classList.add('active-nav');
+      } else {
+        indicator.classList.remove('active-nav');
+      }
+      
+      // Hide after 2 seconds
+      clearTimeout(this.indicatorTimeout);
+      this.indicatorTimeout = setTimeout(() => {
+        indicator.classList.remove('visible');
+        indicator.classList.remove('active-nav');
+      }, 2000);
+    }
+  },
+
+  setupEventListeners() {
+    document.addEventListener('keydown', (e) => this.handleKeydown(e));
+    
+    // Update elements when grid changes
+    const observer = new MutationObserver(() => {
+      this.updateElements();
+    });
+    observer.observe(document.getElementById('story-grid'), { childList: true, subtree: true });
+  },
+
+  handleKeydown(event) {
+    // Don't handle if in editable field (except search which we handle specially)
+    if (this.isEditableTarget(event.target) && event.target.id !== 'search-input') {
+      return;
+    }
+
+    // Handle search box special case
+    if (this.isSearchFocused) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        this.unfocusSearch();
+        return;
+      }
+      // Allow normal typing in search
+      return;
+    }
+
+    // Handle settings panel open
+    if (settingsPanel && !settingsPanel.hidden) {
+      if (event.key === 'Escape') {
+        closeSettings();
+        return;
+      }
+      return; // Don't process other keys when settings is open
+    }
+
+    // Handle help modal open
+    if (helpModal && helpModal.classList.contains('is-open')) {
+      if (event.key === 'Escape') {
+        closeHelpModal();
+        return;
+      }
+      return; // Don't process other keys when help is open
+    }
+
+    const key = event.key.toLowerCase();
+    const isShift = event.shiftKey;
+    
+    // Check for navigation keys
+    const isNavKey = ['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd'].includes(key);
+    
+    if (!isNavKey && key !== 'enter') return;
+
+    // Shift + Nav = Control navigation mode
+    if (isShift && isNavKey) {
+      event.preventDefault();
+      this.setMode('controls');
+      this.navigateControls(key);
+      return;
+    }
+
+    // Normal Nav = Card navigation mode
+    if (isNavKey) {
+      event.preventDefault();
+      this.setMode('cards');
+      this.navigateCards(key);
+      return;
+    }
+
+    // Enter key handling
+    if (key === 'enter') {
+      event.preventDefault();
+      this.handleEnter();
+      return;
+    }
+  },
+
+  setMode(mode) {
+    if (this.mode !== mode) {
+      this.mode = mode;
+      this.clearFocus();
+      
+      if (mode === 'cards') {
+        this.showModeIndicator('🎴 Card Navigation', true);
+        document.body.classList.add('keyboard-nav-active');
+      } else {
+        this.showModeIndicator('⚙️ Control Navigation', true);
+        document.body.classList.remove('keyboard-nav-active');
+      }
+    }
+  },
+
+  navigateCards(key) {
+    this.updateElements();
+    
+    if (this.cards.length === 0) return;
+
+    const grid = document.getElementById('story-grid');
+    const layout = grid?.dataset.layout || 'grid';
+    
+    // Get grid dimensions
+    const computedStyle = window.getComputedStyle(grid);
+    const columns = layout === 'list' ? 1 : 
+                    layout === 'grid' ? parseInt(computedStyle.gridTemplateColumns.split(' ').length) || 4 :
+                    layout === 'compact' ? Math.floor(grid.offsetWidth / 280) || 2 :
+                    layout === 'spotlight' ? Math.floor(grid.offsetWidth / 340) || 1 : 4;
+
+    let newIndex = this.focusedCardIndex;
+
+    if (newIndex === -1) {
+      // Start at first card
+      newIndex = 0;
+    } else {
+      switch (key) {
+        case 'arrowright':
+        case 'd':
+          newIndex = Math.min(this.focusedCardIndex + 1, this.cards.length - 1);
+          break;
+        case 'arrowleft':
+        case 'a':
+          newIndex = Math.max(this.focusedCardIndex - 1, 0);
+          break;
+        case 'arrowdown':
+        case 's':
+          newIndex = Math.min(this.focusedCardIndex + columns, this.cards.length - 1);
+          break;
+        case 'arrowup':
+        case 'w':
+          newIndex = Math.max(this.focusedCardIndex - columns, 0);
+          break;
+      }
+    }
+
+    this.focusCard(newIndex);
+  },
+
+  navigateControls(key) {
+    this.updateElements();
+    
+    if (this.controls.length === 0) return;
+
+    let newIndex = this.focusedControlIndex;
+
+    if (newIndex === -1) {
+      // Start at first control
+      newIndex = 0;
+    } else {
+      switch (key) {
+        case 'arrowright':
+        case 'd':
+          newIndex = Math.min(this.focusedControlIndex + 1, this.controls.length - 1);
+          break;
+        case 'arrowleft':
+        case 'a':
+          newIndex = Math.max(this.focusedControlIndex - 1, 0);
+          break;
+        case 'arrowdown':
+        case 's':
+          // Jump to next group
+          newIndex = Math.min(this.focusedControlIndex + 3, this.controls.length - 1);
+          break;
+        case 'arrowup':
+        case 'w':
+          // Jump to previous group
+          newIndex = Math.max(this.focusedControlIndex - 3, 0);
+          break;
+      }
+    }
+
+    this.focusControl(newIndex);
+  },
+
+  focusCard(index) {
+    // Remove previous focus
+    this.cards.forEach(card => card.classList.remove('keyboard-focused'));
+    
+    this.focusedCardIndex = index;
+    const card = this.cards[index];
+    
+    if (card) {
+      card.classList.add('keyboard-focused');
+      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  },
+
+  focusControl(index) {
+    // Remove previous focus
+    this.controls.forEach(control => control.classList.remove('keyboard-focused'));
+    
+    this.focusedControlIndex = index;
+    const control = this.controls[index];
+    
+    if (control) {
+      control.classList.add('keyboard-focused');
+      control.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  },
+
+  clearFocus() {
+    this.cards.forEach(card => card.classList.remove('keyboard-focused'));
+    this.controls.forEach(control => control.classList.remove('keyboard-focused'));
+    this.focusedCardIndex = -1;
+    this.focusedControlIndex = -1;
+  },
+
+  handleEnter() {
+    if (this.mode === 'cards' && this.focusedCardIndex >= 0) {
+      const card = this.cards[this.focusedCardIndex];
+      if (card) {
+        // Navigate to the story
+        window.location.href = card.href;
+      }
+    } else if (this.mode === 'controls' && this.focusedControlIndex >= 0) {
+      const control = this.controls[this.focusedControlIndex];
+      if (control) {
+        // Special handling for search input
+        if (control.id === 'search-input') {
+          this.focusSearch();
+        } else {
+          // Click the control
+          control.click();
+        }
+      }
+    } else if (this.mode === 'cards' && this.focusedCardIndex === -1) {
+      // If no card focused, focus the first one
+      this.navigateCards('arrowdown');
+    }
+  },
+
+  focusSearch() {
+    const searchInput = document.getElementById('search-input');
+    if (searchInput) {
+      this.isSearchFocused = true;
+      searchInput.focus();
+      searchInput.select();
+      this.showModeIndicator('⌨️ Search Mode - ESC to exit');
+    }
+  },
+
+  unfocusSearch() {
+    const searchInput = document.getElementById('search-input');
+    if (searchInput) {
+      this.isSearchFocused = false;
+      searchInput.blur();
+      this.showModeIndicator('🎴 Card Navigation');
+    }
+  },
+
+  isEditableTarget(target) {
+    if (!target) return false;
+    if (target.isContentEditable) return true;
+    const tag = target.tagName;
+    return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+  }
+};
+
+// Initialize keyboard navigation when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+  KeyboardNavigation.init();
+});

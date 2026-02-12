@@ -2525,3 +2525,160 @@ body[data-theme="light"] .settings-content::-webkit-scrollbar-thumb:hover {
         scrollbar-color: #1c8b76 rgba(28, 139, 118, 0.08);
     }
 }
+
+/* ===== KEYBOARD NAVIGATION HIGHLIGHT STYLES ===== */
+
+/* Card highlight glow - works in both light and dark mode */
+.story-card.keyboard-focused {
+    outline: none;
+    box-shadow:
+        0 0 0 3px var(--accent),
+        0 0 20px var(--accent),
+        0 0 40px var(--accent-2),
+        0 24px 40px var(--shadow);
+    transform: translateY(-4px);
+    z-index: 10;
+}
+
+.story-card.keyboard-focused::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 20px;
+    border: 2px solid var(--accent);
+    box-shadow: inset 0 0 20px rgba(98, 247, 255, 0.3);
+    z-index: 2;
+    pointer-events: none;
+}
+
+/* Top control elements highlight */
+.search-box input.keyboard-focused,
+.filter-btn.keyboard-focused,
+.layout-btn.keyboard-focused,
+.sort-btn.keyboard-focused,
+.theme-toggle.keyboard-focused,
+.help-btn.keyboard-focused,
+#settings-btn.keyboard-focused {
+    outline: none;
+    box-shadow:
+        0 0 0 3px var(--accent),
+        0 0 15px var(--accent),
+        0 0 30px var(--accent-2);
+    transform: translateY(-2px);
+    z-index: 100;
+}
+
+/* Special highlight for search input when focused via keyboard */
+.search-box input.keyboard-focused {
+    background: var(--panel);
+    border-color: var(--accent);
+}
+
+/* Active state indicator for keyboard navigation */
+.keyboard-nav-active .story-card::after {
+    opacity: 0.3;
+}
+
+/* ===== SHORTCUT HELP PILL DESIGN ===== */
+
+.shortcuts-pill-section {
+    margin-bottom: 24px;
+}
+
+.shortcuts-pill-section h3 {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    color: var(--accent-2);
+    font-family: "Orbitron", "Share Tech Mono", monospace;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+}
+
+body[data-theme="light"] .shortcuts-pill-section h3 {
+    color: #0066cc;
+}
+
+.shortcuts-pill-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.shortcut-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: var(--btn);
+    border: 1px solid var(--btn-border);
+    border-radius: 999px;
+    font-size: 12px;
+    transition: all 0.2s ease;
+}
+
+.shortcut-pill:hover {
+    border-color: var(--accent);
+    box-shadow: 0 0 8px rgba(98, 247, 255, 0.2);
+}
+
+.shortcut-pill-key {
+    font-family: "Orbitron", "Share Tech Mono", monospace;
+    font-size: 11px;
+    padding: 2px 8px;
+    background: var(--accent);
+    color: #041017;
+    border-radius: 999px;
+    font-weight: bold;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+}
+
+.shortcut-pill-desc {
+    color: var(--ink);
+    white-space: nowrap;
+}
+
+body[data-theme="light"] .shortcut-pill-desc {
+    color: #0b1220;
+}
+
+/* Category headers for shortcuts */
+.shortcuts-category {
+    margin-bottom: 20px;
+}
+
+.shortcuts-category h4 {
+    margin: 0 0 10px 0;
+    font-size: 12px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    border-bottom: 1px solid var(--btn-border);
+    padding-bottom: 6px;
+}
+
+/* Keyboard mode indicator */
+.keyboard-mode-indicator {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 8px 16px;
+    background: var(--panel);
+    border: 1px solid var(--btn-border);
+    border-radius: 999px;
+    font-size: 11px;
+    color: var(--accent);
+    z-index: 100;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.keyboard-mode-indicator.visible {
+    opacity: 1;
+}
+
+.keyboard-mode-indicator.active-nav {
+    border-color: var(--accent);
+    box-shadow: 0 0 15px rgba(98, 247, 255, 0.4);
+}
