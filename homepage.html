@@ -175,7 +175,24 @@
         <div id="blackout" class="blackout" hidden>
             <div class="blackout-content" aria-live="polite">
                 <div class="blackout-binary" id="blackout-time">00:00:00</div>
-                <div class="blackout-text">Press spacebar again to resume</div>
+                <div class="blackout-search-container">
+                    <input
+                        type="text"
+                        id="blackout-search-input"
+                        class="blackout-search-input"
+                        placeholder="Search Google..."
+                        autocomplete="off"
+                    />
+                    <button
+                        type="button"
+                        id="blackout-search-btn"
+                        class="blackout-search-btn"
+                        aria-label="Search"
+                    >
+                        🔍
+                    </button>
+                </div>
+                <div class="blackout-text" id="blackout-resume-text">Press spacebar again to resume</div>
             </div>
         </div>
 

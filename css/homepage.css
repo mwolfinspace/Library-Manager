@@ -784,6 +784,105 @@ body[data-theme="light"] .blackout-text {
     color: #333333;
 }
 
+/* Blackout Search Box Styles */
+.blackout-search-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 20px 0;
+    padding: 8px;
+    background: rgba(10, 16, 28, 0.7);
+    border: 1px solid rgba(98, 247, 255, 0.4);
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px rgba(98, 247, 255, 0.15);
+    transition: all 0.3s ease;
+}
+
+body[data-theme="light"] .blackout-search-container {
+    background: rgba(255, 255, 255, 0.85);
+    border-color: rgba(10, 166, 199, 0.4);
+    box-shadow: 0 4px 20px rgba(10, 166, 199, 0.15);
+}
+
+.blackout-search-container:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 4px 24px rgba(98, 247, 255, 0.3);
+}
+
+body[data-theme="light"] .blackout-search-container:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 4px 24px rgba(10, 166, 199, 0.25);
+}
+
+.blackout-search-input {
+    flex: 1;
+    padding: 10px 14px;
+    border: none;
+    background: transparent;
+    color: var(--ink);
+    font-family: "Share Tech Mono", "Consolas", monospace;
+    font-size: 14px;
+    letter-spacing: 0.05em;
+    outline: none;
+    min-width: 200px;
+}
+
+body[data-theme="light"] .blackout-search-input {
+    color: #0b1220;
+}
+
+.blackout-search-input::placeholder {
+    color: var(--muted);
+    opacity: 0.7;
+}
+
+body[data-theme="light"] .blackout-search-input::placeholder {
+    color: rgba(11, 18, 32, 0.5);
+}
+
+.blackout-search-btn {
+    padding: 8px 14px;
+    border: 1px solid rgba(98, 247, 255, 0.4);
+    background: linear-gradient(120deg, rgba(98, 247, 255, 0.2), rgba(141, 255, 123, 0.15));
+    color: var(--accent);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+body[data-theme="light"] .blackout-search-btn {
+    border-color: rgba(10, 166, 199, 0.4);
+    background: linear-gradient(120deg, rgba(10, 166, 199, 0.15), rgba(59, 91, 255, 0.1));
+    color: var(--accent);
+}
+
+.blackout-search-btn:hover {
+    background: linear-gradient(120deg, rgba(98, 247, 255, 0.35), rgba(141, 255, 123, 0.25));
+    border-color: var(--accent);
+    box-shadow: 0 0 12px rgba(98, 247, 255, 0.3);
+    transform: translateY(-1px);
+}
+
+body[data-theme="light"] .blackout-search-btn:hover {
+    background: linear-gradient(120deg, rgba(10, 166, 199, 0.25), rgba(59, 91, 255, 0.2));
+    box-shadow: 0 0 12px rgba(10, 166, 199, 0.2);
+}
+
+.blackout-search-btn:active {
+    transform: translateY(0);
+}
+
+/* Hide resume text when search is focused */
+.blackout-search-container:focus-within + .blackout-text {
+    opacity: 0.3;
+    pointer-events: none;
+}
+
 .modal-backdrop {
     position: fixed;
     inset: 0;

@@ -1175,7 +1175,71 @@ window.addEventListener("keydown", (event) => {
   }
 });
 
+// Blackout search functionality
+let isSearchFocused = false;
+
+function initBlackoutSearch() {
+  const searchInput = document.getElementById("blackout-search-input");
+  const searchBtn = document.getElementById("blackout-search-btn");
+  const blackoutDiv = document.getElementById("blackout");
+
+  if (!searchInput || !searchBtn || !blackoutDiv) return;
+
+  // Handle search button click
+  searchBtn.addEventListener("click", () => {
+    performBlackoutSearch(searchInput.value);
+  });
+
+  // Handle Enter key in search input
+  searchInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      performBlackoutSearch(searchInput.value);
+    }
+  });
+
+  // Track focus state
+  searchInput.addEventListener("focus", () => {
+    isSearchFocused = true;
+  });
+
+  searchInput.addEventListener("blur", () => {
+    isSearchFocused = false;
+  });
+
+  // Click outside search container to unfocus
+  blackoutDiv.addEventListener("click", (event) => {
+    if (!event.target.closest(".blackout-search-container")) {
+      searchInput.blur();
+    }
+  });
+}
+
+function performBlackoutSearch(query) {
+  if (!query || !query.trim()) return;
+
+  const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query.trim())}`;
+  window.open(searchUrl, "_blank");
+
+  // Clear the search input after opening
+  const searchInput = document.getElementById("blackout-search-input");
+  if (searchInput) {
+    searchInput.value = "";
+    searchInput.blur();
+  }
+}
+
 window.addEventListener("keydown", (event) => {
+  // If search is focused, only handle Escape to unfocus
+  if (isSearchFocused) {
+    if (event.key === "Escape") {
+      const searchInput = document.getElementById("blackout-search-input");
+      if (searchInput) searchInput.blur();
+    }
+    // Allow all other keys including spacebar for typing
+    return;
+  }
+
   if (isEditableTarget(event.target)) {
     return;
   }
@@ -1183,6 +1247,11 @@ window.addEventListener("keydown", (event) => {
     event.preventDefault();
     toggleBlackout();
   }
+});
+
+// Initialize blackout search on DOM ready
+document.addEventListener("DOMContentLoaded", () => {
+  initBlackoutSearch();
 });
 
 window.addEventListener("mousemove", handleCursorMove);

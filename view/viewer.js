@@ -1114,7 +1114,71 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Blackout search functionality
+  let isBlackoutSearchFocused = false;
+
+  function initBlackoutSearch() {
+    const searchInput = document.getElementById("blackout-search-input");
+    const searchBtn = document.getElementById("blackout-search-btn");
+    const blackoutDiv = document.getElementById("blackout");
+
+    if (!searchInput || !searchBtn || !blackoutDiv) return;
+
+    // Handle search button click
+    searchBtn.addEventListener("click", () => {
+      performBlackoutSearch(searchInput.value);
+    });
+
+    // Handle Enter key in search input
+    searchInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        performBlackoutSearch(searchInput.value);
+      }
+    });
+
+    // Track focus state
+    searchInput.addEventListener("focus", () => {
+      isBlackoutSearchFocused = true;
+    });
+
+    searchInput.addEventListener("blur", () => {
+      isBlackoutSearchFocused = false;
+    });
+
+    // Click outside search container to unfocus
+    blackoutDiv.addEventListener("click", (event) => {
+      if (!event.target.closest(".blackout-search-container")) {
+        searchInput.blur();
+      }
+    });
+  }
+
+  function performBlackoutSearch(query) {
+    if (!query || !query.trim()) return;
+
+    const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query.trim())}`;
+    window.open(searchUrl, "_blank");
+
+    // Clear the search input after opening
+    const searchInput = document.getElementById("blackout-search-input");
+    if (searchInput) {
+      searchInput.value = "";
+      searchInput.blur();
+    }
+  }
+
   function handleKeydown(event) {
+    // Handle blackout search focus state first
+    if (isBlackoutSearchFocused) {
+      if (event.key === "Escape") {
+        const searchInput = document.getElementById("blackout-search-input");
+        if (searchInput) searchInput.blur();
+      }
+      // Allow all other keys including spacebar for typing
+      return;
+    }
+
     if (els.settingsOverlay && !els.settingsOverlay.hidden) {
       if (bindingTarget) {
         event.preventDefault();
@@ -1730,6 +1794,7 @@ document.addEventListener("DOMContentLoaded", () => {
     applySettings();
     buildCodeField();
     refreshHudMarks();
+    initBlackoutSearch(); // Initialize blackout search functionality
 
     if (!storyId) {
       showCorrupted("Missing story id.");
