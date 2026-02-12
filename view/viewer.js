@@ -1327,6 +1327,7 @@ document.addEventListener("DOMContentLoaded", () => {
         saveSettings();
         bindingTarget = null;
         renderKeybindList();
+        updateBlackoutResumeText(); // Update blackout resume text with new keybind
         return;
       }
 

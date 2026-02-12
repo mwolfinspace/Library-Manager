@@ -3891,6 +3891,7 @@ const KeybindManager = {
       const key = e.key.toLowerCase();
       this.setKeybind(action, key);
       this.cancelBinding();
+      updateBlackoutResumeText(); // Update blackout resume text with new keybind
       
       KeyboardNavigation.showModeIndicator(`✅ Bound "${key}" to "${this.defaultKeybinds[action]?.label}"`);
     };
