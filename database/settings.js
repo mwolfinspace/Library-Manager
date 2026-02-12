@@ -1,10 +1,10 @@
-// ===== COMPREHENSIVE FILE-BASED DATABASE SETTINGS SYSTEM =====
-// ALL settings saved directly to file - no localStorage dependency!
-// Works across ALL browsers (Chrome, Firefox, Brave, etc.)
-// Just export before switching browsers, import after switching!
+// ===== LOCALSTORAGE-BASED SETTINGS SYSTEM =====
+// ALL settings saved to localStorage - no file access needed!
+// Works across all browsers without CORS issues
 
 window.DATABASE_SETTINGS = {
   version: "1.0.0",
+  STORAGE_KEY: 'xedryk_database',
   
   // Default settings structure
   defaults: {
@@ -108,27 +108,27 @@ window.DATABASE_SETTINGS = {
   // Current database state (in memory only)
   db: null,
   
-  // Initialize database - load from file
+  // Initialize database - load from localStorage
   async init() {
     try {
-      // Try to load from file first
-      try {
-        const response = await fetch('database/settings.json');
-        if (response.ok) {
-          const fileData = await response.json();
-          if (this.validateStructure(fileData)) {
-            this.db = fileData;
-            console.log('Database loaded from file');
+      // Try to load from localStorage first
+      const savedData = localStorage.getItem(this.STORAGE_KEY);
+      if (savedData) {
+        try {
+          const parsed = JSON.parse(savedData);
+          if (this.validateStructure(parsed)) {
+            this.db = parsed;
+            console.log('Database loaded from localStorage');
             return;
           }
+        } catch (e) {
+          console.log('Corrupted localStorage data, using defaults');
         }
-      } catch (e) {
-        console.log('No settings file found, using defaults');
       }
       
       // Use defaults
       this.db = this.createDefaultDatabase();
-      this.saveToFile();
+      this.saveToStorage();
       console.log('Database initialized with defaults');
     } catch (error) {
       console.error('Error initializing database:', error);
@@ -156,15 +156,17 @@ window.DATABASE_SETTINGS = {
     return true;
   },
   
-  // Save database to file (using download trick since browsers don't allow writing to files)
-  saveToFile() {
-    // For this to work, we need to download the file
-    // But since we can't write to disk from browser, we need a different approach
-    // The user must export manually via the Export button
-    console.log('Settings updated in memory. Use Export button to save to file.');
+  // Save database to localStorage
+  saveToStorage() {
+    if (!this.db) return;
+    try {
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.db));
+    } catch (e) {
+      console.error('Error saving to localStorage:', e);
+    }
   },
   
-  // Export database as JSON file (this is how user saves to file)
+  // Export database as JSON file
   downloadExport() {
     const exportData = {
       ...this.db,
@@ -177,14 +179,14 @@ window.DATABASE_SETTINGS = {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `xedryk-archive-settings-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `xedryk-backup-${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   },
   
-  // Import from JSON string (this is how user loads from file)
+  // Import from JSON string
   import(jsonString, merge = true) {
     try {
       const imported = JSON.parse(jsonString);
@@ -194,11 +196,12 @@ window.DATABASE_SETTINGS = {
       }
       
       if (merge) {
-        this.db = this.deepMerge(this.db, imported);
+        this.db = this.deepMerge(this.db || this.createDefaultDatabase(), imported);
       } else {
         this.db = imported;
       }
       
+      this.saveToStorage();
       return { success: true };
     } catch (error) {
       console.error('Import error:', error);
@@ -222,6 +225,7 @@ window.DATABASE_SETTINGS = {
   // Reset to defaults
   reset() {
     this.db = this.createDefaultDatabase();
+    this.saveToStorage();
   },
   
   // ===== SETTINGS ACCESSORS =====
@@ -234,6 +238,7 @@ window.DATABASE_SETTINGS = {
     if (!this.db) return;
     this.db.settings = { ...this.db.settings, ...settings };
     this.db.lastUpdated = new Date().toISOString();
+    this.saveToStorage();
   },
   
   getColors(theme) {
@@ -245,6 +250,7 @@ window.DATABASE_SETTINGS = {
     if (!this.db.colors) this.db.colors = {};
     this.db.colors[theme] = { ...this.db.colors[theme], ...colors };
     this.db.lastUpdated = new Date().toISOString();
+    this.saveToStorage();
   },
   
   getData() {
@@ -255,6 +261,7 @@ window.DATABASE_SETTINGS = {
     if (!this.db) return;
     this.db.data = { ...this.db.data, ...data };
     this.db.lastUpdated = new Date().toISOString();
+    this.saveToStorage();
   },
   
   getViewerSettings() {
@@ -265,6 +272,7 @@ window.DATABASE_SETTINGS = {
     if (!this.db) return;
     this.db.viewerSettings = { ...this.db.viewerSettings, ...settings };
     this.db.lastUpdated = new Date().toISOString();
+    this.saveToStorage();
   },
   
   // Convenience methods for common data
@@ -278,6 +286,7 @@ window.DATABASE_SETTINGS = {
     if (!this.db.data.favorites.includes(id)) {
       this.db.data.favorites.push(id);
       this.db.lastUpdated = new Date().toISOString();
+      this.saveToStorage();
     }
   },
   
@@ -286,6 +295,7 @@ window.DATABASE_SETTINGS = {
     if (this.db.data.favorites) {
       this.db.data.favorites = this.db.data.favorites.filter(f => f !== id);
       this.db.lastUpdated = new Date().toISOString();
+      this.saveToStorage();
     }
   },
   
@@ -304,6 +314,7 @@ window.DATABASE_SETTINGS = {
     if (!this.db.data.pinned.includes(id)) {
       this.db.data.pinned.push(id);
       this.db.lastUpdated = new Date().toISOString();
+      this.saveToStorage();
     }
   },
   
@@ -312,6 +323,7 @@ window.DATABASE_SETTINGS = {
     if (this.db.data.pinned) {
       this.db.data.pinned = this.db.data.pinned.filter(p => p !== id);
       this.db.lastUpdated = new Date().toISOString();
+      this.saveToStorage();
     }
   },
   
@@ -329,6 +341,7 @@ window.DATABASE_SETTINGS = {
     if (!this.db.data.bookmarks) this.db.data.bookmarks = {};
     this.db.data.bookmarks[id] = payload;
     this.db.lastUpdated = new Date().toISOString();
+    this.saveToStorage();
   },
   
   removeBookmark(id) {
@@ -336,6 +349,7 @@ window.DATABASE_SETTINGS = {
     if (this.db.data.bookmarks) {
       delete this.db.data.bookmarks[id];
       this.db.lastUpdated = new Date().toISOString();
+      this.saveToStorage();
     }
   },
   

@@ -39,10 +39,42 @@
 
         <!-- Global inline handlers for age verification -->
         <script>
+            // Check age verification immediately on page load
+            // This must run before any other scripts to prevent popup flash
+            (function() {
+                var overlay = document.getElementById('age-verify-overlay');
+                if (!overlay) return;
+                
+                // Check both sessionStorage (current session) and the skip preference
+                var ageVerified = sessionStorage.getItem('ageVerified') === 'true';
+                var skipPref = false;
+                
+                try {
+                    var prefsRaw = localStorage.getItem('skipPreferences');
+                    if (prefsRaw) {
+                        var prefs = JSON.parse(prefsRaw);
+                        skipPref = prefs && prefs.skipAgeVerify === true;
+                    }
+                } catch(e) {}
+                
+                // If already verified or skip preference is on, hide overlay immediately
+                if (ageVerified || skipPref) {
+                    overlay.style.display = 'none';
+                    overlay.setAttribute('data-age-verify', 'false');
+                    console.log('Age verify skipped (session verified: ' + ageVerified + ', pref: ' + skipPref + ')');
+                } else {
+                    console.log('Age verify required - showing overlay');
+                }
+            })();
+            
             // Global handlers for age verification buttons
             window.handleAgeYes = function(e) {
                 if (e) e.preventDefault();
                 console.log('Age Yes clicked (inline handler)');
+                
+                // Save age verified state in sessionStorage (persists until F5/tab close)
+                sessionStorage.setItem('ageVerified', 'true');
+                
                 var overlay = document.getElementById('age-verify-overlay');
                 if (overlay) {
                     overlay.style.display = 'none';
@@ -51,10 +83,6 @@
                 // Start loading - call the global function
                 if (typeof window.startAgeVerifiedLoading === 'function') {
                     window.startAgeVerifiedLoading();
-                } else {
-                    // Fallback: reload page with bypass flag
-                    localStorage.setItem('ageVerifyBypass', Date.now().toString());
-                    location.reload();
                 }
             };
             
@@ -302,12 +330,12 @@
                 </button>
                 <button
                     class="tab-btn"
-                    data-tab="input"
+                    data-tab="data"
                     type="button"
                     role="tab"
                     aria-selected="false"
                 >
-                    🖱️ Input
+                    💾 Data
                 </button>
                 <button
                     class="tab-btn"
@@ -414,10 +442,10 @@
                     </div>
                 </div>
 
-                <!-- Input Tab -->
+                <!-- Data Tab -->
                 <div
                     class="tab-panel"
-                    data-tab-panel="input"
+                    data-tab-panel="data"
                     role="tabpanel"
                     hidden
                 >
@@ -480,6 +508,51 @@
                             </div>
                             <p id="db-import-status" style="font-size: 11px; color: var(--muted); margin-top: 12px;"></p>
                         </div>
+
+                        <!-- Reset Data Section -->
+                        <div class="settings-section" style="margin-top: 24px; border-top: 1px solid rgba(98, 247, 255, 0.1); padding-top: 20px;">
+                            <h4 style="margin-bottom: 12px; color: var(--accent);">🗑️ Reset Data</h4>
+                            <p class="settings-description" style="font-size: 12px; color: var(--muted); margin-bottom: 16px;">
+                                ⚠️ These actions cannot be undone. Use with caution.
+                            </p>
+                            <div class="reset-grid">
+                                <div class="reset-item">
+                                    <button type="button" class="reset-btn" data-reset="pin-favorite">
+                                        <span class="reset-btn-icon">⭐📌</span>
+                                        <span class="reset-btn-text">Reset Pin + Favorite</span>
+                                    </button>
+                                    <div class="reset-desc">Remove all pinned and favorited stories. Recent timestamps remain intact.</div>
+                                </div>
+                                <div class="reset-item">
+                                    <button type="button" class="reset-btn" data-reset="pin">
+                                        <span class="reset-btn-icon">📌</span>
+                                        <span class="reset-btn-text">Reset Pin Only</span>
+                                    </button>
+                                    <div class="reset-desc">Remove all pinned stories only. Favorites and timestamps preserved.</div>
+                                </div>
+                                <div class="reset-item">
+                                    <button type="button" class="reset-btn" data-reset="favorite">
+                                        <span class="reset-btn-icon">⭐</span>
+                                        <span class="reset-btn-text">Reset Favorite Only</span>
+                                    </button>
+                                    <div class="reset-desc">Remove all favorited stories only. Pins and timestamps preserved.</div>
+                                </div>
+                                <div class="reset-item">
+                                    <button type="button" class="reset-btn reset-btn-danger" data-reset="reading">
+                                        <span class="reset-btn-icon">📖</span>
+                                        <span class="reset-btn-text">Reset Reading Status</span>
+                                    </button>
+                                    <div class="reset-desc">Remove all pins, favorites, and timestamps. All posts become new/unread.</div>
+                                </div>
+                                <div class="reset-item">
+                                    <button type="button" class="reset-btn reset-btn-danger" data-reset="settings">
+                                        <span class="reset-btn-icon">⚙️</span>
+                                        <span class="reset-btn-text">Reset All Settings</span>
+                                    </button>
+                                    <div class="reset-desc">Reset colors, fonts, sizes, and all per-report settings to default.</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -536,130 +609,107 @@
                     >
                         🎮 OPERATIONS
                     </button>
+                    <button class="modal-tab" data-tab="secret" type="button">
+                        🤫 SECRET
+                    </button>
                     <button class="modal-tab" data-tab="about" type="button">
-                        🐉 CREATOR MATRIX
+                        🐉 CREATOR
                     </button>
                 </div>
 
                 <div class="modal-body" id="help-body">
+                    <!-- SECRET Statistics Tab -->
+                    <div class="modal-tab-content secret-tab" data-content="secret">
+                        <div class="secret-header-row">
+                            <span class="secret-icon-sm">🤫</span>
+                            <span class="secret-title-text">Secret Stats</span>
+                            <span class="secret-version">v1.0</span>
+                            <button type="button" id="reset-stats" class="stats-reset-btn-inline" title="Reset all secret stats">🗑️</button>
+                        </div>
+
+                        <!-- Stats Grid - Compact with tooltips -->
+                        <div class="stats-grid-inline" id="stats-grid">
+                            <div class="stat-inline" title="Total time on archive">
+                                <span class="stat-inline-icon">⏱️</span>
+                                <span class="stat-inline-value" id="stat-total-time">--:--:--</span>
+                            </div>
+                            <div class="stat-inline" title="Days since first visit">
+                                <span class="stat-inline-icon">📅</span>
+                                <span class="stat-inline-value" id="stat-days-since">0d</span>
+                            </div>
+                            <div class="stat-inline" title="Total mouse clicks">
+                                <span class="stat-inline-icon">🖱️</span>
+                                <span class="stat-inline-value" id="stat-total-clicks">0</span>
+                            </div>
+                            <div class="stat-inline" title="Keyboard presses">
+                                <span class="stat-inline-icon">⌨️</span>
+                                <span class="stat-inline-value" id="stat-keypresses">0</span>
+                            </div>
+                            <div class="stat-inline" title="Reports opened">
+                                <span class="stat-inline-icon">📖</span>
+                                <span class="stat-inline-value" id="stat-reports-opened">0</span>
+                            </div>
+                            <div class="stat-inline" title="Pins/Unpins">
+                                <span class="stat-inline-icon">⭐</span>
+                                <span class="stat-inline-value" id="stat-pins">0</span>
+                            </div>
+                            <div class="stat-inline" title="Searches performed">
+                                <span class="stat-inline-icon">🔍</span>
+                                <span class="stat-inline-value" id="stat-searches">0</span>
+                            </div>
+                            <div class="stat-inline" title="Dark mode uses">
+                                <span class="stat-inline-icon">🌙</span>
+                                <span class="stat-inline-value" id="stat-dark-uses">0</span>
+                            </div>
+                        </div>
+
+                        <!-- Quick Pills Inline with tooltips -->
+                        <div class="quick-pills-inline">
+                            <div class="pill-inline" title="Fastest click recorded">
+                                <span class="pill-inline-icon">🚀</span>
+                                <span class="pill-inline-value" id="stat-fastest-click">--ms</span>
+                            </div>
+                            <div class="pill-inline" title="Longest session duration">
+                                <span class="pill-inline-icon">💤</span>
+                                <span class="pill-inline-value" id="stat-longest-session">--</span>
+                            </div>
+                            <div class="pill-inline" title="Click accuracy rate">
+                                <span class="pill-inline-icon">🎯</span>
+                                <span class="pill-inline-value" id="stat-accuracy">--%</span>
+                            </div>
+                            <div class="pill-inline" title="Current streak (days)">
+                                <span class="pill-inline-icon">🔥</span>
+                                <span class="pill-inline-value" id="stat-streak">0d</span>
+                            </div>
+                        </div>
+
+                        <!-- Top Reports -->
+                        <div class="top-section-inline">
+                            <h3 class="top-title-inline">🏆 Top Reports</h3>
+                            <div class="top-list-inline" id="top-reports">
+                                <div class="top-empty-inline">No data yet...</div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="modal-tab-content active" data-content="help">
                         <!-- Keyboard Shortcuts Section - Pill Design -->
                         <div class="help-section">
                             <h3>🎮 Keyboard Navigation</h3>
                             
-                            <!-- Direct Shortcuts -->
-                            <div class="shortcuts-category">
-                                <h4>⚡ Direct Shortcuts (No Mode Switch!)</h4>
-                                <div class="shortcuts-pill-grid">
-                                    <div class="shortcut-pill">
-                                        <span class="shortcut-pill-key">1</span>
-                                        <span class="shortcut-pill-desc">Grid layout</span>
-                                    </div>
-                                    <div class="shortcut-pill">
-                                        <span class="shortcut-pill-key">2</span>
-                                        <span class="shortcut-pill-desc">List layout</span>
-                                    </div>
-                                    <div class="shortcut-pill">
-                                        <span class="shortcut-pill-key">3</span>
-                                        <span class="shortcut-pill-desc">Compact layout</span>
-                                    </div>
-                                    <div class="shortcut-pill">
-                                        <span class="shortcut-pill-key">4</span>
-                                        <span class="shortcut-pill-desc">Spotlight layout</span>
-                                    </div>
-                                    <div class="shortcut-pill">
-                                        <span class="shortcut-pill-key">A</span>
-                                        <span class="shortcut-pill-desc">All stories</span>
-                                    </div>
-                                    <div class="shortcut-pill">
-                                        <span class="shortcut-pill-key">F</span>
-                                        <span class="shortcut-pill-desc">Favorites</span>
-                                    </div>
-                                    <div class="shortcut-pill">
-                                        <span class="shortcut-pill-key">B</span>
-                                        <span class="shortcut-pill-desc">Bookmarks/Pinned</span>
-                                    </div>
-                                    <div class="shortcut-pill">
-                                        <span class="shortcut-pill-key">D</span>
-                                        <span class="shortcut-pill-desc">Sort: Default</span>
-                                    </div>
-                                    <div class="shortcut-pill">
-                                        <span class="shortcut-pill-key">T</span>
-                                        <span class="shortcut-pill-desc">Sort: Title</span>
-                                    </div>
-                                    <div class="shortcut-pill">
-                                        <span class="shortcut-pill-key">R</span>
-                                        <span class="shortcut-pill-desc">Sort: Recent</span>
-                                    </div>
-                                    <div class="shortcut-pill">
-                                        <span class="shortcut-pill-key">P</span>
-                                        <span class="shortcut-pill-desc">Sort: Priority</span>
-                                    </div>
-                                    <div class="shortcut-pill">
-                                        <span class="shortcut-pill-key">Q</span>
-                                        <span class="shortcut-pill-desc">Pin/Unpin card</span>
-                                    </div>
-                                    <div class="shortcut-pill">
-                                        <span class="shortcut-pill-key">E</span>
-                                        <span class="shortcut-pill-desc">Favorite card</span>
-                                    </div>
-                                    <div class="shortcut-pill">
-                                        <span class="shortcut-pill-key">S</span>
-                                        <span class="shortcut-pill-desc">Open Settings</span>
-                                    </div>
-                                    <div class="shortcut-pill">
-                                        <span class="shortcut-pill-key">H</span>
-                                        <span class="shortcut-pill-desc">Open Help</span>
-                                    </div>
-                                    <div class="shortcut-pill">
-                                        <span class="shortcut-pill-key">L</span>
-                                        <span class="shortcut-pill-desc">Toggle Light/Dark</span>
-                                    </div>
-                                </div>
+                            <!-- Direct Shortcuts - Dynamically Rendered -->
+                            <div class="shortcuts-category" id="help-direct-shortcuts">
+                                <!-- Rendered by JavaScript -->
                             </div>
 
-                            <div class="shortcuts-category">
-                                <h4>🎴 Card Navigation (WASD / Arrow Keys)</h4>
-                                <div class="shortcuts-pill-grid">
-                                    <div class="shortcut-pill">
-                                        <span class="shortcut-pill-key">W / ↑</span>
-                                        <span class="shortcut-pill-desc">Move up</span>
-                                    </div>
-                                    <div class="shortcut-pill">
-                                        <span class="shortcut-pill-key">S / ↓</span>
-                                        <span class="shortcut-pill-desc">Move down</span>
-                                    </div>
-                                    <div class="shortcut-pill">
-                                        <span class="shortcut-pill-key">A / ←</span>
-                                        <span class="shortcut-pill-desc">Move left</span>
-                                    </div>
-                                    <div class="shortcut-pill">
-                                        <span class="shortcut-pill-key">D / →</span>
-                                        <span class="shortcut-pill-desc">Move right</span>
-                                    </div>
-                                    <div class="shortcut-pill">
-                                        <span class="shortcut-pill-key">ENTER</span>
-                                        <span class="shortcut-pill-desc">Open card</span>
-                                    </div>
-                                </div>
+                            <!-- Card Navigation - Dynamically Rendered -->
+                            <div class="shortcuts-category" id="help-card-nav">
+                                <!-- Rendered by JavaScript -->
                             </div>
 
-                            <div class="shortcuts-category">
-                                <h4>⚙️ Control Navigation (Shift + WASD / Arrows)</h4>
-                                <div class="shortcuts-pill-grid">
-                                    <div class="shortcut-pill">
-                                        <span class="shortcut-pill-key">Shift + W/S</span>
-                                        <span class="shortcut-pill-desc">Navigate control groups</span>
-                                    </div>
-                                    <div class="shortcut-pill">
-                                        <span class="shortcut-pill-key">Shift + A/D</span>
-                                        <span class="shortcut-pill-desc">Navigate within group</span>
-                                    </div>
-                                    <div class="shortcut-pill">
-                                        <span class="shortcut-pill-key">ENTER</span>
-                                        <span class="shortcut-pill-desc">Activate control</span>
-                                    </div>
-                                </div>
+                            <!-- Control Navigation - Dynamically Rendered -->
+                            <div class="shortcuts-category" id="help-control-nav">
+                                <!-- Rendered by JavaScript -->
                             </div>
 
                             <div class="shortcuts-category">
@@ -788,63 +838,21 @@
                         <div class="help-section">
                             <h3>🔧 Features</h3>
                             <ul class="advanced-list">
-                                <li><strong>🔞 Age Verification:</strong> 18+ age check on first visit. Can be disabled in Settings → Input tab.</li>
-                                <li><strong>👋 Welcome Screen:</strong> Guide for new users showing help button and search bar. Can be disabled in Settings → Input tab.</li>
+                                <li><strong>🔞 Age Verification:</strong> 18+ age check on first visit. Can be disabled in Settings → Data tab.</li>
+                                <li><strong>👋 Welcome Screen:</strong> Guide for new users showing help button and search bar. Can be disabled in Settings → Data tab.</li>
                                 <li><strong>📌 Pin System:</strong> Pin reports for quick access. Pinned items get priority sorting.</li>
                                 <li><strong>🔖 Bookmarks:</strong> Auto-saves reading position. Resume where you left off.</li>
                                 <li><strong>⭐ Favorites:</strong> Star reports for filtering and top priority.</li>
+                                <li><strong>💾 Backup & Restore:</strong> Export all settings, favorites, pins, bookmarks, and theme colors. Import on another device to restore.</li>
                                 <li><strong>🔍 Real-time Search:</strong> Instant filtering with tag support.</li>
                                 <li><strong>📐 Responsive:</strong> Auto-adjusts layout for any screen size.</li>
-                                <li><strong>⚙️ Settings Panel:</strong> Draggable panel with Font, Color, Input, and Shortcuts tabs.</li>
+                                <li><strong>⚙️ Settings Panel:</strong> Draggable panel with Font, Color, Data, and Shortcuts tabs.</li>
                                 <li><strong>🎨 Customization:</strong> Full control over fonts, colors, and keyboard shortcuts.</li>
-                                <li><strong>🗑️ Reset Options:</strong> Multiple reset levels from pins/favorites to complete fresh start.</li>
+                                <li><strong>🗑️ Reset Options:</strong> Multiple reset levels from pins/favorites to complete fresh start (see Settings → Data tab).</li>
                             </ul>
                             <p style="font-size: 11px; color: var(--muted); margin-top: 12px; padding: 8px; background: rgba(98, 247, 255, 0.05); border-radius: 8px;">
                                 💡 <strong>Tip:</strong> Use "Reset All Settings" when preparing the archive for a new user. This will clear all preferences and show age verification + welcome screen on next load.
                             </p>
-                        </div>
-
-                        <!-- Reset Data Section -->
-                        <div class="help-section">
-                            <h3>🗑️ Reset Data</h3>
-                            <p style="font-size: 12px; color: var(--muted); margin-bottom: 12px;">⚠️ These actions cannot be undone. Use with caution.</p>
-                            <div class="reset-grid">
-                                <div class="reset-item">
-                                    <button type="button" class="reset-btn" data-reset="pin-favorite">
-                                        <span class="reset-btn-icon">⭐📌</span>
-                                        <span class="reset-btn-text">Reset Pin + Favorite</span>
-                                    </button>
-                                    <div class="reset-desc">Remove all pinned and favorited stories. Recent timestamps remain intact.</div>
-                                </div>
-                                <div class="reset-item">
-                                    <button type="button" class="reset-btn" data-reset="pin">
-                                        <span class="reset-btn-icon">📌</span>
-                                        <span class="reset-btn-text">Reset Pin Only</span>
-                                    </button>
-                                    <div class="reset-desc">Remove all pinned stories only. Favorites and timestamps preserved.</div>
-                                </div>
-                                <div class="reset-item">
-                                    <button type="button" class="reset-btn" data-reset="favorite">
-                                        <span class="reset-btn-icon">⭐</span>
-                                        <span class="reset-btn-text">Reset Favorite Only</span>
-                                    </button>
-                                    <div class="reset-desc">Remove all favorited stories only. Pins and timestamps preserved.</div>
-                                </div>
-                                <div class="reset-item">
-                                    <button type="button" class="reset-btn reset-btn-danger" data-reset="reading">
-                                        <span class="reset-btn-icon">📖</span>
-                                        <span class="reset-btn-text">Reset Reading Status</span>
-                                    </button>
-                                    <div class="reset-desc">Remove all pins, favorites, and timestamps. All posts become new/unread.</div>
-                                </div>
-                                <div class="reset-item">
-                                    <button type="button" class="reset-btn reset-btn-danger" data-reset="settings">
-                                        <span class="reset-btn-icon">⚙️</span>
-                                        <span class="reset-btn-text">Reset All Settings</span>
-                                    </button>
-                                    <div class="reset-desc">Reset colors, fonts, sizes, and all per-report settings to default.</div>
-                                </div>
-                            </div>
                         </div>
                     </div>
 
@@ -855,7 +863,7 @@
                                     🐉 Xedryk The Dragon
                                 </h2>
                                 <p class="about-subtitle">
-                                    Multidimensional Creator Matrix
+                                    A dark dragon travels between worlds.
                                 </p>
                             </div>
 
@@ -1071,12 +1079,6 @@
                             <strong>Settings</strong> - Customize fonts, colors, and keyboard shortcuts
                         </div>
                     </div>
-                </div>
-                <div class="welcome-checkbox">
-                    <label class="welcome-checkbox-label">
-                        <input type="checkbox" id="welcome-skip-checkbox">
-                        <span class="welcome-checkbox-text">Don't show this welcome screen again</span>
-                    </label>
                 </div>
                 <button type="button" id="welcome-ok" class="welcome-ok-btn">
                     <span>Got it! Let's explore</span>

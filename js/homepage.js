@@ -791,6 +791,7 @@ function toggleBlackout() {
   const willShow = blackout.hidden;
   blackout.hidden = !willShow;
   document.body.classList.toggle("blackout-active", willShow);
+  document.body.classList.toggle("no-scroll", willShow);
 
   if (willShow) {
     startBlackoutTimer();
@@ -1214,6 +1215,8 @@ window.startAgeVerifiedLoading = function() {
 
 function handleYesClick() {
   console.log('Yes button clicked');
+  // Save age verified state in sessionStorage (persists until F5/tab close)
+  sessionStorage.setItem('ageVerified', 'true');
   const overlay = document.getElementById('age-verify-overlay');
   if (overlay) {
     overlay.style.display = 'none';
@@ -1229,6 +1232,9 @@ function handleNoClick() {
 
 // Start the loading screen and load all heavy resources
 async function startLoadingScreen() {
+  // Hide scrollbar during loading
+  document.body.classList.add("no-scroll");
+  
   const loader = {
     overlay: document.getElementById("loader-overlay"),
     progressBar: document.getElementById("progress-bar"),
@@ -1391,12 +1397,27 @@ async function init() {
       modalTabContents.forEach((c) => c.classList.remove("active"));
 
       tab.classList.add("active");
+      
+      // Fix scrollbar flickering - temporarily fix modal body height
+      const modalBody = document.getElementById('help-body');
+      if (modalBody) {
+        const currentHeight = modalBody.clientHeight;
+        modalBody.style.height = currentHeight + 'px';
+      }
+      
       const content = document.querySelector(
         `#help-modal .modal-tab-content[data-content="${tab.dataset.tab}"]`,
       );
       if (content) {
         content.classList.add("active");
       }
+      
+      // Restore auto height after content renders
+      requestAnimationFrame(() => {
+        if (modalBody) {
+          modalBody.style.height = '';
+        }
+      });
     });
   });
 }
@@ -1439,6 +1460,11 @@ if (helpBtn) {
       aboutTab.classList.remove("active");
       helpContent.classList.add("active");
       aboutContent.classList.remove("active");
+    }
+
+    // Render dynamic keyboard shortcuts in help modal
+    if (typeof KeybindManager !== 'undefined' && KeybindManager.renderHelpShortcuts) {
+      KeybindManager.renderHelpShortcuts();
     }
   });
 }
@@ -2240,6 +2266,11 @@ function saveSkipPreferences(prefs) {
 }
 
 function shouldSkipAgeVerify() {
+  // Check if user clicked "Yes" in this session (persists through back button navigation)
+  if (sessionStorage.getItem('ageVerified') === 'true') {
+    return true;
+  }
+  // Otherwise, check the skip preference toggle
   return loadSkipPreferences().skipAgeVerify;
 }
 
@@ -2259,32 +2290,44 @@ function showWelcomeScreen() {
   
   overlay.hidden = false;
   
-  // Handle OK button
+  // Handle OK button - saves to sessionStorage (like age verify)
+  // This means welcome shows once per session, not permanently
   const okBtn = document.getElementById('welcome-ok');
-  const skipCheckbox = document.getElementById('welcome-skip-checkbox');
   
   if (okBtn) {
     okBtn.onclick = () => {
-      // Save skip preference if checkbox is checked
-      if (skipCheckbox && skipCheckbox.checked) {
-        const prefs = loadSkipPreferences();
-        prefs.skipWelcome = true;
-        saveSkipPreferences(prefs);
-      }
+      // Save welcome seen state in sessionStorage (persists until F5/tab close)
+      sessionStorage.setItem('welcomeSeen', 'true');
       overlay.hidden = true;
     };
   }
 }
 
+function shouldShowWelcome() {
+  // Check if welcome was already shown in this session
+  const welcomeSeen = sessionStorage.getItem('welcomeSeen') === 'true';
+  // Only show if not already seen this session
+  return !welcomeSeen;
+}
+
 // Initialize startup screens
 function initStartupScreens() {
-  // Only show welcome screen (age verification is shown at startup, not here)
-  // The age verification skip preference is controlled by the Settings toggle
-  // - Default (toggle unchecked): show age verify on every reload
-  // - Toggle checked: skip age verification permanently
+  // Show welcome screen once per session (like age verification)
+  // Use sessionStorage so it shows again after F5
   
-  if (!shouldSkipWelcome()) {
-    showWelcomeScreen();
+  if (shouldShowWelcome()) {
+    // Wait for stories to load before showing welcome screen
+    // This ensures Top Reports has data
+    const checkAndShowWelcome = () => {
+      if (stories && stories.length > 0) {
+        // Stories are loaded, safe to show welcome screen
+        showWelcomeScreen();
+      } else {
+        // Stories not loaded yet, wait a bit and try again
+        setTimeout(checkAndShowWelcome, 50);
+      }
+    };
+    checkAndShowWelcome();
   }
 }
 
@@ -2553,6 +2596,9 @@ function showNotification(message) {
 // ===== SYSTEM REBOOT SCREEN =====
 
 function showRebootScreen(resetType) {
+  // Hide scrollbar during reboot
+  document.body.classList.add("no-scroll");
+  
   // Create reboot overlay
   const rebootOverlay = document.createElement('div');
   rebootOverlay.id = 'reboot-overlay';
@@ -2878,57 +2924,77 @@ const KeyboardNavigation = {
       return;
     }
     
-    // Layout shortcuts: 1=grid, 2=list, 3=compact, 4=spotlight
-    if (['1', '2', '3', '4'].includes(key)) {
+    // Layout shortcuts using custom keybinds
+    if (key === this.getKeyForAction('layoutGrid')) {
       event.preventDefault();
-      const layouts = { '1': 'grid', '2': 'list', '3': 'compact', '4': 'spotlight' };
-      applyLayout(layouts[key]);
+      applyLayout('grid');
       saveFilterState();
-      this.showModeIndicator(`📐 ${layouts[key].charAt(0).toUpperCase() + layouts[key].slice(1)} Layout`);
+      this.showModeIndicator('📐 Grid Layout');
+      return;
+    }
+    if (key === this.getKeyForAction('layoutList')) {
+      event.preventDefault();
+      applyLayout('list');
+      saveFilterState();
+      this.showModeIndicator('📐 List Layout');
+      return;
+    }
+    if (key === this.getKeyForAction('layoutCompact')) {
+      event.preventDefault();
+      applyLayout('compact');
+      saveFilterState();
+      this.showModeIndicator('📐 Compact Layout');
+      return;
+    }
+    if (key === this.getKeyForAction('layoutSpotlight')) {
+      event.preventDefault();
+      applyLayout('spotlight');
+      saveFilterState();
+      this.showModeIndicator('📐 Spotlight Layout');
       return;
     }
     
-    // Filter shortcuts: A=all, F=favorites, B=bookmarks
-    if (key === 'a' && !isShift) {
+    // Filter shortcuts using custom keybinds
+    if (key === this.getKeyForAction('filterAll')) {
       event.preventDefault();
       this.activateFilter('all');
       return;
     }
-    if (key === 'f' && !isShift) {
+    if (key === this.getKeyForAction('filterFavorites')) {
       event.preventDefault();
       this.activateFilter('favorites');
       return;
     }
-    if (key === 'b' && !isShift) {
+    if (key === this.getKeyForAction('filterBookmarks')) {
       event.preventDefault();
       this.activateFilter('bookmarks');
       return;
     }
     
-    // Sort shortcuts: D=default, T=title, R=recent, P=priority
-    if (key === 'd' && !isShift) {
+    // Sort shortcuts using custom keybinds
+    if (key === this.getKeyForAction('sortDefault')) {
       event.preventDefault();
       this.activateSort('default');
       return;
     }
-    if (key === 't' && !isShift) {
+    if (key === this.getKeyForAction('sortTitle')) {
       event.preventDefault();
       this.activateSort('title');
       return;
     }
-    if (key === 'r' && !isShift) {
+    if (key === this.getKeyForAction('sortRecent')) {
       event.preventDefault();
       this.activateSort('recent');
       return;
     }
-    if (key === 'p' && !isShift) {
+    if (key === this.getKeyForAction('sortPriority')) {
       event.preventDefault();
       this.activateSort('priority');
       return;
     }
     
-    // Settings: S key
-    if (key === 's' && !isShift) {
+    // Settings panel using custom keybind
+    if (key === this.getKeyForAction('settingsTab')) {
       event.preventDefault();
       openSettings();
       initSettingsTabs();
@@ -2939,16 +3005,16 @@ const KeyboardNavigation = {
       return;
     }
     
-    // Help: H key
-    if (key === 'h' && !isShift) {
+    // Help modal using custom keybind
+    if (key === this.getKeyForAction('helpTab')) {
       event.preventDefault();
       if (helpBtn) helpBtn.click();
       this.showModeIndicator('❓ Help Opened');
       return;
     }
     
-    // Theme toggle: L key
-    if (key === 'l' && !isShift) {
+    // Theme toggle using custom keybind
+    if (key === this.getKeyForAction('toggleTheme')) {
       event.preventDefault();
       const next = document.body.dataset.theme === 'light' ? 'dark' : 'light';
       applyTheme(next);
@@ -2956,23 +3022,34 @@ const KeyboardNavigation = {
       return;
     }
     
+    // Focus search using custom keybind
+    if (key === this.getKeyForAction('focusSearch')) {
+      event.preventDefault();
+      this.focusSearch();
+      return;
+    }
+    
     // ===== END DIRECT SHORTCUTS =====
     
-    // Check for navigation keys
-    const isNavKey = ['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd'].includes(key);
+    // Check for WASD navigation keys
+    const isWasdKey = ['w', 'a', 's', 'd'].includes(key);
     
-    if (!isNavKey && key !== 'enter') return;
+    // Check for arrow keys (also for card navigation)
+    const isArrowKey = ['arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key);
+    
+    // If not a navigation key and not Enter, exit
+    if (!isWasdKey && !isArrowKey && key !== 'enter') return;
 
-    // Shift + Nav = Control navigation mode
-    if (isShift && isNavKey) {
+    // Shift + any nav key = Control navigation mode
+    if (isShift && (isWasdKey || isArrowKey)) {
       event.preventDefault();
       this.setMode('controls');
       this.navigateControls(key);
       return;
     }
 
-    // Normal Nav = Card navigation mode
-    if (isNavKey) {
+    // WASD or Arrow keys = Card navigation mode (no Shift needed)
+    if (isWasdKey || isArrowKey) {
       event.preventDefault();
       this.setMode('cards');
       this.navigateCards(key);
@@ -3513,24 +3590,49 @@ const HelpModalKeyboardNav = {
 
 const KeybindManager = {
   bindingTarget: null,
+  keybindListener: null,
   
-  // Default keybinds
+  // Default keybinds - All homepage keyboard shortcuts
+  // IMPORTANT: WASD is reserved for card navigation (Shift+WASD = control navigation)
   defaultKeybinds: {
-    'navUp': { key: 'w', fallback: 'arrowup', label: 'Navigate Up' },
-    'navDown': { key: 's', fallback: 'arrowdown', label: 'Navigate Down' },
-    'navLeft': { key: 'a', fallback: 'arrowleft', label: 'Navigate Left' },
-    'navRight': { key: 'd', fallback: 'arrowright', label: 'Navigate Right' },
+    // Card Navigation (WASD) - for navigating story cards
+    'navUp': { key: 'w', fallback: 'arrowup', label: 'Navigate Up (WASD)' },
+    'navDown': { key: 's', fallback: 'arrowdown', label: 'Navigate Down (WASD)' },
+    'navLeft': { key: 'a', fallback: 'arrowleft', label: 'Navigate Left (WASD)' },
+    'navRight': { key: 'd', fallback: 'arrowright', label: 'Navigate Right (WASD)' },
+    
+    // Card Actions
     'openCard': { key: 'enter', fallback: null, label: 'Open Card' },
-    'pin': { key: 'q', fallback: null, label: 'Pin/Unpin Card' },
-    'favorite': { key: 'e', fallback: null, label: 'Favorite/Unfavorite Card' },
-    'controlMode': { key: 'shift', fallback: null, label: 'Control Mode (hold)' },
-    'focusSearch': { key: 'enter', fallback: null, label: 'Focus Search' },
-    'unfocusSearch': { key: 'escape', fallback: null, label: 'Unfocus Search' },
-    'blackout': { key: 'space', fallback: null, label: 'Blackout Mode' },
-    'closeModal': { key: 'escape', fallback: null, label: 'Close Modal' },
-    'settingsTab': { key: 't', fallback: null, label: 'Open Settings' },
+    'pin': { key: 'q', fallback: null, label: 'Pin-Unpin Card' },
+    'favorite': { key: 'e', fallback: null, label: 'Favorite-Unfavorite' },
+    
+    // Layouts
+    'layoutGrid': { key: '1', fallback: null, label: 'Grid Layout' },
+    'layoutList': { key: '2', fallback: null, label: 'List Layout' },
+    'layoutCompact': { key: '3', fallback: null, label: 'Compact Layout' },
+    'layoutSpotlight': { key: '4', fallback: null, label: 'Spotlight Layout' },
+    
+    // Filters (use other keys, WASD reserved for nav)
+    'filterAll': { key: 'f', fallback: null, label: 'Show All Stories' },
+    'filterFavorites': { key: 'v', fallback: null, label: 'Show Favorites' },
+    'filterBookmarks': { key: 'b', fallback: null, label: 'Show Bookmarks' },
+    
+    // Sorting (use other keys, WASD reserved for nav)
+    'sortDefault': { key: 'o', fallback: null, label: 'Default Sort' },
+    'sortTitle': { key: 't', fallback: null, label: 'Sort by Title' },
+    'sortRecent': { key: 'r', fallback: null, label: 'Sort by Recent' },
+    'sortPriority': { key: 'p', fallback: null, label: 'Sort by Priority' },
+    
+    // Panels (use other keys, WASD reserved for nav)
+    'settingsTab': { key: 'u', fallback: null, label: 'Open Settings' },
     'helpTab': { key: 'h', fallback: null, label: 'Open Help' },
+    
+    // Theme & Mode
     'toggleTheme': { key: 'l', fallback: null, label: 'Toggle Light/Dark' },
+    'blackout': { key: 'space', fallback: null, label: 'Blackout Mode' },
+    
+    // Navigation Modes
+    'focusSearch': { key: '/', fallback: null, label: 'Focus Search' },
   },
 
   customKeybinds: {},
@@ -3542,38 +3644,55 @@ const KeybindManager = {
   },
 
   loadKeybinds() {
-    try {
-      const saved = localStorage.getItem('homepageKeybinds');
-      if (saved) {
-        this.customKeybinds = JSON.parse(saved);
+    // Use DATABASE_SETTINGS if available, fallback to localStorage
+    let keybinds = {};
+    
+    if (window.DATABASE_SETTINGS?.db?.settings?.keybinds) {
+      keybinds = window.DATABASE_SETTINGS.db.settings.keybinds;
+    } else {
+      try {
+        const saved = localStorage.getItem('homepageKeybinds');
+        if (saved) {
+          keybinds = JSON.parse(saved);
+        }
+      } catch (error) {
+        console.error('Error loading keybinds:', error);
       }
-    } catch (error) {
-      console.error('Error loading keybinds:', error);
     }
+    
+    this.customKeybinds = keybinds || {};
   },
 
   saveKeybinds() {
-    try {
-      localStorage.setItem('homepageKeybinds', JSON.stringify(this.customKeybinds));
-    } catch (error) {
-      console.error('Error saving keybinds:', error);
+    // Use DATABASE_SETTINGS if available, fallback to localStorage
+    if (window.DATABASE_SETTINGS?.setSettings) {
+      window.DATABASE_SETTINGS.setSettings({ keybinds: this.customKeybinds });
+    } else {
+      try {
+        localStorage.setItem('homepageKeybinds', JSON.stringify(this.customKeybinds));
+      } catch (error) {
+        console.error('Error saving keybinds:', error);
+      }
     }
   },
 
   getKeyFor(action) {
-    return this.customKeybinds[action] || this.defaultKeybinds[action]?.key || '';
+    return this.customKeybinds?.[action] || this.defaultKeybinds[action]?.key || '';
   },
 
   setKeybind(action, key) {
+    if (!this.customKeybinds) this.customKeybinds = {};
     this.customKeybinds[action] = key.toLowerCase();
     this.saveKeybinds();
     this.renderKeybindList();
   },
 
   clearKeybind(action) {
-    delete this.customKeybinds[action];
-    this.saveKeybinds();
-    this.renderKeybindList();
+    if (this.customKeybinds) {
+      delete this.customKeybinds[action];
+      this.saveKeybinds();
+      this.renderKeybindList();
+    }
   },
 
   resetToDefaults() {
@@ -3613,9 +3732,120 @@ const KeybindManager = {
         this.startBinding(action);
       });
     });
+
+    // Also render help modal shortcuts
+    this.renderHelpShortcuts();
+  },
+
+  renderHelpShortcuts() {
+    // Render Direct Shortcuts (non-navigation keys)
+    const directContainer = document.getElementById('help-direct-shortcuts');
+    if (directContainer) {
+      const directActions = [
+        'layoutGrid', 'layoutList', 'layoutCompact', 'layoutSpotlight',
+        'filterAll', 'filterFavorites', 'filterBookmarks',
+        'sortDefault', 'sortTitle', 'sortRecent', 'sortPriority',
+        'pin', 'favorite', 'settingsTab', 'helpTab', 'toggleTheme', 'focusSearch'
+      ];
+      
+      let html = `<h4>⚡ Direct Shortcuts (No Mode Switch!)</h4><div class="shortcuts-pill-grid">`;
+      directActions.forEach(action => {
+        const config = this.defaultKeybinds[action];
+        const key = this.getKeyFor(action);
+        if (config) {
+          html += `
+            <div class="shortcut-pill">
+              <span class="shortcut-pill-key">${this.formatKeyDisplay(key)}</span>
+              <span class="shortcut-pill-desc">${config.label.replace('Show ', '').replace('Sort by ', '').replace('Open ', '').replace('Toggle ', '').replace('/', '')}</span>
+            </div>
+          `;
+        }
+      });
+      html += `</div>`;
+      directContainer.innerHTML = html;
+    }
+
+    // Render Card Navigation
+    const cardNavContainer = document.getElementById('help-card-nav');
+    if (cardNavContainer) {
+      const navActions = ['navUp', 'navDown', 'navLeft', 'navRight', 'openCard'];
+      
+      let html = `<h4>🎴 Card Navigation (Custom Keys)</h4><div class="shortcuts-pill-grid">`;
+      navActions.forEach(action => {
+        const config = this.defaultKeybinds[action];
+        const key = this.getKeyFor(action);
+        if (config) {
+          let desc = config.label;
+          if (action === 'navUp') desc = 'Move up';
+          if (action === 'navDown') desc = 'Move down';
+          if (action === 'navLeft') desc = 'Move left';
+          if (action === 'navRight') desc = 'Move right';
+          if (action === 'openCard') desc = 'Open card';
+          
+          // Show fallback key in parentheses
+          const fallbackKey = config.fallback ? ` / ${config.fallback.replace('arrow', '↑↓←→')}` : '';
+          
+          html += `
+            <div class="shortcut-pill">
+              <span class="shortcut-pill-key">${this.formatKeyDisplay(key)}${fallbackKey}</span>
+              <span class="shortcut-pill-desc">${desc}</span>
+            </div>
+          `;
+        }
+      });
+      html += `</div>`;
+      cardNavContainer.innerHTML = html;
+    }
+
+    // Render Control Navigation
+    const controlNavContainer = document.getElementById('help-control-nav');
+    if (controlNavContainer) {
+      let html = `<h4>⚙️ Control Navigation (Shift + Nav Keys)</h4>`;
+      html += `<div class="shortcuts-pill-grid">`;
+      
+      // Control navigation uses nav keys with Shift
+      const navKey = this.getKeyFor('navUp') || 'w';
+      
+      html += `
+        <div class="shortcut-pill">
+          <span class="shortcut-pill-key">Shift + ${navKey.toUpperCase()} / ${this.formatKeyDisplay(this.getKeyFor('navDown') || 's')}</span>
+          <span class="shortcut-pill-desc">Navigate control groups</span>
+        </div>
+        <div class="shortcut-pill">
+          <span class="shortcut-pill-key">Shift + A/D</span>
+          <span class="shortcut-pill-desc">Navigate within group</span>
+        </div>
+        <div class="shortcut-pill">
+          <span class="shortcut-pill-key">${this.formatKeyDisplay(this.getKeyFor('openCard') || 'enter')}</span>
+          <span class="shortcut-pill-desc">Activate control</span>
+        </div>
+      `;
+      html += `</div>`;
+      controlNavContainer.innerHTML = html;
+    }
+  },
+
+  formatKeyDisplay(key) {
+    if (!key) return '-';
+    const keyMap = {
+      ' ': 'SPACEBAR',
+      'arrowup': '↑',
+      'arrowdown': '↓',
+      'arrowleft': '←',
+      'arrowright': '→',
+      'enter': 'ENTER',
+      'escape': 'ESC',
+      'backspace': 'BACKSPACE',
+      'delete': 'DEL',
+      '/': '/'
+    };
+    return keyMap[key] || key.toUpperCase();
   },
 
   startBinding(action) {
+    // Cancel any existing binding
+    this.cancelBinding();
+    
     this.bindingTarget = action;
     this.renderKeybindList();
     
@@ -3623,35 +3853,46 @@ const KeybindManager = {
     KeyboardNavigation.showModeIndicator(`⌨️ Press key for "${this.defaultKeybinds[action]?.label}"`);
 
     // Set up one-time key listener
-    const keyListener = (e) => {
+    this.keybindListener = (e) => {
       e.preventDefault();
+      e.stopPropagation(); // Prevent other handlers from receiving this
       
       if (e.key === 'Escape') {
         // Cancel binding
-        this.bindingTarget = null;
-        this.renderKeybindList();
-        document.removeEventListener('keydown', keyListener);
+        this.cancelBinding();
         return;
       }
       
       if (e.key === 'Backspace' || e.key === 'Delete') {
         // Clear binding
         this.clearKeybind(action);
-        this.bindingTarget = null;
-        document.removeEventListener('keydown', keyListener);
+        this.cancelBinding();
+        KeyboardNavigation.showModeIndicator('❌ Binding cleared');
         return;
       }
 
       // Set new binding
       const key = e.key.toLowerCase();
       this.setKeybind(action, key);
-      this.bindingTarget = null;
-      document.removeEventListener('keydown', keyListener);
+      this.cancelBinding();
       
       KeyboardNavigation.showModeIndicator(`✅ Bound "${key}" to "${this.defaultKeybinds[action]?.label}"`);
     };
 
-    document.addEventListener('keydown', keyListener);
+    document.addEventListener('keydown', this.keybindListener, { capture: true });
+  },
+
+  cancelBinding() {
+    if (this.keybindListener) {
+      document.removeEventListener('keydown', this.keybindListener, { capture: true });
+      this.keybindListener = null;
+    }
+    this.bindingTarget = null;
+    this.renderKeybindList();
+  },
+
+  isBinding() {
+    return this.bindingTarget !== null;
   },
 
   setupResetButton() {
@@ -3667,8 +3908,9 @@ const KeybindManager = {
   }
 };
 
-// Initialize all keyboard navigation systems
+// ===== MAIN INITIALIZATION =====
 document.addEventListener('DOMContentLoaded', async () => {
+  // Initialize all systems
   KeyboardNavigation.init();
   SettingsPanelKeyboardNav.init();
   HelpModalKeyboardNav.init();
@@ -3677,27 +3919,462 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Initialize database system
   await initDatabase();
   
-  // Setup import/export functionality
-  setupDatabaseImportExport();
+  // Initialize import/export functionality
+  setupImportExport();
+  
+  // Initialize secret stats
+  SecretStats.init();
 });
 
-// Database import/export functionality
-function setupDatabaseImportExport() {
+// ===== SECRET STATS TRACKING SYSTEM =====
+// (Moved to main initialization above)
+const SecretStats = {
+    // Stats storage
+    stats: {
+        totalTime: 0,
+        sessionTime: 0,
+        firstVisit: null,
+        lastVisit: null,
+        totalClicks: 0,
+        keypresses: 0,
+        reportsOpened: {},
+        pins: 0,
+        unfPins: 0,
+        favorites: 0,
+        unfavorites: 0,
+        searches: 0,
+        darkModeUses: 0,
+        lightModeUses: 0,
+        layoutChanges: 0,
+        sortChanges: 0,
+        fastestClick: null,
+        longestSession: 0,
+        streak: 0,
+        lastActiveDate: null
+    },
+    
+    sessionStart: null,
+    clickStart: null,
+    interactionInterval: null,
+    
+    init() {
+        this.loadStats();
+        this.sessionStart = Date.now();
+        this.setupTracking();
+        this.setupResetButton();
+        this.updateDisplay();
+        
+        // Track session time every second
+        this.interactionInterval = setInterval(() => {
+            this.stats.sessionTime += 1000;
+            this.stats.totalTime += 1000;
+            this.updateDisplay();
+        }, 1000);
+        
+        // Update last active date for streak
+        const today = new Date().toDateString();
+        if (this.stats.lastActiveDate !== today) {
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            if (this.stats.lastActiveDate === yesterday.toDateString()) {
+                // Consecutive day
+                this.stats.streak++;
+            } else {
+                // Reset streak if not consecutive
+                this.stats.streak = 1;
+            }
+            this.stats.lastActiveDate = today;
+            this.saveStats();
+        }
+        
+        // Save stats periodically
+        setInterval(() => this.saveStats(), 30000); // Every 30 seconds
+    },
+    
+    loadStats() {
+        try {
+            const raw = localStorage.getItem('secretStats');
+            if (raw) {
+                this.stats = { ...this.stats, ...JSON.parse(raw) };
+            } else {
+                // First visit - set first visit date
+                this.stats.firstVisit = new Date().toISOString();
+            }
+            this.stats.lastVisit = new Date().toISOString();
+        } catch (error) {
+            console.error('Error loading stats:', error);
+        }
+    },
+    
+    saveStats() {
+        try {
+            localStorage.setItem('secretStats', JSON.stringify(this.stats));
+        } catch (error) {
+            console.error('Error saving stats:', error);
+        }
+    },
+    
+    setupTracking() {
+        // Track clicks
+        document.addEventListener('click', (e) => {
+            // Ignore clicks on modals/popups
+            if (e.target.closest('.modal-panel') || 
+                e.target.closest('.draggable-panel') ||
+                e.target.closest('#confirm-overlay')) {
+                return;
+            }
+            
+            this.stats.totalClicks++;
+            
+            // Track click speed
+            const now = Date.now();
+            if (this.clickStart) {
+                const diff = now - this.clickStart;
+                if (!this.stats.fastestClick || diff < this.stats.fastestClick) {
+                    this.stats.fastestClick = diff;
+                }
+            }
+            this.clickStart = now;
+            
+            this.updateDisplay();
+        });
+        
+        // Track keypresses
+        document.addEventListener('keydown', (e) => {
+            // Ignore modifier keys and function keys
+            if (e.key.length === 1 || 
+                ['Backspace', 'Delete', 'Enter', 'Escape', 'Tab', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                this.stats.keypresses++;
+                this.updateDisplay();
+            }
+        });
+        
+        // Track report opens (cards clicked)
+        document.addEventListener('click', (e) => {
+            const card = e.target.closest('.story-card');
+            if (card) {
+                const href = card.href;
+                const storyIdMatch = href.match(/story=([^&]+)/);
+                const storyId = storyIdMatch ? decodeURIComponent(storyIdMatch[1]) : 'unknown';
+                
+                this.stats.reportsOpened[storyId] = (this.stats.reportsOpened[storyId] || 0) + 1;
+                this.updateTopReports();
+                this.saveStats();
+            }
+        });
+        
+        // Track pin/favorite actions
+        document.addEventListener('click', (e) => {
+            const pinBtn = e.target.closest('.pin-btn');
+            const favBtn = e.target.closest('.favorite-btn');
+            
+            if (pinBtn) {
+                if (pinBtn.classList.contains('active')) {
+                    this.stats.unPins++;
+                } else {
+                    this.stats.pins++;
+                }
+                this.updateDisplay();
+            }
+            
+            if (favBtn) {
+                if (favBtn.classList.contains('active')) {
+                    this.stats.unfavorites++;
+                } else {
+                    this.stats.favorites++;
+                }
+                this.updateDisplay();
+            }
+        });
+        
+        // Track search
+        const searchInput = document.getElementById('search-input');
+        if (searchInput) {
+            searchInput.addEventListener('search', () => {
+                if (searchInput.value.trim()) {
+                    this.stats.searches++;
+                    this.updateDisplay();
+                }
+            });
+        }
+        
+        // Track theme changes
+        const themeToggle = document.getElementById('theme-toggle');
+        if (themeToggle) {
+            const observer = new MutationObserver(() => {
+                const isDark = document.body.dataset.theme !== 'light';
+                if (isDark) {
+                    this.stats.darkModeUses++;
+                } else {
+                    this.stats.lightModeUses++;
+                }
+                this.updateDisplay();
+            });
+            observer.observe(document.body, { attributes: true, attributeFilter: ['data-theme'] });
+        }
+        
+        // Track layout changes
+        document.addEventListener('click', (e) => {
+            const layoutBtn = e.target.closest('.layout-btn');
+            if (layoutBtn) {
+                this.stats.layoutChanges++;
+                this.updateDisplay();
+            }
+        });
+        
+        // Track sort changes
+        document.addEventListener('click', (e) => {
+            const sortBtn = e.target.closest('.sort-btn');
+            if (sortBtn) {
+                this.stats.sortChanges++;
+                this.updateDisplay();
+            }
+        });
+    },
+    
+    setupResetButton() {
+        const resetBtn = document.getElementById('reset-stats');
+        if (resetBtn) {
+            resetBtn.addEventListener('click', () => {
+                if (confirm('Reset all statistics? This cannot be undone.')) {
+                    localStorage.removeItem('secretStats');
+                    location.reload();
+                }
+            });
+        }
+    },
+    
+    formatTime(ms) {
+        const seconds = Math.floor(ms / 1000);
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const secs = seconds % 60;
+        return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    },
+    
+    formatDuration(ms) {
+        const hours = Math.floor(ms / 3600000);
+        const minutes = Math.floor((ms % 3600000) / 60000);
+        if (hours > 0) {
+            return `${hours}h ${minutes}m`;
+        }
+        return `${minutes}m`;
+    },
+    
+    updateDisplay() {
+        // Update time displays
+        const totalTimeEl = document.getElementById('stat-total-time');
+        if (totalTimeEl) {
+            totalTimeEl.textContent = this.formatTime(this.stats.totalTime);
+        }
+        
+        const daysSinceEl = document.getElementById('stat-days-since');
+        if (daysSinceEl && this.stats.firstVisit) {
+            const first = new Date(this.stats.firstVisit);
+            const now = new Date();
+            const diff = Math.floor((now - first) / (1000 * 60 * 60 * 24));
+            daysSinceEl.textContent = diff;
+        }
+        
+        // Update other stats
+        this.updateStat('stat-total-clicks', this.stats.totalClicks);
+        this.updateStat('stat-keypresses', this.stats.keypresses);
+        
+        const pinTotal = this.stats.pins + this.stats.unPins;
+        this.updateStat('stat-pins', pinTotal);
+        
+        const favTotal = this.stats.favorites + this.stats.unfavorites;
+        this.updateStat('stat-favorites', favTotal);
+        
+        this.updateStat('stat-searches', this.stats.searches);
+        this.updateStat('stat-dark-uses', this.stats.darkModeUses);
+        this.updateStat('stat-light-uses', this.stats.lightModeUses);
+        this.updateStat('stat-layouts', this.stats.layoutChanges);
+        this.updateStat('stat-sorts', this.stats.sortChanges);
+        
+        // Update reports opened
+        let totalReports = 0;
+        Object.values(this.stats.reportsOpened).forEach(count => {
+            totalReports += count;
+        });
+        this.updateStat('stat-reports-opened', totalReports);
+        
+        // Update quick pills
+        const fastestClickEl = document.getElementById('stat-fastest-click');
+        if (fastestClickEl && this.stats.fastestClick) {
+            fastestClickEl.textContent = this.stats.fastestClick + ' ms';
+        }
+        
+        const longestSessionEl = document.getElementById('stat-longest-session');
+        if (longestSessionEl) {
+            longestSessionEl.textContent = this.formatDuration(this.stats.longestSession);
+        }
+        
+        // Calculate accuracy (clicks that led to actions vs total clicks)
+        const totalActions = this.stats.reportsOpened ? Object.keys(this.stats.reportsOpened).length : 0;
+        const accuracy = this.stats.totalClicks > 0 
+            ? Math.round((totalActions / this.stats.totalClicks) * 100) 
+            : 0;
+        const accuracyEl = document.getElementById('stat-accuracy');
+        if (accuracyEl) {
+            accuracyEl.textContent = Math.min(accuracy, 100) + '%';
+        }
+        
+        const streakEl = document.getElementById('stat-streak');
+        if (streakEl) {
+            streakEl.textContent = this.stats.streak + ' days';
+        }
+        
+        this.updateTopReports();
+    },
+    
+    updateStat(id, value) {
+        const el = document.getElementById(id);
+        if (el) {
+            el.textContent = value.toLocaleString();
+        }
+    },
+    
+    updateTopReports() {
+        const container = document.getElementById('top-reports');
+        if (!container) return;
+        
+        const reports = Object.entries(this.stats.reportsOpened)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5);
+        
+        if (reports.length === 0) {
+            container.innerHTML = '<div class="top-empty">No data yet...</div>';
+            return;
+        }
+        
+        container.innerHTML = reports.map(([id, count], index) => {
+            // Try to get story title
+            let title = id;
+            const story = stories.find(s => s.id === id);
+            if (story) {
+                title = story.title || `Report #${story.reportNumber || index + 1}`;
+            }
+            
+            return `
+                <div class="top-item">
+                    <span class="top-rank">#${index + 1}</span>
+                    <span class="top-name" title="${title}">${title}</span>
+                    <span class="top-count">${count} opens</span>
+                </div>
+            `;
+        }).join('');
+    },
+    
+    endSession() {
+        // Check for longest session
+        if (this.stats.sessionTime > this.stats.longestSession) {
+            this.stats.longestSession = this.stats.sessionTime;
+        }
+        this.saveStats();
+        
+        if (this.interval) {
+            clearInterval(this.interactionInterval);
+        }
+    }
+};
+
+// Initialize secret stats when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    // ... existing code ...
+    SecretStats.init();
+});
+
+// ===== LOCALSTORAGE EXPORT/IMPORT SYSTEM =====
+// Simple export/import using localStorage - no CORS issues!
+
+// Get all localStorage data as an object
+function getAllLocalStorageData() {
+  const data = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    try {
+      data[key] = JSON.parse(localStorage.getItem(key));
+    } catch (e) {
+      // Store as plain string if not valid JSON
+      data[key] = localStorage.getItem(key);
+    }
+  }
+  return data;
+}
+
+// Export all localStorage data to a downloadable JSON file
+function exportLocalStorageData() {
+  const exportData = {
+    exportDate: new Date().toISOString(),
+    version: '1.0',
+    type: 'xedryk-archive-backup',
+    data: getAllLocalStorageData()
+  };
+  
+  const json = JSON.stringify(exportData, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `xedryk-backup-${new Date().toISOString().split('T')[0]}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  
+  return true;
+}
+
+// Import localStorage data from a JSON string
+function importLocalStorageData(jsonString) {
+  try {
+    const importData = JSON.parse(jsonString);
+    
+    // Validate backup format
+    if (!importData.type || importData.type !== 'xedryk-archive-backup') {
+      throw new Error('Invalid backup file format');
+    }
+    
+    if (!importData.data || typeof importData.data !== 'object') {
+      throw new Error('Invalid backup data structure');
+    }
+    
+    // Clear existing localStorage
+    localStorage.clear();
+    
+    // Import all data
+    const data = importData.data;
+    for (const key in data) {
+      if (data.hasOwnProperty(key)) {
+        const value = data[key];
+        if (typeof value === 'object') {
+          localStorage.setItem(key, JSON.stringify(value));
+        } else {
+          localStorage.setItem(key, String(value));
+        }
+      }
+    }
+    
+    return { success: true, message: 'Import successful! Reloading...' };
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
+}
+
+// Setup export/import buttons (using existing HTML IDs)
+function setupImportExport() {
   const exportBtn = document.getElementById('db-export-btn');
   const importInput = document.getElementById('db-import-input');
   const statusEl = document.getElementById('db-import-status');
   
   if (exportBtn) {
     exportBtn.addEventListener('click', () => {
-      if (window.DATABASE_SETTINGS) {
-        window.DATABASE_SETTINGS.downloadExport();
-        if (statusEl) {
-          statusEl.textContent = 'Settings exported successfully!';
-          statusEl.style.color = 'var(--accent-2)';
-          setTimeout(() => {
-            statusEl.textContent = '';
-          }, 3000);
-        }
+      exportLocalStorageData();
+      if (statusEl) {
+        statusEl.textContent = '✅ Exported successfully!';
+        statusEl.style.color = 'var(--accent-2)';
+        setTimeout(() => { statusEl.textContent = ''; }, 3000);
       }
     });
   }
@@ -3708,37 +4385,39 @@ function setupDatabaseImportExport() {
       if (!file) return;
       
       const reader = new FileReader();
-      reader.onload = async (event) => {
-        try {
-          const jsonString = event.target.result;
-          if (window.DATABASE_SETTINGS) {
-            const result = window.DATABASE_SETTINGS.import(jsonString, false); // Replace entirely
-            if (result.success) {
-              if (statusEl) {
-                statusEl.textContent = 'Settings imported successfully! Reloading...';
-                statusEl.style.color = 'var(--accent-2)';
-              }
-              // Reload page after successful import
-              setTimeout(() => {
-                window.location.reload();
-              }, 1500);
-            } else {
-              if (statusEl) {
-                statusEl.textContent = 'Import failed: ' + result.error;
-                statusEl.style.color = '#ff6b6b';
-              }
-            }
-          }
-        } catch (error) {
+      reader.onload = (event) => {
+        const result = importLocalStorageData(event.target.result);
+        if (result.success) {
           if (statusEl) {
-            statusEl.textContent = 'Import failed: Invalid file format';
+            statusEl.textContent = '✅ ' + result.message;
+            statusEl.style.color = 'var(--accent-2)';
+          }
+          // Reload after short delay
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+        } else {
+          if (statusEl) {
+            statusEl.textContent = '❌ ' + result.message;
             statusEl.style.color = '#ff6b6b';
           }
         }
         // Reset input
         importInput.value = '';
       };
+      reader.onerror = () => {
+        if (statusEl) {
+          statusEl.textContent = '❌ Error reading file';
+          statusEl.style.color = '#ff6b6b';
+        }
+        importInput.value = '';
+      };
       reader.readAsText(file);
     });
   }
 }
+
+// Initialize export/import when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+  setupImportExport();
+});
