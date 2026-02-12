@@ -1036,7 +1036,6 @@ filterButtons.forEach((button) => {
     button.classList.add("active");
     activeFilter = button.dataset.filter;
     saveFilterState();
-    SFX.filterChange();
     render();
   });
 });
@@ -1082,11 +1081,10 @@ function applySortPreference(sortData) {
   });
 }
 
-layoutButtons.forEach((button) => {
+  layoutButtons.forEach((button) => {
   button.addEventListener("click", () => {
     applyLayout(button.dataset.layout);
     saveFilterState();
-    SFX.click();
   });
 });
 
@@ -1444,7 +1442,6 @@ if (document.readyState === 'loading') {
 if (themeToggle) {
   themeToggle.addEventListener("click", () => {
     const next = document.body.dataset.theme === "light" ? "dark" : "light";
-    SFX.themeSwitch();
     applyTheme(next);
   });
 }
@@ -3715,10 +3712,10 @@ const KeybindManager = {
       const currentKey = this.getKeyFor(action);
       const isActive = this.bindingTarget === action;
       
-      html += `
+    html += `
         <div class="keybind-tag ${isActive ? 'active' : ''}" data-action="${action}">
           <span class="keybind-tag-label">${config.label}</span>
-          <span class="keybind-tag-key">${currentKey || '-'}</span>
+          <span class="keybind-tag-key">${this.formatKeyDisplay(currentKey) || '-'}</span>
           <button type="button" class="keybind-tag-assign" data-action="${action}">
             ${isActive ? 'Press key...' : 'Assign'}
           </button>
