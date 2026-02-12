@@ -227,6 +227,15 @@
                 >
                     🎨 Color
                 </button>
+                <button
+                    class="tab-btn"
+                    data-tab="shortcuts"
+                    type="button"
+                    role="tab"
+                    aria-selected="false"
+                >
+                    ⌨️ Shortcuts
+                </button>
             </div>
             <div class="settings-content">
                 <!-- Font Tab -->
@@ -322,6 +331,30 @@
                         </button>
                     </div>
                 </div>
+
+                <!-- Shortcuts Tab -->
+                <div
+                    class="tab-panel"
+                    data-tab-panel="shortcuts"
+                    role="tabpanel"
+                    hidden
+                >
+                    <div class="settings-section">
+                        <h4>Keyboard Shortcuts</h4>
+                        <p class="shortcuts-instructions" style="font-size: 12px; color: var(--muted); margin-bottom: 16px;">
+                            Click <strong>Assign</strong> then press a key to bind. Press <strong>Backspace</strong> to clear. Press <strong>Esc</strong> to cancel.
+                        </p>
+                        <div class="keybind-list" id="keybind-list">
+                            <!-- Keybinds will be rendered here by JavaScript -->
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <button id="reset-keybinds" class="settings-reset-btn">
+                            Reset Keybinds to Default
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -363,6 +396,77 @@
                         <div class="help-section">
                             <h3>🎮 Keyboard Navigation</h3>
                             
+                            <!-- Direct Shortcuts -->
+                            <div class="shortcuts-category">
+                                <h4>⚡ Direct Shortcuts (No Mode Switch!)</h4>
+                                <div class="shortcuts-pill-grid">
+                                    <div class="shortcut-pill">
+                                        <span class="shortcut-pill-key">1</span>
+                                        <span class="shortcut-pill-desc">Grid layout</span>
+                                    </div>
+                                    <div class="shortcut-pill">
+                                        <span class="shortcut-pill-key">2</span>
+                                        <span class="shortcut-pill-desc">List layout</span>
+                                    </div>
+                                    <div class="shortcut-pill">
+                                        <span class="shortcut-pill-key">3</span>
+                                        <span class="shortcut-pill-desc">Compact layout</span>
+                                    </div>
+                                    <div class="shortcut-pill">
+                                        <span class="shortcut-pill-key">4</span>
+                                        <span class="shortcut-pill-desc">Spotlight layout</span>
+                                    </div>
+                                    <div class="shortcut-pill">
+                                        <span class="shortcut-pill-key">A</span>
+                                        <span class="shortcut-pill-desc">All stories</span>
+                                    </div>
+                                    <div class="shortcut-pill">
+                                        <span class="shortcut-pill-key">F</span>
+                                        <span class="shortcut-pill-desc">Favorites</span>
+                                    </div>
+                                    <div class="shortcut-pill">
+                                        <span class="shortcut-pill-key">B</span>
+                                        <span class="shortcut-pill-desc">Bookmarks/Pinned</span>
+                                    </div>
+                                    <div class="shortcut-pill">
+                                        <span class="shortcut-pill-key">D</span>
+                                        <span class="shortcut-pill-desc">Sort: Default</span>
+                                    </div>
+                                    <div class="shortcut-pill">
+                                        <span class="shortcut-pill-key">T</span>
+                                        <span class="shortcut-pill-desc">Sort: Title</span>
+                                    </div>
+                                    <div class="shortcut-pill">
+                                        <span class="shortcut-pill-key">R</span>
+                                        <span class="shortcut-pill-desc">Sort: Recent</span>
+                                    </div>
+                                    <div class="shortcut-pill">
+                                        <span class="shortcut-pill-key">P</span>
+                                        <span class="shortcut-pill-desc">Sort: Priority</span>
+                                    </div>
+                                    <div class="shortcut-pill">
+                                        <span class="shortcut-pill-key">Q</span>
+                                        <span class="shortcut-pill-desc">Pin/Unpin card</span>
+                                    </div>
+                                    <div class="shortcut-pill">
+                                        <span class="shortcut-pill-key">E</span>
+                                        <span class="shortcut-pill-desc">Favorite card</span>
+                                    </div>
+                                    <div class="shortcut-pill">
+                                        <span class="shortcut-pill-key">S</span>
+                                        <span class="shortcut-pill-desc">Open Settings</span>
+                                    </div>
+                                    <div class="shortcut-pill">
+                                        <span class="shortcut-pill-key">H</span>
+                                        <span class="shortcut-pill-desc">Open Help</span>
+                                    </div>
+                                    <div class="shortcut-pill">
+                                        <span class="shortcut-pill-key">L</span>
+                                        <span class="shortcut-pill-desc">Toggle Light/Dark</span>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="shortcuts-category">
                                 <h4>🎴 Card Navigation (WASD / Arrow Keys)</h4>
                                 <div class="shortcuts-pill-grid">
@@ -429,12 +533,12 @@
                                 <h4>⚡ Global Shortcuts</h4>
                                 <div class="shortcuts-pill-grid">
                                     <div class="shortcut-pill">
-                                        <span class="shortcut-pill-key">SPACEBAR</span>
-                                        <span class="shortcut-pill-desc">Blackout mode</span>
+                                        <span class="shortcut-pill-key">ESC</span>
+                                        <span class="shortcut-pill-desc">Unfocus / Close modals</span>
                                     </div>
                                     <div class="shortcut-pill">
-                                        <span class="shortcut-pill-key">ESC</span>
-                                        <span class="shortcut-pill-desc">Close modals / Exit</span>
+                                        <span class="shortcut-pill-key">SPACEBAR</span>
+                                        <span class="shortcut-pill-desc">Blackout mode</span>
                                     </div>
                                     <div class="shortcut-pill">
                                         <span class="shortcut-pill-key">F11</span>
@@ -442,6 +546,38 @@
                                     </div>
                                 </div>
                             </div>
+                            
+                            <p style="font-size: 11px; color: var(--muted); margin-top: 12px; padding: 8px; background: rgba(98, 247, 255, 0.05); border-radius: 8px;">
+                                💡 <strong>Tip:</strong> Direct shortcuts work anytime unless a popup (Settings/Help) is open or you're typing in the search box.
+                            </p>
+                        </div>
+
+                        <!-- Search Guide Section -->
+                        <div class="help-section">
+                            <h3>🔍 Search Guide</h3>
+                            <div class="search-guide-pills">
+                                <div class="search-guide-pill">
+                                    <span class="search-query-pill">tag1 tag2</span>
+                                    <span class="search-desc-pill">Stories with either tag1 OR tag2</span>
+                                </div>
+                                <div class="search-guide-pill">
+                                    <span class="search-query-pill">+tag1 +tag2</span>
+                                    <span class="search-desc-pill">Stories with BOTH tags (required)</span>
+                                </div>
+                                <div class="search-guide-pill">
+                                    <span class="search-query-pill">-tag1</span>
+                                    <span class="search-desc-pill">Exclude stories with tag1</span>
+                                </div>
+                                <div class="search-guide-pill">
+                                    <span class="search-query-pill">tag1 | tag2</span>
+                                    <span class="search-desc-pill">Stories with tag1 OR tag2 (pipe separator)</span>
+                                </div>
+                                <div class="search-guide-pill">
+                                    <span class="search-query-pill">action +sci-fi -romance</span>
+                                    <span class="search-desc-pill">Action that is sci-fi but NOT romance</span>
+                                </div>
+                            </div>
+                            <p class="search-tip-pill">💡 Click tags on story cards to auto-add them to search</p>
                         </div>
 
                         <div class="help-section">
@@ -450,152 +586,72 @@
                                 <div class="control-item">
                                     <div class="control-icon">🔍</div>
                                     <div class="control-desc">
-                                        <strong>Search Function:</strong> Input
-                                        keywords to filter reports by title,
-                                        description, or tags. The system uses
-                                        fuzzy matching for optimal results.
+                                        <strong>Search:</strong> Filter reports by title, description, or tags. Supports fuzzy matching and OR/AND operators.
                                     </div>
                                 </div>
                                 <div class="control-item">
                                     <div class="control-icon">📊</div>
                                     <div class="control-desc">
-                                        <strong>Filter Matrix:</strong> Toggle
-                                        between All (🌐), Favorites (⭐), or
-                                        Pinned (📌) data streams.
+                                        <strong>Filters:</strong> Toggle between All (🌐), Favorites (⭐), or Pinned (📌) views.
                                     </div>
                                 </div>
                                 <div class="control-item">
                                     <div class="control-icon">🖥️</div>
                                     <div class="control-desc">
-                                        <strong>Layout Engine:</strong> Switch
-                                        visual interfaces - Grid (▦), List (☰),
-                                        Compact (▤), or Spotlight (⬚) modes.
+                                        <strong>Layouts:</strong> Grid (▦), List (☰), Compact (▤), or Spotlight (⬚) modes.
                                     </div>
                                 </div>
                                 <div class="control-item">
                                     <div class="control-icon">🔄</div>
                                     <div class="control-desc">
-                                        <strong>Sorting Algorithm:</strong>
-                                        Reorganize data by Default, Title
-                                        (A-Z/Z-A), Most Recent activity, or
-                                        Priority (Favorites > Pinned > Normal).
+                                        <strong>Sort:</strong> By Default, Title, Recent, or Priority (Fav > Pin > Normal).
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <div class="help-section">
-                            <h3>🎨 Interface Customization</h3>
+                            <h3>🎨 Customization</h3>
                             <div class="customization-grid">
                                 <div class="custom-item">
                                     <div class="custom-icon">⚙️</div>
                                     <div class="custom-desc">
-                                        <strong>Settings Panel:</strong> Access
-                                        the draggable settings console (⚙️) to
-                                        modify font families and color schemes.
-                                        The panel supports multi-touch gestures
-                                        and can be resized dynamically.
+                                        <strong>Settings:</strong> Draggable panel for fonts, colors, and keyboard shortcuts. All changes persist locally.
                                     </div>
                                 </div>
                                 <div class="custom-item">
                                     <div class="custom-icon">🎨</div>
                                     <div class="custom-desc">
-                                        <strong>Color Matrix:</strong> Customize
-                                        all UI elements including text (ink),
-                                        backgrounds, accents, and gradients.
-                                        Changes are saved to local storage for
-                                        persistence.
+                                        <strong>Colors:</strong> Customize all UI elements - text, backgrounds, accents, and gradients.
                                     </div>
                                 </div>
                                 <div class="custom-item">
                                     <div class="custom-icon">📱</div>
                                     <div class="custom-desc">
-                                        <strong>Theme Toggle:</strong> Switch
-                                        between Dark Mode (🌙) and Light Mode
-                                        (☀️) with a single click. The system
-                                        remembers your preference.
+                                        <strong>Theme:</strong> Toggle Dark (🌙) / Light (☀️) mode. Preference is saved.
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <div class="help-section">
-                            <h3>⚡ Quick Actions</h3>
-                            <div class="action-grid">
-                                <div class="action-item">
-                                    <div class="action-key">SPACEBAR</div>
-                                    <div class="action-desc">
-                                        <strong>Blackout Mode:</strong> Instant
-                                        minimal interface with binary clock
-                                        display. Press again to restore full UI.
-                                    </div>
-                                </div>
-                                <div class="action-item">
-                                    <div class="action-key">ESC</div>
-                                    <div class="action-desc">
-                                        <strong>Exit Modal:</strong> Close any
-                                        open dialog or return to previous
-                                        interface state.
-                                    </div>
-                                </div>
-                                <div class="action-item">
-                                    <div class="action-key">CLICK</div>
-                                    <div class="action-desc">
-                                        <strong>Data Access:</strong> Select any
-                                        report card to launch the viewer
-                                        interface with full navigation controls.
-                                    </div>
-                                </div>
-                                <div class="action-item">
-                                    <div class="action-key">F11</div>
-                                    <div class="action-desc">
-                                        <strong>Fullscreen Mode:</strong> Press
-                                        F11 for immersive fullscreen display.
-                                        Use ESC to exit.
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="help-section">
-                            <h3>🔧 Advanced Features</h3>
+                            <h3>🔧 Features</h3>
                             <ul class="advanced-list">
-                                <li>
-                                    <strong>Pin System (📌):</strong> Pin important reports to keep them easily accessible. Pinned posts appear in the Pinned filter and get priority in sorting.
-                                </li>
-                                <li>
-                                    <strong>Reading Progress Bookmarks:</strong> Automatically saves your reading position with timestamp tracking. Resume from where you left off when you reopen a report.
-                                </li>
-                                <li>
-                                    <strong>Favorite Matrix (★):</strong> Star
-                                    important reports for quick access
-                                    filtering and top priority sorting.
-                                </li>
-                                <li>
-                                    <strong>Real-time Search:</strong> Instant
-                                    filtering as you type with debounced input
-                                    handling.
-                                </li>
-                                <li>
-                                    <strong>Responsive Grid:</strong> Automatic
-                                    layout adjustment based on viewport
-                                    dimensions.
-                                </li>
-                                <li>
-                                    <strong>Persistent Settings:</strong> All
-                                    customizations are stored locally and
-                                    restored on return visits.
-                                </li>
+                                <li><strong>📌 Pin System:</strong> Pin reports for quick access. Pinned items get priority sorting.</li>
+                                <li><strong>🔖 Bookmarks:</strong> Auto-saves reading position. Resume where you left off.</li>
+                                <li><strong>⭐ Favorites:</strong> Star reports for filtering and top priority.</li>
+                                <li><strong>🔍 Real-time Search:</strong> Instant filtering with tag support.</li>
+                                <li><strong>📐 Responsive:</strong> Auto-adjusts layout for any screen size.</li>
                             </ul>
                         </div>
 
                         <div class="help-section">
-                            <h3>⚠️ Data Management</h3>
+                            <h3>⚠️ Reset Data</h3>
                             <div class="control-grid">
                                 <div class="control-item">
                                     <div class="control-icon">🗑️</div>
                                     <div class="control-desc">
-                                        <strong>Reset Reading Progress:</strong> Clear all bookmarks and reading timestamps. This will mark all reports as "New" and unread. This action cannot be undone.
+                                        <strong>Clear Bookmarks:</strong> Reset all reading progress. Reports will show as "New". Cannot be undone.
                                         <br><br>
                                         <button id="reset-bookmarks-btn" class="modal-btn" type="button" style="background: linear-gradient(120deg, rgba(255,100,100,0.9), rgba(200,50,50,0.9)); color: white; border: none;">
                                             🗑️ Reset All Bookmarks

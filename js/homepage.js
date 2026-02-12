@@ -2096,6 +2096,26 @@ const KeyboardNavigation = {
   },
 
   handleKeydown(event) {
+    // Let settings panel handle its own keyboard navigation when open
+    if (settingsPanel && !settingsPanel.hidden) {
+      if (event.key === 'Escape' && !KeybindManager.bindingTarget) {
+        closeSettings();
+        return;
+      }
+      // SettingsPanelKeyboardNav will handle other keys
+      return;
+    }
+
+    // Let help modal handle its own keyboard navigation when open
+    if (helpModal && helpModal.classList.contains('is-open')) {
+      if (event.key === 'Escape') {
+        closeHelpModal();
+        return;
+      }
+      // HelpModalKeyboardNav will handle other keys
+      return;
+    }
+
     // Don't handle if in editable field (except search which we handle specially)
     if (this.isEditableTarget(event.target) && event.target.id !== 'search-input') {
       return;
@@ -2112,26 +2132,114 @@ const KeyboardNavigation = {
       return;
     }
 
-    // Handle settings panel open
-    if (settingsPanel && !settingsPanel.hidden) {
-      if (event.key === 'Escape') {
-        closeSettings();
-        return;
-      }
-      return; // Don't process other keys when settings is open
-    }
-
-    // Handle help modal open
-    if (helpModal && helpModal.classList.contains('is-open')) {
-      if (event.key === 'Escape') {
-        closeHelpModal();
-        return;
-      }
-      return; // Don't process other keys when help is open
-    }
-
     const key = event.key.toLowerCase();
     const isShift = event.shiftKey;
+    
+    // ESC key unfocuses everything
+    if (key === 'escape') {
+      event.preventDefault();
+      this.clearFocus();
+      this.mode = 'cards';
+      this.focusedCardIndex = -1;
+      this.focusedControlIndex = -1;
+      document.body.classList.remove('keyboard-nav-active');
+      this.showModeIndicator('✨ All unfocused');
+      return;
+    }
+    
+    // ===== DIRECT SHORTCUTS (when not in search/popups) =====
+
+    // Card action shortcuts (Q=pin, E=favorite) - work even when card not focused
+    if (key === this.getKeyForAction('pin')) {
+      event.preventDefault();
+      this.togglePinCurrentCard();
+      return;
+    }
+    if (key === this.getKeyForAction('favorite')) {
+      event.preventDefault();
+      this.toggleFavoriteCurrentCard();
+      return;
+    }
+    
+    // Layout shortcuts: 1=grid, 2=list, 3=compact, 4=spotlight
+    if (['1', '2', '3', '4'].includes(key)) {
+      event.preventDefault();
+      const layouts = { '1': 'grid', '2': 'list', '3': 'compact', '4': 'spotlight' };
+      applyLayout(layouts[key]);
+      saveFilterState();
+      this.showModeIndicator(`📐 ${layouts[key].charAt(0).toUpperCase() + layouts[key].slice(1)} Layout`);
+      return;
+    }
+    
+    // Filter shortcuts: A=all, F=favorites, B=bookmarks
+    if (key === 'a' && !isShift) {
+      event.preventDefault();
+      this.activateFilter('all');
+      return;
+    }
+    if (key === 'f' && !isShift) {
+      event.preventDefault();
+      this.activateFilter('favorites');
+      return;
+    }
+    if (key === 'b' && !isShift) {
+      event.preventDefault();
+      this.activateFilter('bookmarks');
+      return;
+    }
+    
+    // Sort shortcuts: D=default, T=title, R=recent, P=priority
+    if (key === 'd' && !isShift) {
+      event.preventDefault();
+      this.activateSort('default');
+      return;
+    }
+    if (key === 't' && !isShift) {
+      event.preventDefault();
+      this.activateSort('title');
+      return;
+    }
+    if (key === 'r' && !isShift) {
+      event.preventDefault();
+      this.activateSort('recent');
+      return;
+    }
+    if (key === 'p' && !isShift) {
+      event.preventDefault();
+      this.activateSort('priority');
+      return;
+    }
+    
+    // Settings: S key
+    if (key === 's' && !isShift) {
+      event.preventDefault();
+      openSettings();
+      initSettingsTabs();
+      initQuickFontButtons();
+      initFontSizeControls();
+      initCustomFontInput();
+      this.showModeIndicator('⚙️ Settings Opened');
+      return;
+    }
+    
+    // Help: H key
+    if (key === 'h' && !isShift) {
+      event.preventDefault();
+      if (helpBtn) helpBtn.click();
+      this.showModeIndicator('❓ Help Opened');
+      return;
+    }
+    
+    // Theme toggle: L key
+    if (key === 'l' && !isShift) {
+      event.preventDefault();
+      const next = document.body.dataset.theme === 'light' ? 'dark' : 'light';
+      applyTheme(next);
+      this.showModeIndicator(`🌗 ${next.charAt(0).toUpperCase() + next.slice(1)} Mode`);
+      return;
+    }
+    
+    // ===== END DIRECT SHORTCUTS =====
     
     // Check for navigation keys
     const isNavKey = ['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd'].includes(key);
@@ -2160,6 +2268,38 @@ const KeyboardNavigation = {
       this.handleEnter();
       return;
     }
+  },
+
+  activateFilter(filterName) {
+    activeFilter = filterName;
+    filterButtons.forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.filter === activeFilter);
+    });
+    saveFilterState();
+    render();
+    const labels = { 'all': 'All Stories', 'favorites': 'Favorites', 'bookmarks': 'Bookmarks' };
+    this.showModeIndicator(`🏷️ ${labels[filterName]}`);
+  },
+
+  activateSort(sortName) {
+    activeSort = sortName;
+    if (sortName === 'title') {
+      titleSortDirection = titleSortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      titleSortDirection = 'asc';
+    }
+    sortButtons.forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.sort === activeSort);
+      if (btn.dataset.sort === 'title' && activeSort === 'title') {
+        btn.textContent = titleSortDirection === 'asc' ? 'Title A-Z' : 'Title Z-A';
+      } else if (btn.dataset.sort === 'title') {
+        btn.textContent = 'Title';
+      }
+    });
+    saveSortPreference(activeSort, titleSortDirection);
+    render();
+    const labels = { 'default': 'Default', 'title': 'By Title', 'recent': 'Recent', 'priority': 'Priority' };
+    this.showModeIndicator(`📊 ${labels[sortName]}`);
   },
 
   setMode(mode) {
@@ -2338,10 +2478,483 @@ const KeyboardNavigation = {
     if (target.isContentEditable) return true;
     const tag = target.tagName;
     return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+  },
+
+  // Get key for action from KeybindManager
+  getKeyForAction(actionName) {
+    return KeybindManager.getKeyFor(actionName) || '';
+  },
+
+  // Toggle pin for current focused card (or first card if none focused)
+  togglePinCurrentCard() {
+    this.updateElements();
+    
+    // Use focused card, or first card if none
+    const targetIndex = this.focusedCardIndex >= 0 ? this.focusedCardIndex : 0;
+    const card = this.cards[targetIndex];
+    
+    if (!card) {
+      this.showModeIndicator('⚠️ No cards available');
+      return;
+    }
+
+    // Get the story ID from the card's href
+    const href = card.href;
+    const storyIdMatch = href.match(/story=([^&]+)/);
+    const storyId = storyIdMatch ? decodeURIComponent(storyIdMatch[1]) : null;
+    
+    if (!storyId) {
+      this.showModeIndicator('⚠️ Cannot identify story');
+      return;
+    }
+
+    // Toggle pin
+    const pins = loadPins();
+    if (isPinned(storyId)) {
+      pins.delete(storyId);
+      savePins(pins);
+      this.showModeIndicator('📌 Unpinned');
+    } else {
+      pins.add(storyId);
+      savePins(pins);
+      this.showModeIndicator('📌 Pinned!');
+    }
+    
+    // Re-render and re-focus the same card
+    render();
+    
+    // Re-focus the card after render
+    setTimeout(() => {
+      this.updateElements();
+      if (this.cards[targetIndex]) {
+        this.focusCard(targetIndex);
+      }
+    }, 50);
+  },
+
+  // Toggle favorite for current focused card (or first card if none focused)
+  toggleFavoriteCurrentCard() {
+    this.updateElements();
+    
+    // Use focused card, or first card if none
+    const targetIndex = this.focusedCardIndex >= 0 ? this.focusedCardIndex : 0;
+    const card = this.cards[targetIndex];
+    
+    if (!card) {
+      this.showModeIndicator('⚠️ No cards available');
+      return;
+    }
+
+    // Get the story ID from the card's href
+    const href = card.href;
+    const storyIdMatch = href.match(/story=([^&]+)/);
+    const storyId = storyIdMatch ? decodeURIComponent(storyIdMatch[1]) : null;
+    
+    if (!storyId) {
+      this.showModeIndicator('⚠️ Cannot identify story');
+      return;
+    }
+
+    // Toggle favorite
+    const favorites = loadFavorites();
+    if (favorites.has(storyId)) {
+      favorites.delete(storyId);
+      saveFavorites(favorites);
+      this.showModeIndicator('⭐ Unfavorited');
+    } else {
+      favorites.add(storyId);
+      saveFavorites(favorites);
+      this.showModeIndicator('⭐ Favorited!');
+    }
+    
+    // Re-render and re-focus the same card
+    render();
+    
+    // Re-focus the card after render
+    setTimeout(() => {
+      this.updateElements();
+      if (this.cards[targetIndex]) {
+        this.focusCard(targetIndex);
+      }
+    }, 50);
   }
 };
 
-// Initialize keyboard navigation when DOM is ready
+// ===== SETTINGS PANEL KEYBOARD NAVIGATION =====
+
+const SettingsPanelKeyboardNav = {
+  focusedTabIndex: -1,
+  focusedElementIndex: -1,
+  tabs: [],
+  focusableElements: [],
+
+  init() {
+    this.setupEventListeners();
+  },
+
+  setupEventListeners() {
+    // Listen for when settings panel opens
+    const settingsBtn = document.getElementById('settings-btn');
+    if (settingsBtn) {
+      settingsBtn.addEventListener('click', () => {
+        setTimeout(() => this.updateElements(), 100);
+      });
+    }
+
+    // Handle keyboard navigation within settings
+    document.addEventListener('keydown', (e) => this.handleKeydown(e));
+  },
+
+  updateElements() {
+    if (settingsPanel && !settingsPanel.hidden) {
+      this.tabs = Array.from(settingsPanel.querySelectorAll('.settings-tabs .tab-btn'));
+      this.focusableElements = Array.from(settingsPanel.querySelectorAll(
+        '.quick-font-btn, .theme-tab, .color-picker-btn, .color-item, .settings-reset-btn, .keybind-tag'
+      )).filter(el => el.offsetParent !== null);
+    }
+  },
+
+  handleKeydown(event) {
+    if (!settingsPanel || settingsPanel.hidden) return;
+    
+    // Don't interfere with keybind assignment
+    if (KeybindManager.bindingTarget) return;
+
+    const key = event.key.toLowerCase();
+    const isNavKey = ['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd'].includes(key);
+    
+    if (!isNavKey && key !== 'enter' && key !== ' ') return;
+
+    event.preventDefault();
+
+    // Tab switching with A/D or Arrow keys
+    if (['a', 'arrowleft', 'd', 'arrowright'].includes(key)) {
+      const direction = ['a', 'arrowleft'].includes(key) ? -1 : 1;
+      this.switchTab(direction);
+      return;
+    }
+
+    // Navigate within panel content with W/S
+    if (['w', 'arrowup', 's', 'arrowdown'].includes(key)) {
+      const direction = ['w', 'arrowup'].includes(key) ? -1 : 1;
+      this.navigateContent(direction);
+      return;
+    }
+
+    // Activate focused element
+    if (key === 'enter' || key === ' ') {
+      this.activateFocusedElement();
+    }
+  },
+
+  switchTab(direction) {
+    this.updateElements();
+    if (this.tabs.length === 0) return;
+
+    let newIndex = this.focusedTabIndex;
+    if (newIndex === -1) {
+      // Find currently active tab
+      newIndex = this.tabs.findIndex(tab => tab.classList.contains('active'));
+      if (newIndex === -1) newIndex = 0;
+    }
+
+    newIndex = Math.max(0, Math.min(newIndex + direction, this.tabs.length - 1));
+    this.focusedTabIndex = newIndex;
+    
+    // Click the tab to switch
+    this.tabs[newIndex].click();
+    this.tabs[newIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    
+    // Clear content focus when switching tabs
+    this.focusedElementIndex = -1;
+    this.clearContentFocus();
+  },
+
+  navigateContent(direction) {
+    this.updateElements();
+    if (this.focusableElements.length === 0) return;
+
+    let newIndex = this.focusedElementIndex;
+    if (newIndex === -1) {
+      newIndex = direction > 0 ? 0 : this.focusableElements.length - 1;
+    } else {
+      newIndex = Math.max(0, Math.min(newIndex + direction, this.focusableElements.length - 1));
+    }
+
+    this.focusedElementIndex = newIndex;
+    this.focusContentElement(newIndex);
+  },
+
+  focusContentElement(index) {
+    this.clearContentFocus();
+    const element = this.focusableElements[index];
+    if (element) {
+      element.classList.add('keyboard-focused');
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  },
+
+  clearContentFocus() {
+    this.focusableElements.forEach(el => el.classList.remove('keyboard-focused'));
+  },
+
+  activateFocusedElement() {
+    if (this.focusedElementIndex >= 0) {
+      const element = this.focusableElements[this.focusedElementIndex];
+      if (element) {
+        element.click();
+      }
+    } else if (this.focusedTabIndex >= 0) {
+      // If no content focused, activate current tab
+      this.tabs[this.focusedTabIndex]?.click();
+    }
+  }
+};
+
+// ===== HELP MODAL KEYBOARD NAVIGATION =====
+
+const HelpModalKeyboardNav = {
+  focusedTabIndex: -1,
+  scrollPosition: 0,
+  tabs: [],
+  modalBody: null,
+
+  init() {
+    this.setupEventListeners();
+  },
+
+  setupEventListeners() {
+    const helpBtn = document.getElementById('help-btn');
+    if (helpBtn) {
+      helpBtn.addEventListener('click', () => {
+        setTimeout(() => this.updateElements(), 100);
+      });
+    }
+
+    document.addEventListener('keydown', (e) => this.handleKeydown(e));
+  },
+
+  updateElements() {
+    if (helpModal && helpModal.classList.contains('is-open')) {
+      this.tabs = Array.from(helpModal.querySelectorAll('.modal-tabs .modal-tab'));
+      this.modalBody = helpModal.querySelector('.modal-body');
+    }
+  },
+
+  handleKeydown(event) {
+    if (!helpModal || !helpModal.classList.contains('is-open')) return;
+
+    const key = event.key.toLowerCase();
+    const isNavKey = ['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd'].includes(key);
+    
+    if (!isNavKey && key !== 'enter' && key !== ' ') return;
+
+    event.preventDefault();
+
+    // Tab switching with A/D
+    if (['a', 'arrowleft', 'd', 'arrowright'].includes(key)) {
+      const direction = ['a', 'arrowleft'].includes(key) ? -1 : 1;
+      this.switchTab(direction);
+      return;
+    }
+
+    // Scroll content with W/S
+    if (['w', 'arrowup', 's', 'arrowdown'].includes(key)) {
+      const direction = ['w', 'arrowup'].includes(key) ? -1 : 1;
+      this.scrollContent(direction);
+    }
+  },
+
+  switchTab(direction) {
+    this.updateElements();
+    if (this.tabs.length === 0) return;
+
+    let newIndex = this.focusedTabIndex;
+    if (newIndex === -1) {
+      newIndex = this.tabs.findIndex(tab => tab.classList.contains('active'));
+      if (newIndex === -1) newIndex = 0;
+    }
+
+    newIndex = Math.max(0, Math.min(newIndex + direction, this.tabs.length - 1));
+    this.focusedTabIndex = newIndex;
+    
+    this.tabs[newIndex].click();
+    this.tabs[newIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  },
+
+  scrollContent(direction) {
+    if (!this.modalBody) return;
+    
+    const scrollAmount = 100;
+    this.modalBody.scrollBy({
+      top: direction * scrollAmount,
+      behavior: 'smooth'
+    });
+  }
+};
+
+// ===== KEYBIND MANAGER =====
+
+const KeybindManager = {
+  bindingTarget: null,
+  
+  // Default keybinds
+  defaultKeybinds: {
+    'navUp': { key: 'w', fallback: 'arrowup', label: 'Navigate Up' },
+    'navDown': { key: 's', fallback: 'arrowdown', label: 'Navigate Down' },
+    'navLeft': { key: 'a', fallback: 'arrowleft', label: 'Navigate Left' },
+    'navRight': { key: 'd', fallback: 'arrowright', label: 'Navigate Right' },
+    'openCard': { key: 'enter', fallback: null, label: 'Open Card' },
+    'pin': { key: 'q', fallback: null, label: 'Pin/Unpin Card' },
+    'favorite': { key: 'e', fallback: null, label: 'Favorite/Unfavorite Card' },
+    'controlMode': { key: 'shift', fallback: null, label: 'Control Mode (hold)' },
+    'focusSearch': { key: 'enter', fallback: null, label: 'Focus Search' },
+    'unfocusSearch': { key: 'escape', fallback: null, label: 'Unfocus Search' },
+    'blackout': { key: 'space', fallback: null, label: 'Blackout Mode' },
+    'closeModal': { key: 'escape', fallback: null, label: 'Close Modal' },
+    'settingsTab': { key: 't', fallback: null, label: 'Open Settings' },
+    'helpTab': { key: 'h', fallback: null, label: 'Open Help' },
+    'toggleTheme': { key: 'l', fallback: null, label: 'Toggle Light/Dark' },
+  },
+
+  customKeybinds: {},
+
+  init() {
+    this.loadKeybinds();
+    this.renderKeybindList();
+    this.setupResetButton();
+  },
+
+  loadKeybinds() {
+    try {
+      const saved = localStorage.getItem('homepageKeybinds');
+      if (saved) {
+        this.customKeybinds = JSON.parse(saved);
+      }
+    } catch (error) {
+      console.error('Error loading keybinds:', error);
+    }
+  },
+
+  saveKeybinds() {
+    try {
+      localStorage.setItem('homepageKeybinds', JSON.stringify(this.customKeybinds));
+    } catch (error) {
+      console.error('Error saving keybinds:', error);
+    }
+  },
+
+  getKeyFor(action) {
+    return this.customKeybinds[action] || this.defaultKeybinds[action]?.key || '';
+  },
+
+  setKeybind(action, key) {
+    this.customKeybinds[action] = key.toLowerCase();
+    this.saveKeybinds();
+    this.renderKeybindList();
+  },
+
+  clearKeybind(action) {
+    delete this.customKeybinds[action];
+    this.saveKeybinds();
+    this.renderKeybindList();
+  },
+
+  resetToDefaults() {
+    this.customKeybinds = {};
+    this.saveKeybinds();
+    this.renderKeybindList();
+  },
+
+  renderKeybindList() {
+    const container = document.getElementById('keybind-list');
+    if (!container) return;
+
+    let html = '';
+    
+    Object.entries(this.defaultKeybinds).forEach(([action, config]) => {
+      const currentKey = this.getKeyFor(action);
+      const isActive = this.bindingTarget === action;
+      
+      html += `
+        <div class="keybind-tag ${isActive ? 'active' : ''}" data-action="${action}">
+          <span class="keybind-tag-label">${config.label}</span>
+          <span class="keybind-tag-key">${currentKey || '-'}</span>
+          <button type="button" class="keybind-tag-assign" data-action="${action}">
+            ${isActive ? 'Press key...' : 'Assign'}
+          </button>
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
+
+    // Add click handlers
+    container.querySelectorAll('.keybind-tag-assign').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const action = btn.dataset.action;
+        this.startBinding(action);
+      });
+    });
+  },
+
+  startBinding(action) {
+    this.bindingTarget = action;
+    this.renderKeybindList();
+    
+    // Show indicator
+    KeyboardNavigation.showModeIndicator(`⌨️ Press key for "${this.defaultKeybinds[action]?.label}"`);
+
+    // Set up one-time key listener
+    const keyListener = (e) => {
+      e.preventDefault();
+      
+      if (e.key === 'Escape') {
+        // Cancel binding
+        this.bindingTarget = null;
+        this.renderKeybindList();
+        document.removeEventListener('keydown', keyListener);
+        return;
+      }
+      
+      if (e.key === 'Backspace' || e.key === 'Delete') {
+        // Clear binding
+        this.clearKeybind(action);
+        this.bindingTarget = null;
+        document.removeEventListener('keydown', keyListener);
+        return;
+      }
+
+      // Set new binding
+      const key = e.key.toLowerCase();
+      this.setKeybind(action, key);
+      this.bindingTarget = null;
+      document.removeEventListener('keydown', keyListener);
+      
+      KeyboardNavigation.showModeIndicator(`✅ Bound "${key}" to "${this.defaultKeybinds[action]?.label}"`);
+    };
+
+    document.addEventListener('keydown', keyListener);
+  },
+
+  setupResetButton() {
+    const resetBtn = document.getElementById('reset-keybinds');
+    if (resetBtn) {
+      resetBtn.addEventListener('click', () => {
+        if (confirm('Reset all keybinds to default?')) {
+          this.resetToDefaults();
+          KeyboardNavigation.showModeIndicator('🔄 Keybinds reset to default');
+        }
+      });
+    }
+  }
+};
+
+// Initialize all keyboard navigation systems
 document.addEventListener('DOMContentLoaded', () => {
   KeyboardNavigation.init();
+  SettingsPanelKeyboardNav.init();
+  HelpModalKeyboardNav.init();
+  KeybindManager.init();
 });

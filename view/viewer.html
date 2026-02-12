@@ -202,80 +202,122 @@
                 aria-labelledby="help-title"
             >
                 <div class="help-header">
-                    <h2 id="help-title">🎮 SHORTCUTS</h2>
+                    <h2 id="help-title">🎮 VIEWER SHORTCUTS</h2>
                     <button id="close-help" class="ghost" type="button">✕</button>
                 </div>
                 <div class="help-content">
-                    <div class="shortcuts-grid">
-                        <div class="shortcut-category">
-                            <h4>Navigate</h4>
-                            <div class="shortcut-items">
-                                <div class="shortcut-item"><span class="shortcut-label">Pan</span><span class="shortcut-keys">WASD / Arrows</span></div>
-                                <div class="shortcut-item"><span class="shortcut-label">Prev Story</span><span class="shortcut-keys">Ctrl+← / PgUp</span></div>
-                                <div class="shortcut-item"><span class="shortcut-label">Next Story</span><span class="shortcut-keys">Ctrl+→ / PgDn</span></div>
-                                <div class="shortcut-item"><span class="shortcut-label">Scroll</span><span class="shortcut-keys">Shift + W/S</span></div>
+                    <!-- Keyboard Navigation Section - Pill Design -->
+                    <div class="help-section">
+                        <h3>🎮 Keyboard Navigation</h3>
+                        
+                        <div class="shortcuts-category">
+                            <h4>📷 Image Navigation</h4>
+                            <div class="shortcuts-pill-grid">
+                                <div class="shortcut-pill">
+                                    <span class="shortcut-pill-key">W / ↑</span>
+                                    <span class="shortcut-pill-desc">Pan up</span>
+                                </div>
+                                <div class="shortcut-pill">
+                                    <span class="shortcut-pill-key">S / ↓</span>
+                                    <span class="shortcut-pill-desc">Pan down</span>
+                                </div>
+                                <div class="shortcut-pill">
+                                    <span class="shortcut-pill-key">A / ←</span>
+                                    <span class="shortcut-pill-desc">Pan left</span>
+                                </div>
+                                <div class="shortcut-pill">
+                                    <span class="shortcut-pill-key">D / →</span>
+                                    <span class="shortcut-pill-desc">Pan right</span>
+                                </div>
+                                <div class="shortcut-pill">
+                                    <span class="shortcut-pill-key">Shift + W/S</span>
+                                    <span class="shortcut-pill-desc">Scroll text</span>
+                                </div>
+                                <div class="shortcut-pill">
+                                    <span class="shortcut-pill-key">Ctrl + ←</span>
+                                    <span class="shortcut-pill-desc">Prev story</span>
+                                </div>
+                                <div class="shortcut-pill">
+                                    <span class="shortcut-pill-key">Ctrl + →</span>
+                                    <span class="shortcut-pill-desc">Next story</span>
+                                </div>
                             </div>
                         </div>
-                        <div class="shortcut-category">
-                            <h4>Zoom</h4>
-                            <div class="shortcut-items">
-                                <div class="shortcut-item"><span class="shortcut-label">Zoom Out</span><span class="shortcut-keys" id="zoom-out-key">- / Q</span></div>
-                                <div class="shortcut-item"><span class="shortcut-label">Zoom In</span><span class="shortcut-keys" id="zoom-in-key">= / E</span></div>
-                                <div class="shortcut-item"><span class="shortcut-label">Fit</span><span class="shortcut-keys" id="fit-key">0 / 1</span></div>
-                            </div>
-                        </div>
-                        <div class="shortcut-category">
-                            <h4>Text</h4>
-                            <div class="shortcut-items">
-                                <div class="shortcut-item"><span class="shortcut-label">Font -</span><span class="shortcut-keys" id="font-down-key">[</span></div>
-                                <div class="shortcut-item"><span class="shortcut-label">Font +</span><span class="shortcut-keys" id="font-up-key">]</span></div>
-                                <div class="shortcut-item"><span class="shortcut-label">Line -</span><span class="shortcut-keys" id="line-down-key">{</span></div>
-                                <div class="shortcut-item"><span class="shortcut-label">Line +</span><span class="shortcut-keys" id="line-up-key">}</span></div>
-                            </div>
-                        </div>
-                        <div class="shortcut-category">
-                            <h4>Actions</h4>
-                            <div class="shortcut-items">
-                                <div class="shortcut-item"><span class="shortcut-label">Favorite</span><span class="shortcut-keys" id="favorite-key">F</span></div>
-                                <div class="shortcut-item"><span class="shortcut-label">Pin</span><span class="shortcut-keys" id="bookmark-key">B</span></div>
-                                <div class="shortcut-item"><span class="shortcut-label">Theme</span><span class="shortcut-keys" id="theme-key">T</span></div>
-                                <div class="shortcut-item"><span class="shortcut-label">Settings</span><span class="shortcut-keys" id="settings-key">?</span></div>
-                                <div class="shortcut-item"><span class="shortcut-label">Blackout</span><span class="shortcut-keys" id="blackout-key">Space</span></div>
-                            </div>
-                        </div>
-                    </div>
-                    <p class="help-footer">Customize keys in Settings → Shortcuts</p>
-                </div>
 
-                <div class="help-section">
-                    <h3>🔍 Search Guide</h3>
-                    <div class="search-guide">
-                        <div class="search-example">
-                            <span class="search-query">tag1 tag2</span>
-                            <span class="search-desc">Stories with either tag1 OR tag2</span>
+                        <div class="shortcuts-category">
+                            <h4>🔍 Zoom Controls</h4>
+                            <div class="shortcuts-pill-grid">
+                                <div class="shortcut-pill">
+                                    <span class="shortcut-pill-key">- / Q</span>
+                                    <span class="shortcut-pill-desc">Zoom out</span>
+                                </div>
+                                <div class="shortcut-pill">
+                                    <span class="shortcut-pill-key">= / E</span>
+                                    <span class="shortcut-pill-desc">Zoom in</span>
+                                </div>
+                                <div class="shortcut-pill">
+                                    <span class="shortcut-pill-key">0 / 1</span>
+                                    <span class="shortcut-pill-desc">Fit to view</span>
+                                </div>
+                            </div>
                         </div>
-                        <div class="search-example">
-                            <span class="search-query">+tag1 +tag2</span>
-                            <span class="search-desc">Stories with BOTH tag1 AND tag2 (required)</span>
+
+                        <div class="shortcuts-category">
+                            <h4>📝 Text Controls</h4>
+                            <div class="shortcuts-pill-grid">
+                                <div class="shortcut-pill">
+                                    <span class="shortcut-pill-key">[</span>
+                                    <span class="shortcut-pill-desc">Font smaller</span>
+                                </div>
+                                <div class="shortcut-pill">
+                                    <span class="shortcut-pill-key">]</span>
+                                    <span class="shortcut-pill-desc">Font larger</span>
+                                </div>
+                                <div class="shortcut-pill">
+                                    <span class="shortcut-pill-key">{</span>
+                                    <span class="shortcut-pill-desc">Line spacing -</span>
+                                </div>
+                                <div class="shortcut-pill">
+                                    <span class="shortcut-pill-key">}</span>
+                                    <span class="shortcut-pill-desc">Line spacing +</span>
+                                </div>
+                            </div>
                         </div>
-                        <div class="search-example">
-                            <span class="search-query">-tag1</span>
-                            <span class="search-desc">Exclude stories with tag1</span>
+
+                        <div class="shortcuts-category">
+                            <h4>⚡ Quick Actions</h4>
+                            <div class="shortcuts-pill-grid">
+                                <div class="shortcut-pill">
+                                    <span class="shortcut-pill-key">F</span>
+                                    <span class="shortcut-pill-desc">Toggle favorite</span>
+                                </div>
+                                <div class="shortcut-pill">
+                                    <span class="shortcut-pill-key">B</span>
+                                    <span class="shortcut-pill-desc">Toggle pin</span>
+                                </div>
+                                <div class="shortcut-pill">
+                                    <span class="shortcut-pill-key">T</span>
+                                    <span class="shortcut-pill-desc">Toggle theme</span>
+                                </div>
+                                <div class="shortcut-pill">
+                                    <span class="shortcut-pill-key">?</span>
+                                    <span class="shortcut-pill-desc">Open settings</span>
+                                </div>
+                                <div class="shortcut-pill">
+                                    <span class="shortcut-pill-key">SPACE</span>
+                                    <span class="shortcut-pill-desc">Blackout mode</span>
+                                </div>
+                                <div class="shortcut-pill">
+                                    <span class="shortcut-pill-key">ESC</span>
+                                    <span class="shortcut-pill-desc">Close modal</span>
+                                </div>
+                            </div>
                         </div>
-                        <div class="search-example">
-                            <span class="search-query">tag1 | tag2</span>
-                            <span class="search-desc">Stories with tag1 OR tag2 (pipe separator)</span>
-                        </div>
-                        <div class="search-example">
-                            <span class="search-query">action +sci-fi -romance</span>
-                            <span class="search-desc">Action stories that are sci-fi but NOT romance</span>
-                        </div>
-                        <div class="search-example">
-                            <span class="search-query">tag1, tag2, tag3</span>
-                            <span class="search-desc">Commas are treated as spaces (same as "tag1 tag2 tag3")</span>
-                        </div>
+                        
+                        <p style="font-size: 11px; color: var(--muted); margin-top: 12px; padding: 8px; background: rgba(98, 247, 255, 0.05); border-radius: 8px;">
+                            💡 <strong>Tip:</strong> Customize shortcuts in Settings → Shortcuts tab
+                        </p>
                     </div>
-                    <p class="search-tip">💡 Click tags on story cards to auto-add them to search</p>
                 </div>
             </div>
         </div>

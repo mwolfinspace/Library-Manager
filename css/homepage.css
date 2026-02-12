@@ -2529,26 +2529,60 @@ body[data-theme="light"] .settings-content::-webkit-scrollbar-thumb:hover {
 /* ===== KEYBOARD NAVIGATION HIGHLIGHT STYLES ===== */
 
 /* Card highlight glow - works in both light and dark mode */
+/* Clean outer glow only - no inset shadows that darken content */
 .story-card.keyboard-focused {
     outline: none;
     box-shadow:
-        0 0 0 3px var(--accent),
-        0 0 20px var(--accent),
-        0 0 40px var(--accent-2),
+        0 0 0 4px var(--accent),
+        0 0 25px var(--accent),
+        0 0 50px var(--accent-2),
         0 24px 40px var(--shadow);
-    transform: translateY(-4px);
+    transform: translateY(-4px) scale(1.01);
     z-index: 10;
 }
 
+/* Simple border highlight - z-index -1 puts it BEHIND content, not covering */
 .story-card.keyboard-focused::before {
     content: "";
     position: absolute;
-    inset: 0;
-    border-radius: 20px;
-    border: 2px solid var(--accent);
-    box-shadow: inset 0 0 20px rgba(98, 247, 255, 0.3);
-    z-index: 2;
+    inset: -1px;
+    border-radius: 21px;
+    border: 3px solid var(--accent);
+    /* Only outer glow, no inset shadows */
+    box-shadow: 0 0 20px rgba(98, 247, 255, 0.6);
+    z-index: -1;
     pointer-events: none;
+}
+
+/* Ensure text/tags inside focused card preserve original colors - NO COLOR CHANGES */
+.story-card.keyboard-focused .card-title {
+    color: var(--ink) !important;
+    text-shadow: 0 0 8px rgba(98, 247, 255, 0.3);
+}
+
+.story-card.keyboard-focused .card-desc {
+    color: var(--ink) !important;
+    opacity: 0.9;
+}
+
+/* Tags keep their original colors (no override) */
+.story-card.keyboard-focused .tag {
+    /* No color override - keeps original color */
+}
+
+.story-card.keyboard-focused .badge {
+    color: var(--ink) !important;
+    background: rgba(141, 255, 123, 0.18) !important;
+}
+
+/* Light mode - text colors only, tags keep original */
+body[data-theme="light"] .story-card.keyboard-focused .card-title {
+    color: #0b1220 !important;
+    text-shadow: none;
+}
+
+body[data-theme="light"] .story-card.keyboard-focused .card-desc {
+    color: #0b1220 !important;
 }
 
 /* Top control elements highlight */
@@ -2681,4 +2715,235 @@ body[data-theme="light"] .shortcut-pill-desc {
 .keyboard-mode-indicator.active-nav {
     border-color: var(--accent);
     box-shadow: 0 0 15px rgba(98, 247, 255, 0.4);
+}
+
+/* ===== KEYBIND LIST STYLES ===== */
+
+.keybind-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 60vh;
+    overflow-y: auto;
+    padding-right: 8px;
+}
+
+.keybind-tag {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: var(--btn);
+    border: 1px solid var(--btn-border);
+    border-radius: 12px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.keybind-tag:hover {
+    border-color: var(--accent);
+    background: rgba(98, 247, 255, 0.05);
+}
+
+.keybind-tag.active {
+    border-color: var(--accent);
+    box-shadow: 0 0 12px rgba(98, 247, 255, 0.3);
+    background: rgba(98, 247, 255, 0.1);
+}
+
+.keybind-tag-label {
+    flex: 1;
+    font-size: 13px;
+    color: var(--ink);
+}
+
+.keybind-tag-key {
+    font-family: "Orbitron", "Share Tech Mono", monospace;
+    font-size: 12px;
+    padding: 4px 10px;
+    background: var(--accent);
+    color: #041017;
+    border-radius: 999px;
+    font-weight: bold;
+    letter-spacing: 0.05em;
+    min-width: 60px;
+    text-align: center;
+}
+
+.keybind-tag-assign {
+    padding: 4px 12px;
+    border: 1px solid var(--btn-border);
+    background: transparent;
+    color: var(--muted);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 11px;
+    transition: all 0.2s ease;
+}
+
+.keybind-tag-assign:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(98, 247, 255, 0.1);
+}
+
+.keybind-tag.active .keybind-tag-assign {
+    background: var(--accent);
+    color: #041017;
+    border-color: var(--accent);
+}
+
+/* Settings Panel Keyboard Navigation */
+.settings-tabs .tab-btn.keyboard-focused {
+    outline: none;
+    box-shadow: inset 0 -3px 0 var(--accent), 0 0 15px rgba(98, 247, 255, 0.3);
+    color: var(--accent);
+}
+
+.tab-panel.keyboard-focused {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--accent), 0 0 20px rgba(98, 247, 255, 0.2);
+    border-radius: 12px;
+}
+
+.quick-font-btn.keyboard-focused,
+.theme-tab.keyboard-focused,
+.settings-reset-btn.keyboard-focused {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--accent), 0 0 15px rgba(98, 247, 255, 0.4);
+    transform: translateY(-2px);
+}
+
+.color-picker-btn.keyboard-focused,
+.color-item.keyboard-focused {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--accent), 0 0 15px rgba(98, 247, 255, 0.4);
+}
+
+/* Help Modal Keyboard Navigation */
+.modal-tabs .modal-tab.keyboard-focused {
+    outline: none;
+    box-shadow: inset 0 -2px 0 var(--accent), 0 0 15px rgba(98, 247, 255, 0.3);
+    color: var(--accent);
+    transform: translateY(-1px);
+}
+
+.modal-body.keyboard-focused {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--accent), 0 0 20px rgba(98, 247, 255, 0.2);
+    border-radius: 12px;
+}
+
+.help-section.keyboard-focused,
+.control-item.keyboard-focused,
+.action-item.keyboard-focused {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--accent), 0 0 15px rgba(98, 247, 255, 0.3);
+    border-color: var(--accent);
+}
+
+/* ===== SEARCH GUIDE PILL DESIGN ===== */
+
+.search-guide-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.search-guide-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    background: rgba(10, 16, 28, 0.4);
+    border: 1px solid var(--btn-border);
+    border-radius: 12px;
+    transition: all 0.2s ease;
+    cursor: default;
+}
+
+.search-guide-pill:hover {
+    border-color: rgba(98, 247, 255, 0.4);
+    background: rgba(98, 247, 255, 0.08);
+    transform: translateY(-2px);
+}
+
+.search-query-pill {
+    font-family: "Share Tech Mono", monospace;
+    font-size: 12px;
+    padding: 4px 10px;
+    background: rgba(98, 247, 255, 0.15);
+    color: var(--accent);
+    border-radius: 999px;
+    border: 1px solid rgba(98, 247, 255, 0.3);
+    white-space: nowrap;
+}
+
+.search-desc-pill {
+    font-size: 12px;
+    color: var(--ink);
+    opacity: 0.9;
+    white-space: nowrap;
+}
+
+.search-tip-pill {
+    margin-top: 12px;
+    padding: 10px 14px;
+    background: rgba(98, 247, 255, 0.08);
+    border: 1px solid rgba(98, 247, 255, 0.2);
+    border-radius: 10px;
+    font-size: 12px;
+    color: var(--accent);
+    text-align: center;
+}
+
+/* Light mode search guide */
+body[data-theme="light"] .search-guide-pill {
+    background: rgba(255, 255, 255, 0.85);
+    border-color: rgba(11, 18, 32, 0.2);
+}
+
+body[data-theme="light"] .search-guide-pill:hover {
+    background: rgba(10, 166, 199, 0.1);
+    border-color: rgba(10, 166, 199, 0.4);
+}
+
+body[data-theme="light"] .search-query-pill {
+    background: rgba(10, 166, 199, 0.15);
+    color: var(--accent-2);
+    border-color: rgba(10, 166, 199, 0.4);
+}
+
+body[data-theme="light"] .search-desc-pill {
+    color: #0b1220;
+}
+
+body[data-theme="light"] .search-tip-pill {
+    background: rgba(240, 240, 240, 0.9);
+    border-color: rgba(11, 18, 32, 0.2);
+    color: #0b1220;
+}
+
+/* Responsive search guide */
+@media (max-width: 600px) {
+    .search-guide-pills {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .search-guide-pill {
+        padding: 8px 10px;
+        flex-wrap: wrap;
+    }
+    
+    .search-query-pill {
+        font-size: 11px;
+        padding: 3px 8px;
+    }
+    
+    .search-desc-pill {
+        font-size: 11px;
+        flex: 1;
+    }
 }
