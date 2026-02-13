@@ -1201,29 +1201,39 @@
         .help-panel.wide .help-body {
             flex: 1;
             min-height: 0;
-            overflow-y: auto;
-            overflow-x: hidden;
+            overflow: hidden;
+            padding: 0;
+            margin: 0;
         }
         
         .help-panel.wide .help-header {
             flex-shrink: 0;
+            padding: 12px 16px 8px;
         }
         
         .help-panel.wide .help-actions {
             flex-shrink: 0;
+            padding: 8px 16px 12px;
         }
         
         .help-panel.wide .embedded-help-body {
             flex: 1;
             min-height: 0;
             overflow: hidden;
-            padding: 0 4px 8px 4px;
+            padding: 0 0 20px 0;
+            margin: 0;
         }
         
-        .help-panel.wide #homepage-settings-iframe {
-            height: 100%;
-            min-height: unset;
+        .help-panel.wide #homepage-settings-iframe,
+        .help-panel.wide #viewer-settings-iframe {
             display: block;
+            width: 100%;
+            height: 100%;
+            min-height: 400px;
+            border: none;
+            border-radius: 0;
+            flex: 1;
+            overflow: hidden;
         }
 
         /* External link section */
@@ -1641,7 +1651,7 @@
         </div>
     </div>
 
-    <!-- Homepage Settings - Loaded from external file -->
+        <!-- Homepage Settings - Loaded from external file -->
     <div class="help-backdrop" id="homepage-settings-modal" aria-hidden="true">
         <div class="help-panel wide" role="dialog" aria-modal="true" aria-labelledby="homepage-settings-title">
             <div class="help-header">
@@ -1649,15 +1659,15 @@
                     <p class="help-eyebrow">Xedryk's Lab System</p>
                     <h2 id="homepage-settings-title">🏠 Homepage Settings</h2>
                 </div>
-                <button class="help-close" id="homepage-settings-close" type="button" aria-label="Close">✕</button>
+                <button class="help-close" id="homepage-settings-close" type="button" aria-label="Close" aria-hidden="false">✕</button>
             </div>
             <div class="help-body embedded-help-body">
-                <iframe id="homepage-settings-iframe" src="database/Homepage_Settings.html" style="width: 100%; min-height: 500px; border: none; background: transparent;"></iframe>
+                <iframe id="homepage-settings-iframe" src="database/Homepage_Settings.html" class="settings-iframe"></iframe>
             </div>
         </div>
     </div>
 
-    <!-- Viewer Settings - Full inline UI -->
+    <!-- Viewer Settings - Loaded from external file -->
     <div class="help-backdrop" id="viewer-settings-modal" aria-hidden="true">
         <div class="help-panel wide" role="dialog" aria-modal="true" aria-labelledby="viewer-settings-title">
             <div class="help-header">
@@ -1665,58 +1675,10 @@
                     <p class="help-eyebrow">Xedryk's Lab System</p>
                     <h2 id="viewer-settings-title">📖 Viewer Settings</h2>
                 </div>
-                <button class="help-close" id="viewer-settings-close" type="button" aria-label="Close">✕</button>
+                <button class="help-close" id="viewer-settings-close" type="button" aria-label="Close" aria-hidden="false">✕</button>
             </div>
-            <div class="help-body" style="max-height: 60vh; overflow-y: auto;">
-                <div class="settings-tabs" role="tablist">
-                    <button class="tab-btn active" data-tab="v-appearance" type="button" role="tab">🎨 Appearance</button>
-                    <button class="tab-btn" data-tab="v-reading" type="button" role="tab">📖 Reading</button>
-                    <button class="tab-btn" data-tab="v-input" type="button" role="tab">⌨️ Input</button>
-                </div>
-                
-                <div class="tab-panel active" data-tab-panel="v-appearance">
-                    <div class="settings-section">
-                        <h4>Theme</h4>
-                        <select id="v-theme-select" class="font-select"><option value="dark">🌙 Dark</option><option value="light">☀️ Light</option></select>
-                    </div>
-                    <div class="settings-section">
-                        <h4>Story Font</h4>
-                        <select id="v-font-family" class="font-select"></select>
-                        <label class="full custom-font-label">Custom Font<input type="text" id="v-custom-font" placeholder="e.g. 'Fira Code', monospace"></label>
-                    </div>
-                </div>
-                
-                <div class="tab-panel" data-tab-panel="v-reading" hidden>
-                    <div class="settings-section">
-                        <h4>Font Size</h4>
-                        <input type="range" id="v-font-size" min="14" max="26" step="1"><span class="range-value" id="v-font-size-value">18px</span>
-                    </div>
-                    <div class="settings-section">
-                        <h4>Line Spacing</h4>
-                        <input type="range" id="v-line-spacing" min="1.2" max="2.2" step="0.1"><span class="range-value" id="v-line-spacing-value">1.6</span>
-                    </div>
-                    <div class="settings-section">
-                        <h4>Scroll Step</h4>
-                        <select id="v-scroll-step" class="font-select"><option value="20">20 px</option><option value="40">40 px</option><option value="60">60 px</option></select>
-                    </div>
-                </div>
-                
-                <div class="tab-panel" data-tab-panel="v-input" hidden>
-                    <div class="settings-section">
-                        <h4>Keyboard Mode</h4>
-                        <select id="v-keyboard-mode" class="font-select"><option value="default">Default</option><option value="left">One-Hand Left</option><option value="right">One-Hand Right</option></select>
-                    </div>
-                    <div class="settings-section">
-                        <h4>Options</h4>
-                        <label class="checkbox"><input type="checkbox" id="v-pan-keys">Enable Pan Keys (WASD / Arrows)</label>
-                        <label class="checkbox"><input type="checkbox" id="v-remember-zoom">Remember Zoom Per Story</label>
-                        <label class="checkbox"><input type="checkbox" id="v-remember-view-all">Remember View Across All Stories</label>
-                    </div>
-                </div>
-            </div>
-            <div class="help-actions">
-                <button class="help-primary" id="viewer-settings-save" type="button">💾 Save as Default</button>
-                <button class="ghost" id="viewer-settings-close-btn" type="button">Close</button>
+            <div class="help-body embedded-help-body">
+                <iframe id="viewer-settings-iframe" src="database/Viewer_Settings.html" class="settings-iframe"></iframe>
             </div>
         </div>
     </div>
@@ -4108,8 +4070,19 @@
             if (event.data && event.data.type) {
                 switch (event.data.type) {
                     case 'getHpFonts':
-                        // Send fonts to iframe
+                        // Send fonts to iframe (only if library is open)
                         try {
+                            if (!state.rootHandle) {
+                                // No library open, send default fonts
+                                const iframe = document.getElementById('homepage-settings-iframe');
+                                if (iframe && iframe.contentWindow) {
+                                    iframe.contentWindow.postMessage({ 
+                                        type: 'hpFonts', 
+                                        fonts: [] 
+                                    }, '*');
+                                }
+                                return;
+                            }
                             const dbDir = await getDatabaseDir();
                             const fonts = await readJsonFile(dbDir, 'fonts.json');
                             const iframe = document.getElementById('homepage-settings-iframe');
@@ -4142,6 +4115,54 @@
                     case 'closeHomepageSettings':
                         // Close the popup
                         closeHomepageSettingsModal();
+                        break;
+                        
+                    case 'getVFonts':
+                        // Send fonts to viewer settings iframe (only if library is open)
+                        try {
+                            if (!state.rootHandle) {
+                                // No library open, send default fonts
+                                const iframe = document.getElementById('viewer-settings-iframe');
+                                if (iframe && iframe.contentWindow) {
+                                    iframe.contentWindow.postMessage({ 
+                                        type: 'vFonts', 
+                                        fonts: [] 
+                                    }, '*');
+                                }
+                                return;
+                            }
+                            const dbDir = await getDatabaseDir();
+                            const fonts = await readJsonFile(dbDir, 'fonts.json');
+                            const iframe = document.getElementById('viewer-settings-iframe');
+                            if (iframe && iframe.contentWindow) {
+                                iframe.contentWindow.postMessage({ 
+                                    type: 'vFonts', 
+                                    fonts: fonts || [] 
+                                }, '*');
+                            }
+                        } catch (e) {
+                            console.error('Error sending fonts to viewer settings iframe:', e);
+                        }
+                        break;
+                        
+                    case 'saveViewerSettings':
+                        // Save viewer settings from iframe
+                        try {
+                            const dbDir = await getDatabaseDir();
+                            const existing = await readJsonFile(dbDir, 'settings.json') || {};
+                            const newSettings = { ...existing, ...event.data.settings };
+                            await writeFile(dbDir, 'settings.json', JSON.stringify(newSettings, null, 2));
+                            await writeCatalog(state.stories);
+                            setStatus('Viewer settings saved successfully!');
+                        } catch (e) {
+                            console.error('Error saving viewer settings from iframe:', e);
+                            setStatus('Error saving viewer settings: ' + e.message);
+                        }
+                        break;
+                        
+                    case 'closeViewerSettings':
+                        // Close the viewer settings popup
+                        closeViewerSettingsModal();
                         break;
                 }
             }
