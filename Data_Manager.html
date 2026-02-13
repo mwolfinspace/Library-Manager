@@ -4322,13 +4322,59 @@
                             const existing = await readJsonFile(dbDir, 'settings.json') || {};
                             const newSettings = { ...existing, ...event.data.settings };
                             await writeFile(dbDir, 'settings.json', JSON.stringify(newSettings, null, 2));
-                            // Also save to localStorage so homepage/viewer can read immediately
+                            
+                            // Save to localStorage in the format homepage.js expects
+                            // Theme
+                            if (newSettings.theme) {
+                                localStorage.setItem('homepageTheme', newSettings.theme);
+                            }
+                            
+                            // Font settings
+                            if (newSettings.fontFamily || newSettings.customFont) {
+                                const fontFamily = newSettings.customFont || newSettings.fontFamily || "'Share Tech Mono', monospace";
+                                localStorage.setItem('homepageFont', JSON.stringify({
+                                    family: fontFamily,
+                                    fallback: 'monospace'
+                                }));
+                            }
+                            
+                            // Font sizes
+                            if (newSettings.fontSize || newSettings.headerSize || newSettings.buttonFontSize || newSettings.cardFontSize) {
+                                localStorage.setItem('homepageFontSizes', JSON.stringify({
+                                    base: newSettings.fontSize || 14,
+                                    header: newSettings.headerSize || 26,
+                                    button: newSettings.buttonFontSize || 12,
+                                    card: newSettings.cardFontSize || 13
+                                }));
+                            }
+                            
+                            // Skip preferences
+                            const skipPrefs = {
+                                skipAgeVerify: newSettings.skipAgeVerify || false,
+                                skipWelcome: newSettings.skipWelcome || false
+                            };
+                            localStorage.setItem('skipPreferences', JSON.stringify(skipPrefs));
+                            
+                            // Also save full settings for reference
                             localStorage.setItem('homepageSettings', JSON.stringify(newSettings));
+                            
+                            // Save custom colors if present
+                            if (newSettings.customColors) {
+                                localStorage.setItem('customColors', JSON.stringify(newSettings.customColors));
+                            }
+                            
+                            // Save keybinds if present
+                            if (newSettings.keybinds) {
+                                localStorage.setItem('homepageKeybinds', JSON.stringify(newSettings.keybinds));
+                            }
+                            
                             await writeCatalog(state.stories);
                             setStatus('Homepage settings saved successfully!');
+                            showToast('🏠 Homepage settings saved!', 'success');
                         } catch (e) {
                             console.error('Error saving settings from iframe:', e);
                             setStatus('Error saving settings: ' + e.message);
+                            showToast('❌ Error saving settings: ' + e.message, 'error');
                         }
                         break;
                         

@@ -320,21 +320,21 @@ window.VIEWER_SETTINGS = {
   "skipAgeVerify": false,
   "skipWelcome": false,
   "keybinds": {
-    "navUp": "w",
-    "navDown": "s",
-    "navLeft": "a",
-    "navRight": "d",
-    "openCard": "enter",
-    "pin": "q",
-    "favorite": "e",
+    "navUp": "W",
+    "navDown": "S",
+    "navLeft": "A",
+    "navRight": "D",
+    "openCard": "Enter",
+    "pin": "Q",
+    "favorite": "E",
     "layoutGrid": "1",
     "layoutList": "2",
     "layoutCompact": "3",
     "layoutSpotlight": "4",
-    "settingsTab": "u",
-    "helpTab": "h",
-    "toggleTheme": "l",
-    "blackout": " ",
+    "settingsTab": ";",
+    "helpTab": "H",
+    "toggleTheme": "L",
+    "blackout": "Space",
     "focusSearch": "/"
   },
   "lineSpacing": 1.6,
@@ -346,5 +346,31 @@ window.VIEWER_SETTINGS = {
   "rememberViewAll": false,
   "customBindings": {},
   "buttonFontSize": 12,
-  "cardFontSize": 13
+  "cardFontSize": 13,
+  "customColors": {
+    "dark": {
+      "ink": "#e8f1ff",
+      "muted": "#e8f1ff",
+      "bg": "#03050b",
+      "bg-2": "#0a1220",
+      "panel": "#0c1422",
+      "accent": "#62f7ff",
+      "accent-2": "#8dff7b",
+      "card": "#0c1422",
+      "shadow": "#02060c",
+      "grid": "#62f7ff"
+    },
+    "light": {
+      "ink": "#0b1220",
+      "muted": "#0b1220",
+      "bg": "#eef3f9",
+      "bg-2": "#f8fbff",
+      "panel": "#ffffff",
+      "accent": "#0aa6c7",
+      "accent-2": "#3b5bff",
+      "card": "#ffffff",
+      "shadow": "#0c1626",
+      "grid": "#0aa6c7"
+    }
+  }
 };

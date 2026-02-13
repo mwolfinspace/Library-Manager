@@ -791,11 +791,52 @@
             }
         }
         
+        // Helper function to save settings to localStorage in the format homepage.js expects
+        function saveToLocalStorage(settings) {
+            // Save theme
+            if (settings.theme) {
+                localStorage.setItem('homepageTheme', settings.theme);
+            }
+            
+            // Save font settings (as homepage.js expects)
+            if (settings.fontFamily || settings.customFont) {
+                const fontFamily = settings.customFont || settings.fontFamily || "'Share Tech Mono', monospace";
+                localStorage.setItem('homepageFont', JSON.stringify({
+                    family: fontFamily,
+                    fallback: 'monospace'
+                }));
+            }
+            
+            // Save font sizes
+            if (settings.fontSize || settings.headerSize || settings.buttonFontSize || settings.cardFontSize) {
+                localStorage.setItem('homepageFontSizes', JSON.stringify({
+                    base: settings.fontSize || 14,
+                    header: settings.headerSize || 26,
+                    button: settings.buttonFontSize || 12,
+                    card: settings.cardFontSize || 13
+                }));
+            }
+            
+            // Save skip preferences
+            const skipPrefs = {
+                skipAgeVerify: settings.skipAgeVerify || false,
+                skipWelcome: settings.skipWelcome || false
+            };
+            localStorage.setItem('skipPreferences', JSON.stringify(skipPrefs));
+            
+            // Also save the full settings for reference
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+        }
+        
         // Also create global save/close functions for Data Manager to call
         window.saveAndClose = function() {
             const settings = window.getCurrentSettings ? window.getCurrentSettings() : {};
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+            
+            // Save to localStorage in the format homepage.js expects
+            saveToLocalStorage(settings);
+            
             if (MODE === 'datamanager') {
+                // Send to parent (Data_Manager) to save to file system
                 window.parent.postMessage({ type: 'saveHomepageSettings', settings: settings }, '*');
             }
             window.parent.postMessage({ type: 'closeHomepageSettings' }, '*');
@@ -807,37 +848,6 @@
             }
         };
         
-        window.getCurrentSettings = function() {
-            // Gather all current settings from the form
-            const settings = {};
-            
-            // Font settings
-            const fontSelect = document.getElementById('hp-font-select');
-            const customFont = document.getElementById('hp-custom-font');
-            const baseFontSize = document.getElementById('hp-base-font-size');
-            const headerFontSize = document.getElementById('hp-header-font-size');
-            const buttonFontSize = document.getElementById('hp-button-font-size');
-            const cardFontSize = document.getElementById('hp-card-font-size');
-            
-            if (fontSelect) settings.fontFamily = fontSelect.value;
-            if (customFont) settings.customFont = customFont.value;
-            if (baseFontSize) settings.fontSize = parseInt(baseFontSize.value, 10);
-            if (headerFontSize) settings.headerSize = parseInt(headerFontSize.value, 10);
-            if (buttonFontSize) settings.buttonFontSize = parseInt(buttonFontSize.value, 10);
-            if (cardFontSize) settings.cardFontSize = parseInt(cardFontSize.value, 10);
-            
-            // Theme
-            const activeTheme = document.querySelector('.theme-tab.active');
-            if (activeTheme) settings.theme = activeTheme.dataset.theme;
-            
-            // Data settings
-            const skipAgeVerify = document.getElementById('hp-skip-age-verify');
-            const skipWelcome = document.getElementById('hp-skip-welcome');
-            if (skipAgeVerify) settings.skipAgeVerify = skipAgeVerify.checked;
-            if (skipWelcome) settings.skipWelcome = skipWelcome.checked;
-            
-            return settings;
-        };
 
         class FontManager {
             constructor(settingsManager) {
@@ -882,9 +892,133 @@
             }
         }
 
+        // Tab switching functionality
+        function initTabSwitching() {
+            const tabButtons = document.querySelectorAll('.settings-tabs .tab-btn');
+            const tabPanels = document.querySelectorAll('.tab-panel');
+            
+            tabButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tabId = btn.dataset.tab;
+                    
+                    // Update tab buttons
+                    tabButtons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    
+                    // Update tab panels
+                    tabPanels.forEach(panel => {
+                        if (panel.dataset.tabPanel === tabId) {
+                            panel.removeAttribute('hidden');
+                            panel.classList.add('active');
+                        } else {
+                            panel.setAttribute('hidden', '');
+                            panel.classList.remove('active');
+                        }
+                    });
+                });
+            });
+        }
+
+        // Get current color settings
+        function getColorSettings() {
+            const colors = {
+                dark: {},
+                light: {}
+            };
+            
+            // Get dark theme colors
+            document.querySelectorAll('#dark-colors .color-picker').forEach(picker => {
+                const colorKey = picker.dataset.color;
+                const key = colorKey.replace('dark.', '');
+                colors.dark[key] = picker.value;
+            });
+            
+            // Get light theme colors
+            document.querySelectorAll('#light-colors .color-picker').forEach(picker => {
+                const colorKey = picker.dataset.color;
+                const key = colorKey.replace('light.', '');
+                colors.light[key] = picker.value;
+            });
+            
+            return colors;
+        }
+
+        // Get current keybind settings
+        function getKeybindSettings() {
+            const keybinds = {};
+            
+            document.querySelectorAll('.keybind-key').forEach(input => {
+                const key = input.dataset.keybind;
+                keybinds[key] = input.value;
+            });
+            
+            return keybinds;
+        }
+
+        // Update getCurrentSettings to include colors and keybinds
+        window.getCurrentSettings = function() {
+            // Gather all current settings from the form
+            const settings = {};
+            
+            // Font settings
+            const fontSelect = document.getElementById('hp-font-select');
+            const customFont = document.getElementById('hp-custom-font');
+            const baseFontSize = document.getElementById('hp-base-font-size');
+            const headerFontSize = document.getElementById('hp-header-font-size');
+            const buttonFontSize = document.getElementById('hp-button-font-size');
+            const cardFontSize = document.getElementById('hp-card-font-size');
+            
+            if (fontSelect) settings.fontFamily = fontSelect.value;
+            if (customFont) settings.customFont = customFont.value;
+            if (baseFontSize) settings.fontSize = parseInt(baseFontSize.value, 10);
+            if (headerFontSize) settings.headerSize = parseInt(headerFontSize.value, 10);
+            if (buttonFontSize) settings.buttonFontSize = parseInt(buttonFontSize.value, 10);
+            if (cardFontSize) settings.cardFontSize = parseInt(cardFontSize.value, 10);
+            
+            // Theme
+            const activeTheme = document.querySelector('.theme-tab.active');
+            if (activeTheme) settings.theme = activeTheme.dataset.theme;
+            
+            // Color settings
+            settings.customColors = getColorSettings();
+            
+            // Keybind settings
+            settings.keybinds = getKeybindSettings();
+            
+            // Data settings
+            const skipAgeVerify = document.getElementById('hp-skip-age-verify');
+            const skipWelcome = document.getElementById('hp-skip-welcome');
+            if (skipAgeVerify) settings.skipAgeVerify = skipAgeVerify.checked;
+            if (skipWelcome) settings.skipWelcome = skipWelcome.checked;
+            
+            return settings;
+        };
+
+        // Initialize range sliders to show current values
+        function initRangeSliders() {
+            const ranges = ['hp-base-font-size', 'hp-header-font-size', 'hp-button-font-size', 'hp-card-font-size'];
+            ranges.forEach(id => {
+                const input = document.getElementById(id);
+                if (input) {
+                    const valueSpan = input.nextElementSibling;
+                    if (valueSpan && valueSpan.classList.contains('range-value')) {
+                        input.addEventListener('input', () => {
+                            valueSpan.textContent = input.value + 'px';
+                        });
+                    }
+                }
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             const settingsManager = new SettingsManager({}, 'homepageSettings');
             const fontManager = new FontManager(settingsManager);
+
+            // Initialize tab switching
+            initTabSwitching();
+            
+            // Initialize range sliders
+            initRangeSliders();
 
             fontManager.loadFonts();
 
@@ -905,6 +1039,82 @@
                     if (window.closeSettings) {
                         window.closeSettings();
                     }
+                });
+            }
+            
+            // Theme tab switching (inside iframe)
+            document.querySelectorAll('.theme-tab').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.theme-tab').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                });
+            });
+            
+            // Reset colors button
+            const resetColorsBtn = document.getElementById('hp-reset-colors');
+            if (resetColorsBtn) {
+                resetColorsBtn.addEventListener('click', () => {
+                    // Reset dark colors
+                    const darkDefaults = {
+                        'dark.ink': '#e8f1ff',
+                        'dark.muted': '#e8f1ff',
+                        'dark.bg': '#03050b',
+                        'dark.bg-2': '#0a1220',
+                        'dark.panel': '#0c1422',
+                        'dark.accent': '#62f7ff',
+                        'dark.accent-2': '#8dff7b',
+                        'dark.card': '#0c1422',
+                        'dark.shadow': '#02060c',
+                        'dark.grid': '#62f7ff'
+                    };
+                    // Reset light colors
+                    const lightDefaults = {
+                        'light.ink': '#0b1220',
+                        'light.muted': '#0b1220',
+                        'light.bg': '#eef3f9',
+                        'light.bg-2': '#f8fbff',
+                        'light.panel': '#ffffff',
+                        'light.accent': '#0aa6c7',
+                        'light.accent-2': '#3b5bff',
+                        'light.card': '#ffffff',
+                        'light.shadow': '#0c1626',
+                        'light.grid': '#0aa6c7'
+                    };
+                    // Apply defaults
+                    document.querySelectorAll('.color-picker').forEach(picker => {
+                        const colorKey = picker.dataset.color;
+                        if (darkDefaults[colorKey]) picker.value = darkDefaults[colorKey];
+                        if (lightDefaults[colorKey]) picker.value = lightDefaults[colorKey];
+                    });
+                });
+            }
+            
+            // Reset keybinds button
+            const resetKeybindsBtn = document.getElementById('hp-reset-keybinds');
+            if (resetKeybindsBtn) {
+                resetKeybindsBtn.addEventListener('click', () => {
+                    const defaults = {
+                        'navUp': 'W',
+                        'navDown': 'S',
+                        'navLeft': 'A',
+                        'navRight': 'D',
+                        'openCard': 'Enter',
+                        'pin': 'Q',
+                        'favorite': 'E',
+                        'layoutGrid': '1',
+                        'layoutList': '2',
+                        'layoutCompact': '3',
+                        'layoutSpotlight': '4',
+                        'settingsTab': 'U',
+                        'helpTab': 'H',
+                        'toggleTheme': 'L',
+                        'blackout': 'Space',
+                        'focusSearch': '/'
+                    };
+                    document.querySelectorAll('.keybind-key').forEach(input => {
+                        const key = input.dataset.keybind;
+                        if (defaults[key]) input.value = defaults[key];
+                    });
                 });
             }
         });
