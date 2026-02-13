@@ -3768,6 +3768,13 @@
 
         function openHomepageSettingsModal() {
             if (!homepageSettingsModal) return;
+            
+            // Force reload iframe to get fresh fonts
+            const iframe = document.getElementById('homepage-settings-iframe');
+            if (iframe) {
+                iframe.src = 'database/Homepage_Settings.html?t=' + Date.now();
+            }
+            
             homepageSettingsModal.classList.add('is-open');
             homepageSettingsModal.setAttribute('aria-hidden', 'false');
             loadHomepageSettings();
@@ -3777,6 +3784,12 @@
             if (!homepageSettingsModal) return;
             homepageSettingsModal.classList.remove('is-open');
             homepageSettingsModal.setAttribute('aria-hidden', 'true');
+            
+            // Clear the iframe src to prevent stale data on next open
+            const iframe = document.getElementById('homepage-settings-iframe');
+            if (iframe) {
+                iframe.src = 'about:blank';
+            }
         }
 
         if (homepageSettingsBtn) {
@@ -3852,6 +3865,13 @@
 
         function openViewerSettingsModal() {
             if (!viewerSettingsModal) return;
+            
+            // Force reload iframe to get fresh fonts
+            const iframe = document.getElementById('viewer-settings-iframe');
+            if (iframe) {
+                iframe.src = 'database/Viewer_Settings.html?t=' + Date.now();
+            }
+            
             viewerSettingsModal.classList.add('is-open');
             viewerSettingsModal.setAttribute('aria-hidden', 'false');
             loadViewerSettings();
@@ -3861,6 +3881,12 @@
             if (!viewerSettingsModal) return;
             viewerSettingsModal.classList.remove('is-open');
             viewerSettingsModal.setAttribute('aria-hidden', 'true');
+            
+            // Clear the iframe src to prevent stale data on next open
+            const iframe = document.getElementById('viewer-settings-iframe');
+            if (iframe) {
+                iframe.src = 'about:blank';
+            }
         }
 
         if (viewerSettingsBtn) {

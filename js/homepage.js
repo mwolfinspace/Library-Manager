@@ -290,6 +290,7 @@ const COLOR_DESCRIPTIONS = {
 
 async function loadFonts() {
   try {
+    // Use window.FONTS from fonts.js (loaded as script tag - no CORS issues)
     const fonts = window.FONTS || [];
     const fontSelect = document.getElementById("font-select");
     if (fontSelect) {
@@ -1799,8 +1800,12 @@ function convertGradientToHex(gradient) {
   });
 }
 
-function openSettings() {
+async function openSettings() {
   if (!settingsPanel) return;
+  
+  // Reload fonts - window.FONTS is set by fonts.js loaded via script tag
+  await loadFonts();
+  
   loadPanelSettings();
   settingsPanel.hidden = false;
   settingsCurrentTheme = document.body.dataset.theme || "dark";

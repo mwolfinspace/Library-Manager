@@ -25,6 +25,11 @@
     "source": "local"
   },
   {
+    "name": "SN Pro",
+    "family": "'SN Pro', sans-serif",
+    "source": "local"
+  },
+  {
     "name": "space mono",
     "family": "'space mono', sans-serif",
     "source": "local"

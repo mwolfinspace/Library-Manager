@@ -43,6 +43,12 @@
 }
 
 @font-face {
+  font-family: 'SN Pro';
+  src: url(../fonts/SN-Pro/SNPro-Italic-VariableFont_wght.ttf) format('truetype'),
+       url(../fonts/SN-Pro/SNPro-VariableFont_wght.ttf) format('truetype');
+}
+
+@font-face {
   font-family: 'space mono';
   src: url(../fonts/space-mono/SpaceMono-Bold.ttf) format('truetype'),
        url(../fonts/space-mono/SpaceMono-BoldItalic.ttf) format('truetype'),

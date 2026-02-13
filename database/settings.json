@@ -78,7 +78,7 @@
     "pinned": [],
     "bookmarks": {}
   },
-  "fontFamily": "'IBM Plex Mono', monospace",
+  "fontFamily": "'SN Pro', sans-serif",
   "customFont": "",
   "fontSize": 18,
   "headerSize": 26,
@@ -111,5 +111,6 @@
   "keyboardMode": "default",
   "panKeys": true,
   "rememberZoom": true,
-  "rememberViewAll": false
+  "rememberViewAll": false,
+  "customBindings": {}
 }
