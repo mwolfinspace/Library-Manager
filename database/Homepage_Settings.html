@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Homepage Settings</title>
+    <style>
+        :root {
+            --ink: #e6f3ff;
+            --ink-muted: rgba(230, 243, 255, 0.68);
+            --bg: #0b1019;
+            --bg-soft: #141d2a;
+            --panel: #162235;
+            --panel-2: #1c2a3f;
+            --accent: #3ef0c1;
+            --accent-2: #5aa5ff;
+            --danger: #ff6b6b;
+            --shadow: rgba(6, 12, 22, 0.55);
+        }
+
+        * { box-sizing: border-box; }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        body {
+            padding: 16px;
+            font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+            color: var(--ink);
+            background: var(--bg);
+            height: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        h1 {
+            margin: 0 0 4px;
+            font-family: "Palatino Linotype", "Georgia", serif;
+            font-size: 20px;
+            color: var(--accent);
+        }
+
+        .subtitle {
+            margin: 0 0 16px;
+            font-size: 12px;
+            color: var(--ink-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+        }
+
+        .settings-tabs {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(90, 165, 255, 0.3);
+            background: transparent;
+            color: var(--ink-muted);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn:hover {
+            border-color: rgba(62, 240, 193, 0.5);
+            color: var(--ink);
+        }
+
+        .tab-btn.active {
+            background: rgba(62, 240, 193, 0.15);
+            border-color: rgba(62, 240, 193, 0.6);
+            color: var(--accent);
+        }
+
+        .tab-panel { display: block; }
+        .tab-panel[hidden] { display: none; }
+
+        .settings-section {
+            margin-bottom: 16px;
+            padding: 12px;
+            border-radius: 12px;
+            background: rgba(15, 24, 38, 0.6);
+            border: 1px solid rgba(90, 165, 255, 0.15);
+        }
+
+        .settings-section h4 {
+            margin: 0 0 10px;
+            font-size: 13px;
+            color: var(--ink);
+            font-weight: 600;
+        }
+
+        .quick-font-buttons {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .quick-font-btn {
+            padding: 6px 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(90, 165, 255, 0.3);
+            background: transparent;
+            color: var(--ink);
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .quick-font-btn:hover {
+            border-color: rgba(62, 240, 193, 0.6);
+            background: rgba(62, 240, 193, 0.1);
+        }
+
+        .font-select {
+            width: 100%;
+            margin-bottom: 8px;
+            padding: 8px 10px;
+            border-radius: 10px;
+            border: 1px solid rgba(90, 165, 255, 0.35);
+            background: var(--panel-2);
+            color: var(--ink);
+            font-size: 14px;
+        }
+
+        .custom-font-label {
+            display: block;
+            margin-top: 8px;
+            font-size: 13px;
+            color: var(--ink-muted);
+        }
+
+        .custom-font-label input {
+            width: 100%;
+            margin-top: 4px;
+            padding: 8px 10px;
+            border-radius: 10px;
+            border: 1px solid rgba(90, 165, 255, 0.35);
+            background: var(--panel-2);
+            color: var(--ink);
+            font-size: 14px;
+        }
+
+        .font-size-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+        }
+
+        .font-size-grid label {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 13px;
+            color: var(--ink-muted);
+        }
+
+        .font-size-grid input[type="range"] {
+            width: 100%;
+        }
+
+        .range-value {
+            font-size: 12px;
+            color: var(--accent);
+        }
+
+        .theme-tabs {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        .theme-tab {
+            flex: 1;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid rgba(90, 165, 255, 0.3);
+            background: transparent;
+            color: var(--ink-muted);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .theme-tab:hover {
+            border-color: rgba(62, 240, 193, 0.5);
+        }
+
+        .theme-tab.active {
+            background: rgba(62, 240, 193, 0.15);
+            border-color: rgba(62, 240, 193, 0.6);
+            color: var(--accent);
+        }
+
+        .toggle-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .toggle-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 10px;
+            border-radius: 8px;
+            background: rgba(15, 24, 38, 0.8);
+            border: 1px solid rgba(90, 165, 255, 0.2);
+            cursor: pointer;
+        }
+
+        .toggle-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .toggle-icon { font-size: 16px; }
+
+        .toggle-text strong {
+            font-size: 13px;
+            color: var(--ink);
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 40px;
+            height: 22px;
+        }
+
+        .toggle-input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(90, 165, 255, 0.2);
+            transition: 0.3s;
+            border-radius: 22px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 3px;
+            bottom: 3px;
+            background-color: var(--ink-muted);
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        .toggle-input:checked + .toggle-slider {
+            background-color: rgba(62, 240, 193, 0.4);
+        }
+
+        .toggle-input:checked + .toggle-slider:before {
+            transform: translateX(18px);
+            background-color: var(--accent);
+        }
+
+        .settings-reset-btn {
+            width: 100%;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 107, 107, 0.4);
+            background: transparent;
+            color: var(--danger);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .settings-reset-btn:hover {
+            background: rgba(255, 107, 107, 0.15);
+            border-color: rgba(255, 107, 107, 0.7);
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(90, 165, 255, 0.2);
+        }
+
+        button {
+            border: none;
+            border-radius: 999px;
+            padding: 8px 14px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 13px;
+            color: #041018;
+            background: var(--accent);
+            box-shadow: 0 10px 16px rgba(62, 240, 193, 0.18);
+        }
+
+        button.ghost {
+            background: transparent;
+            color: var(--ink);
+            border: 1px solid rgba(90, 165, 255, 0.4);
+            box-shadow: none;
+        }
+
+        .current-settings {
+            margin-top: 16px;
+            padding: 12px;
+            border-radius: 12px;
+            background: rgba(15, 24, 38, 0.8);
+            border: 1px solid rgba(90, 165, 255, 0.2);
+        }
+
+        .current-settings h4 {
+            margin: 0 0 12px;
+            font-size: 13px;
+            color: var(--ink);
+            font-weight: 600;
+        }
+
+        .settings-display {
+            display: grid;
+            gap: 8px;
+        }
+
+        .settings-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: rgba(10, 16, 28, 0.6);
+            font-size: 12px;
+        }
+
+        .settings-item-label { color: var(--ink-muted); }
+        .settings-item-value { color: var(--accent); font-weight: 500; }
+        .settings-item-value.enabled { color: #3ef0c1; }
+        .settings-item-value.disabled { color: rgba(230, 243, 255, 0.5); }
+
+        .loading {
+            color: var(--ink-muted);
+            font-style: italic;
+            font-size: 12px;
+        }
+
+        .status-msg {
+            margin-top: 12px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            display: none;
+        }
+
+        .status-msg.success {
+            display: block;
+            background: rgba(62, 240, 193, 0.15);
+            color: var(--accent);
+            border: 1px solid rgba(62, 240, 193, 0.3);
+        }
+
+        .status-msg.error {
+            display: block;
+            background: rgba(255, 107, 107, 0.15);
+            color: var(--danger);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+        }
+
+        /* Color grid styles */
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .color-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            border-radius: 8px;
+            background: rgba(15, 24, 38, 0.8);
+            border: 1px solid rgba(90, 165, 255, 0.2);
+        }
+
+        .color-item label {
+            flex: 1;
+            font-size: 11px;
+            color: var(--ink);
+            cursor: pointer;
+        }
+
+        .color-picker {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            border: 1px solid rgba(90, 165, 255, 0.3);
+            cursor: pointer;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .color-picker::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+
+        .color-picker::-webkit-color-swatch {
+            border: none;
+            border-radius: 5px;
+        }
+
+        /* Keybind list styles */
+        .keybind-list {
+            display: grid;
+            gap: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .keybind-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            border-radius: 8px;
+            background: rgba(15, 24, 38, 0.8);
+            border: 1px solid rgba(90, 165, 255, 0.2);
+        }
+
+        .keybind-label {
+            font-size: 12px;
+            color: var(--ink);
+        }
+
+        .keybind-key {
+            padding: 4px 8px;
+            border-radius: 4px;
+            background: rgba(62, 240, 193, 0.15);
+            color: var(--accent);
+            font-size: 11px;
+            font-family: monospace;
+        }
+
+        /* Custom scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 24, 38, 0.5);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(90, 165, 255, 0.4);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(62, 240, 193, 0.6);
+        }
+
+        /* Prevent horizontal scroll */
+        * {
+            overflow-x: hidden;
+        }
+
+        /* Scrollable containers */
+        .color-grid,
+        .keybind-list {
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+    </style>
+</head>
+<body>
+    <h1>Homepage Settings</h1>
+    <p class="subtitle">Customize your reading experience</p>
+
+    <div class="settings-tabs" role="tablist">
+        <button class="tab-btn active" data-tab="hp-font" type="button" role="tab">📝 Font</button>
+        <button class="tab-btn" data-tab="hp-color" type="button" role="tab">🎨 Color</button>
+        <button class="tab-btn" data-tab="hp-keyboard" type="button" role="tab">⌨️ Shortcuts</button>
+        <button class="tab-btn" data-tab="hp-data" type="button" role="tab">💾 Data</button>
+    </div>
+
+    <!-- Font Tab -->
+    <div class="tab-panel active" data-tab-panel="hp-font">
+        <div class="settings-section">
+            <h4>Quick Font Apply</h4>
+            <div class="quick-font-buttons">
+                <button type="button" class="quick-font-btn" data-font="'Share Tech Mono', monospace">🖥️ Tech Mono</button>
+                <button type="button" class="quick-font-btn" data-font="'Orbitron', sans-serif">🚀 Orbitron</button>
+                <button type="button" class="quick-font-btn" data-font="'VT323', monospace">⌨️ VT323</button>
+                <button type="button" class="quick-font-btn" data-font="'Space Mono', monospace">🌌 Space Mono</button>
+            </div>
+        </div>
+        <div class="settings-section">
+            <h4>Font Family</h4>
+            <select id="hp-font-select" class="font-select"></select>
+            <label class="custom-font-label">Custom Font<input type="text" id="hp-custom-font" placeholder="e.g. 'Fira Code', monospace"></label>
+        </div>
+        <div class="settings-section">
+            <h4>Font Sizes</h4>
+            <div class="font-size-grid">
+                <label>Base Size<input type="range" id="hp-base-font-size" min="10" max="24" step="1" value="14"><span class="range-value">14px</span></label>
+                <label>Headers<input type="range" id="hp-header-font-size" min="16" max="48" step="2" value="26"><span class="range-value">26px</span></label>
+                <label>Buttons<input type="range" id="hp-button-font-size" min="8" max="18" step="1" value="12"><span class="range-value">12px</span></label>
+                <label>Cards<input type="range" id="hp-card-font-size" min="10" max="20" step="1" value="13"><span class="range-value">13px</span></label>
+            </div>
+        </div>
+        <div class="settings-section">
+            <button id="hp-reset-fonts" class="settings-reset-btn">Reset Fonts to Default</button>
+        </div>
+    </div>
+
+    <!-- Color Tab -->
+    <div class="tab-panel" data-tab-panel="hp-color" hidden>
+        <div class="settings-section">
+            <h4>Theme Mode</h4>
+            <div class="theme-tabs">
+                <button class="theme-tab active" data-theme="dark">🌙 Dark</button>
+                <button class="theme-tab" data-theme="light">☀️ Light</button>
+            </div>
+        </div>
+        <div class="settings-section">
+            <h4>Dark Theme Colors</h4>
+            <div class="color-grid" id="dark-colors">
+                <div class="color-item">
+                    <label>Text (ink)</label>
+                    <input type="color" class="color-picker" data-color="dark.ink" value="#e8f1ff">
+                </div>
+                <div class="color-item">
+                    <label>Muted text</label>
+                    <input type="color" class="color-picker" data-color="dark.muted" value="#e8f1ff">
+                </div>
+                <div class="color-item">
+                    <label>Background</label>
+                    <input type="color" class="color-picker" data-color="dark.bg" value="#03050b">
+                </div>
+                <div class="color-item">
+                    <label>Background 2</label>
+                    <input type="color" class="color-picker" data-color="dark.bg-2" value="#0a1220">
+                </div>
+                <div class="color-item">
+                    <label>Panel</label>
+                    <input type="color" class="color-picker" data-color="dark.panel" value="#0c1422">
+                </div>
+                <div class="color-item">
+                    <label>Accent</label>
+                    <input type="color" class="color-picker" data-color="dark.accent" value="#62f7ff">
+                </div>
+                <div class="color-item">
+                    <label>Accent 2</label>
+                    <input type="color" class="color-picker" data-color="dark.accent-2" value="#8dff7b">
+                </div>
+                <div class="color-item">
+                    <label>Card</label>
+                    <input type="color" class="color-picker" data-color="dark.card" value="#0c1422">
+                </div>
+                <div class="color-item">
+                    <label>Shadow</label>
+                    <input type="color" class="color-picker" data-color="dark.shadow" value="#02060c">
+                </div>
+                <div class="color-item">
+                    <label>Grid</label>
+                    <input type="color" class="color-picker" data-color="dark.grid" value="#62f7ff">
+                </div>
+            </div>
+        </div>
+        <div class="settings-section">
+            <h4>Light Theme Colors</h4>
+            <div class="color-grid" id="light-colors">
+                <div class="color-item">
+                    <label>Text (ink)</label>
+                    <input type="color" class="color-picker" data-color="light.ink" value="#0b1220">
+                </div>
+                <div class="color-item">
+                    <label>Muted text</label>
+                    <input type="color" class="color-picker" data-color="light.muted" value="#0b1220">
+                </div>
+                <div class="color-item">
+                    <label>Background</label>
+                    <input type="color" class="color-picker" data-color="light.bg" value="#eef3f9">
+                </div>
+                <div class="color-item">
+                    <label>Background 2</label>
+                    <input type="color" class="color-picker" data-color="light.bg-2" value="#f8fbff">
+                </div>
+                <div class="color-item">
+                    <label>Panel</label>
+                    <input type="color" class="color-picker" data-color="light.panel" value="#ffffff">
+                </div>
+                <div class="color-item">
+                    <label>Accent</label>
+                    <input type="color" class="color-picker" data-color="light.accent" value="#0aa6c7">
+                </div>
+                <div class="color-item">
+                    <label>Accent 2</label>
+                    <input type="color" class="color-picker" data-color="light.accent-2" value="#3b5bff">
+                </div>
+                <div class="color-item">
+                    <label>Card</label>
+                    <input type="color" class="color-picker" data-color="light.card" value="#ffffff">
+                </div>
+                <div class="color-item">
+                    <label>Shadow</label>
+                    <input type="color" class="color-picker" data-color="light.shadow" value="#0c1626">
+                </div>
+                <div class="color-item">
+                    <label>Grid</label>
+                    <input type="color" class="color-picker" data-color="light.grid" value="#0aa6c7">
+                </div>
+            </div>
+        </div>
+        <div class="settings-section">
+            <button id="hp-reset-colors" class="settings-reset-btn">Reset Colors to Default</button>
+        </div>
+    </div>
+
+    <!-- Keyboard Shortcuts Tab -->
+    <div class="tab-panel" data-tab-panel="hp-keyboard" hidden>
+        <div class="settings-section">
+            <h4>Navigation Keys</h4>
+            <div class="keybind-list">
+                <div class="keybind-item">
+                    <span class="keybind-label">Navigate Up</span>
+                    <input type="text" class="keybind-key" data-keybind="navUp" value="W" style="width: 50px; text-align: center;">
+                </div>
+                <div class="keybind-item">
+                    <span class="keybind-label">Navigate Down</span>
+                    <input type="text" class="keybind-key" data-keybind="navDown" value="S" style="width: 50px; text-align: center;">
+                </div>
+                <div class="keybind-item">
+                    <span class="keybind-label">Navigate Left</span>
+                    <input type="text" class="keybind-key" data-keybind="navLeft" value="A" style="width: 50px; text-align: center;">
+                </div>
+                <div class="keybind-item">
+                    <span class="keybind-label">Navigate Right</span>
+                    <input type="text" class="keybind-key" data-keybind="navRight" value="D" style="width: 50px; text-align: center;">
+                </div>
+                <div class="keybind-item">
+                    <span class="keybind-label">Open Card</span>
+                    <input type="text" class="keybind-key" data-keybind="openCard" value="Enter" style="width: 50px; text-align: center;">
+                </div>
+            </div>
+        </div>
+        <div class="settings-section">
+            <h4>Card Actions</h4>
+            <div class="keybind-list">
+                <div class="keybind-item">
+                    <span class="keybind-label">Pin/Unpin Card</span>
+                    <input type="text" class="keybind-key" data-keybind="pin" value="Q" style="width: 50px; text-align: center;">
+                </div>
+                <div class="keybind-item">
+                    <span class="keybind-label">Favorite/Unfavorite</span>
+                    <input type="text" class="keybind-key" data-keybind="favorite" value="E" style="width: 50px; text-align: center;">
+                </div>
+            </div>
+        </div>
+        <div class="settings-section">
+            <h4>Layouts</h4>
+            <div class="keybind-list">
+                <div class="keybind-item">
+                    <span class="keybind-label">Grid Layout</span>
+                    <input type="text" class="keybind-key" data-keybind="layoutGrid" value="1" style="width: 50px; text-align: center;">
+                </div>
+                <div class="keybind-item">
+                    <span class="keybind-label">List Layout</span>
+                    <input type="text" class="keybind-key" data-keybind="layoutList" value="2" style="width: 50px; text-align: center;">
+                </div>
+                <div class="keybind-item">
+                    <span class="keybind-label">Compact Layout</span>
+                    <input type="text" class="keybind-key" data-keybind="layoutCompact" value="3" style="width: 50px; text-align: center;">
+                </div>
+                <div class="keybind-item">
+                    <span class="keybind-label">Spotlight Layout</span>
+                    <input type="text" class="keybind-key" data-keybind="layoutSpotlight" value="4" style="width: 50px; text-align: center;">
+                </div>
+            </div>
+        </div>
+        <div class="settings-section">
+            <h4>Panels & Modes</h4>
+            <div class="keybind-list">
+                <div class="keybind-item">
+                    <span class="keybind-label">Open Settings</span>
+                    <input type="text" class="keybind-key" data-keybind="settingsTab" value="U" style="width: 50px; text-align: center;">
+                </div>
+                <div class="keybind-item">
+                    <span class="keybind-label">Open Help</span>
+                    <input type="text" class="keybind-key" data-keybind="helpTab" value="H" style="width: 50px; text-align: center;">
+                </div>
+                <div class="keybind-item">
+                    <span class="keybind-label">Toggle Theme</span>
+                    <input type="text" class="keybind-key" data-keybind="toggleTheme" value="L" style="width: 50px; text-align: center;">
+                </div>
+                <div class="keybind-item">
+                    <span class="keybind-label">Blackout Mode</span>
+                    <input type="text" class="keybind-key" data-keybind="blackout" value="Space" style="width: 50px; text-align: center;">
+                </div>
+                <div class="keybind-item">
+                    <span class="keybind-label">Focus Search</span>
+                    <input type="text" class="keybind-key" data-keybind="focusSearch" value="/" style="width: 50px; text-align: center;">
+                </div>
+            </div>
+        </div>
+        <div class="settings-section">
+            <button id="hp-reset-keybinds" class="settings-reset-btn">Reset Keybinds to Default</button>
+        </div>
+    </div>
+
+    <!-- Data Tab -->
+    <div class="tab-panel" data-tab-panel="hp-data" hidden>
+        <div class="settings-section">
+            <h4>Startup Options</h4>
+            <div class="toggle-list">
+                <label class="toggle-item">
+                    <div class="toggle-info">
+                        <span class="toggle-icon">🔞</span>
+                        <div class="toggle-text"><strong>Skip Age Verification</strong></div>
+                    </div>
+                    <div class="toggle-switch"><input type="checkbox" id="hp-skip-age-verify" class="toggle-input"><span class="toggle-slider"></span></div>
+                </label>
+                <label class="toggle-item">
+                    <div class="toggle-info">
+                        <span class="toggle-icon">👋</span>
+                        <div class="toggle-text"><strong>Skip Welcome Screen</strong></div>
+                    </div>
+                    <div class="toggle-switch"><input type="checkbox" id="hp-skip-welcome" class="toggle-input"><span class="toggle-slider"></span></div>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <div class="current-settings" id="current-settings">
+        <h4>Current Settings</h4>
+        <div class="settings-display" id="settings-display">
+            <p class="loading">Loading...</p>
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <button id="save-btn" type="button">💾 Save Settings</button>
+        <button class="ghost" id="close-btn" type="button">Close</button>
+    </div>
+
+    <div class="status-msg" id="status-msg"></div>
+
+    <script>
+        // Mode: 'datamanager' or 'homepage'
+        const MODE = window.parent === window ? 'homepage' : 'datamanager';
+        
+        // localStorage keys for homepage mode
+        const HP_STORAGE_KEY = 'homepageSettings';
+        
+        // Default settings
+        const DEFAULTS = {
+            fontFamily: 'tech',
+            customFont: '',
+            fontSize: 14,
+            headerSize: 26,
+            buttonSize: 12,
+            cardSize: 13,
+            theme: 'dark',
+            skipAgeVerify: false,
+            skipWelcome: false,
+            colors: {
+                dark: {
+                    ink: '#e8f1ff',
+                    muted: 'rgba(232, 241, 255, 0.68)',
+                    bg: '#03050b',
+                    'bg-2': '#0a1220',
+                    panel: 'rgba(12, 20, 34, 0.92)',
+                    accent: '#62f7ff',
+                    'accent-2': '#8dff7b',
+                    card: 'rgba(12, 20, 34, 0.88)',
+                    shadow: 'rgba(2, 6, 12, 0.75)',
+                    grid: 'rgba(98, 247, 255, 0.12)',
+                },
+                light: {
+                    ink: '#0b1220',
+                    muted: 'rgba(11, 18, 32, 0.65)',
+                    bg: '#eef3f9',
+                    'bg-2': '#f8fbff',
+                    panel: 'rgba(255, 255, 255, 0.88)',
+                    accent: '#0aa6c7',
+                    'accent-2': '#3b5bff',
+                    card: 'rgba(255, 255, 255, 0.92)',
+                    shadow: 'rgba(12, 22, 38, 0.2)',
+                    grid: 'rgba(10, 166, 199, 0.15)',
+                }
+            },
+            keybinds: {
+                navUp: 'w',
+                navDown: 's',
+                navLeft: 'a',
+                navRight: 'd',
+                openCard: 'enter',
+                pin: 'q',
+                favorite: 'e',
+                layoutGrid: '1',
+                layoutList: '2',
+                layoutCompact: '3',
+                layoutSpotlight: '4',
+                settingsTab: 'u',
+                helpTab: 'h',
+                toggleTheme: 'l',
+                blackout: ' ',
+                focusSearch: '/'
+            }
+        };
+
+        // Current settings storage
+        let currentSettings = { ...DEFAULTS };
+
+        // Get settings based on mode
+        function getSettings() {
+            if (MODE === 'datamanager') {
+                // Try to get from localStorage (set by parent before iframe loads)
+                const stored = localStorage.getItem('hpFromParent');
+                if (stored) {
+                    try {
+                        return { ...DEFAULTS, ...JSON.parse(stored) };
+                    } catch (e) {
+                        return DEFAULTS;
+                    }
+                }
+                return DEFAULTS;
+            } else {
+                const stored = localStorage.getItem(HP_STORAGE_KEY);
+                if (stored) {
+                    try {
+                        return { ...DEFAULTS, ...JSON.parse(stored) };
+                    } catch (e) {
+                        return DEFAULTS;
+                    }
+                }
+                return DEFAULTS;
+            }
+        }
+
+        // Save settings based on mode
+        function saveSettings(settings) {
+            if (MODE === 'datamanager') {
+                // Send to parent via postMessage
+                window.parent.postMessage({ type: 'saveHomepageSettings', settings: settings }, '*');
+            } else {
+                localStorage.setItem(HP_STORAGE_KEY, JSON.stringify(settings));
+            }
+        }
+
+        // Show status message
+        function showStatus(message, isError = false) {
+            const statusEl = document.getElementById('status-msg');
+            statusEl.textContent = message;
+            statusEl.className = 'status-msg ' + (isError ? 'error' : 'success');
+            setTimeout(() => {
+                statusEl.className = 'status-msg';
+            }, 3000);
+        }
+
+        // Load fonts into select
+        async function loadFonts() {
+            const fontSelect = document.getElementById('hp-font-select');
+            
+            // Default options (will be used unless parent sends fonts via postMessage)
+            const defaultFonts = `
+                <option value="'Share Tech Mono', monospace">🖥️ Share Tech Mono</option>
+                <option value="'Orbitron', sans-serif">🚀 Orbitron</option>
+                <option value="'VT323', monospace">⌨️ VT323</option>
+                <option value="'Space Mono', monospace">🌌 Space Mono</option>
+                <option value="'Roboto Mono', monospace">🔤 Roboto Mono</option>
+                <option value="'IBM Plex Mono', monospace">💻 IBM Plex Mono</option>
+                <option value="tech">⚙️ Tech (Default)</option>
+            `;
+            
+            if (MODE === 'datamanager') {
+                // Request fonts from parent
+                window.parent.postMessage({ type: 'getHpFonts' }, '*');
+                
+                // Listen for fonts from parent
+                window.addEventListener('message', function handleFonts(event) {
+                    if (event.data && event.data.type === 'hpFonts' && event.data.fonts) {
+                        fontSelect.innerHTML = event.data.fonts.map(f => 
+                            `<option value="${f.family}">${f.name}</option>`
+                        ).join('');
+                        window.removeEventListener('message', handleFonts);
+                    }
+                }, { once: true });
+                
+                // Set default after timeout (in case parent doesn't respond)
+                setTimeout(() => {
+                    if (!fontSelect.options.length) {
+                        fontSelect.innerHTML = defaultFonts;
+                    }
+                }, 1000);
+            } else {
+                // Try to load from fonts.js in homepage
+                if (typeof window.FONTS !== 'undefined') {
+                    fontSelect.innerHTML = window.FONTS.map(f => 
+                        `<option value="${f.family}">${f.name}</option>`
+                    ).join('');
+                } else {
+                    fontSelect.innerHTML = defaultFonts;
+                }
+            }
+        }
+
+        // Load current settings into form
+        function loadForm() {
+            currentSettings = getSettings();
+            
+            // Font settings
+            document.getElementById('hp-font-select').value = currentSettings.fontFamily || 'tech';
+            document.getElementById('hp-custom-font').value = currentSettings.customFont || '';
+            
+            const baseSizeInput = document.getElementById('hp-base-font-size');
+            baseSizeInput.value = currentSettings.fontSize || 14;
+            baseSizeInput.nextElementSibling.textContent = (currentSettings.fontSize || 14) + 'px';
+            
+            const headerSizeInput = document.getElementById('hp-header-font-size');
+            headerSizeInput.value = currentSettings.headerSize || 26;
+            headerSizeInput.nextElementSibling.textContent = (currentSettings.headerSize || 26) + 'px';
+
+            const buttonSizeInput = document.getElementById('hp-button-font-size');
+            buttonSizeInput.value = currentSettings.buttonSize || 12;
+            buttonSizeInput.nextElementSibling.textContent = (currentSettings.buttonSize || 12) + 'px';
+
+            const cardSizeInput = document.getElementById('hp-card-font-size');
+            cardSizeInput.value = currentSettings.cardSize || 13;
+            cardSizeInput.nextElementSibling.textContent = (currentSettings.cardSize || 13) + 'px';
+            
+            // Theme
+            document.querySelectorAll('.theme-tab').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.theme === (currentSettings.theme || 'dark'));
+            });
+            
+            // Data settings
+            document.getElementById('hp-skip-age-verify').checked = currentSettings.skipAgeVerify === true;
+            document.getElementById('hp-skip-welcome').checked = currentSettings.skipWelcome === true;
+            
+            // Load colors
+            loadColorPickers();
+            
+            // Load keybinds
+            loadKeybindInputs();
+            
+            // Update display
+            updateDisplay();
+        }
+
+        // Load color pickers with current values
+        function loadColorPickers() {
+            const colors = currentSettings.colors || DEFAULTS.colors;
+            
+            // Dark colors
+            document.querySelectorAll('#dark-colors .color-picker').forEach(picker => {
+                const colorKey = picker.dataset.color.replace('dark.', '');
+                const colorValue = colors.dark[colorKey] || DEFAULTS.colors.dark[colorKey];
+                // Convert to hex for input type="color"
+                picker.value = colorValue.startsWith('#') ? colorValue : rgbToHex(colorValue) || '#000000';
+            });
+            
+            // Light colors
+            document.querySelectorAll('#light-colors .color-picker').forEach(picker => {
+                const colorKey = picker.dataset.color.replace('light.', '');
+                const colorValue = colors.light[colorKey] || DEFAULTS.colors.light[colorKey];
+                picker.value = colorValue.startsWith('#') ? colorValue : rgbToHex(colorValue) || '#ffffff';
+            });
+        }
+
+        // Simple RGB to Hex converter
+        function rgbToHex(rgb) {
+            if (!rgb || rgb.startsWith('#')) return rgb;
+            const match = rgb.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+            if (match) {
+                return '#' + [match[1], match[2], match[3]].map(x => {
+                    const hex = parseInt(x).toString(16);
+                    return hex.length === 1 ? '0' + hex : hex;
+                }).join('');
+            }
+            return '#000000';
+        }
+
+        // Load keybind inputs with current values
+        function loadKeybindInputs() {
+            const keybinds = currentSettings.keybinds || DEFAULTS.keybinds;
+            
+            document.querySelectorAll('.keybind-key').forEach(input => {
+                const keybindName = input.dataset.keybind;
+                const keyValue = keybinds[keybindName] || DEFAULTS.keybinds[keybindName];
+                input.value = keyValue === ' ' ? 'Space' : keyValue;
+            });
+        }
+
+        // Update current settings display
+        function updateDisplay() {
+            const display = document.getElementById('settings-display');
+            const themeLabel = currentSettings.theme === 'light' ? '☀️ Light' : '🌙 Dark';
+            const fontName = document.querySelector('#hp-font-select option:checked')?.textContent || currentSettings.fontFamily || 'Tech Mono';
+            
+            display.innerHTML = `
+                <div class="settings-item"><span class="settings-item-label">Theme</span><span class="settings-item-value">${themeLabel}</span></div>
+                <div class="settings-item"><span class="settings-item-label">Font</span><span class="settings-item-value">${fontName}</span></div>
+                ${currentSettings.customFont ? `<div class="settings-item"><span class="settings-item-label">Custom Font</span><span class="settings-item-value">${currentSettings.customFont}</span></div>` : ''}
+                <div class="settings-item"><span class="settings-item-label">Base Size</span><span class="settings-item-value">${currentSettings.fontSize || 14}px</span></div>
+                <div class="settings-item"><span class="settings-item-label">Header Size</span><span class="settings-item-value">${currentSettings.headerSize || 26}px</span></div>
+                <div class="settings-item"><span class="settings-item-label">Button Size</span><span class="settings-item-value">${currentSettings.buttonSize || 12}px</span></div>
+                <div class="settings-item"><span class="settings-item-label">Card Size</span><span class="settings-item-value">${currentSettings.cardSize || 13}px</span></div>
+                <div class="settings-item"><span class="settings-item-label">Skip Age Verify</span><span class="settings-item-value ${currentSettings.skipAgeVerify ? 'enabled' : 'disabled'}">${currentSettings.skipAgeVerify ? 'Yes' : 'No'}</span></div>
+                <div class="settings-item"><span class="settings-item-label">Skip Welcome</span><span class="settings-item-value ${currentSettings.skipWelcome ? 'enabled' : 'disabled'}">${currentSettings.skipWelcome ? 'Yes' : 'No'}</span></div>
+            `;
+        }
+
+        // Save button handler
+        document.getElementById('save-btn').addEventListener('click', () => {
+            // Get active theme
+            let theme = 'dark';
+            const activeTheme = document.querySelector('.theme-tab.active');
+            if (activeTheme) theme = activeTheme.dataset.theme;
+            
+            // Collect colors
+            const colors = {
+                dark: {},
+                light: {}
+            };
+            
+            document.querySelectorAll('#dark-colors .color-picker').forEach(picker => {
+                const colorKey = picker.dataset.color.replace('dark.', '');
+                colors.dark[colorKey] = picker.value;
+            });
+            
+            document.querySelectorAll('#light-colors .color-picker').forEach(picker => {
+                const colorKey = picker.dataset.color.replace('light.', '');
+                colors.light[colorKey] = picker.value;
+            });
+            
+            // Collect keybinds
+            const keybinds = {};
+            document.querySelectorAll('.keybind-key').forEach(input => {
+                const keybindName = input.dataset.keybind;
+                let keyValue = input.value.trim();
+                if (keyValue.toLowerCase() === 'space') keyValue = ' ';
+                keybinds[keybindName] = keyValue;
+            });
+            
+            const settings = {
+                fontFamily: document.getElementById('hp-font-select').value,
+                customFont: document.getElementById('hp-custom-font').value.trim(),
+                fontSize: parseInt(document.getElementById('hp-base-font-size').value, 10),
+                headerSize: parseInt(document.getElementById('hp-header-font-size').value, 10),
+                buttonSize: parseInt(document.getElementById('hp-button-font-size').value, 10),
+                cardSize: parseInt(document.getElementById('hp-card-font-size').value, 10),
+                theme: theme,
+                skipAgeVerify: document.getElementById('hp-skip-age-verify').checked,
+                skipWelcome: document.getElementById('hp-skip-welcome').checked,
+                colors: colors,
+                keybinds: keybinds
+            };
+            
+            saveSettings(settings);
+            currentSettings = settings;
+            updateDisplay();
+            showStatus('Settings saved successfully!');
+        });
+
+        // Close button handler
+        document.getElementById('close-btn').addEventListener('click', () => {
+            // Send close command to parent
+            if (MODE === 'datamanager') {
+                window.parent.postMessage({ type: 'closeHomepageSettings' }, '*');
+            } else if (window.parent.closePopup) {
+                window.parent.closePopup();
+            } else {
+                window.close();
+            }
+        });
+
+        // Tab switching
+        document.querySelectorAll('.settings-tabs .tab-btn').forEach(tabBtn => {
+            tabBtn.addEventListener('click', () => {
+                const parent = tabBtn.closest('body');
+                
+                // Update tabs
+                tabBtn.parentElement.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+                tabBtn.classList.add('active');
+                
+                // Update panels
+                parent.querySelectorAll('.tab-panel').forEach(panel => {
+                    panel.classList.remove('active');
+                    panel.setAttribute('hidden', '');
+                });
+                
+                const tabId = tabBtn.dataset.tab;
+                const targetPanel = parent.querySelector(`[data-tab-panel="${tabId}"]`);
+                if (targetPanel) {
+                    targetPanel.classList.add('active');
+                    targetPanel.removeAttribute('hidden');
+                }
+            });
+        });
+
+        // Quick font buttons
+        document.querySelectorAll('.quick-font-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const fontSelect = document.getElementById('hp-font-select');
+                const fontFamily = btn.dataset.font;
+                const matchingOption = Array.from(fontSelect.options).find(opt => 
+                    opt.value === fontFamily || opt.textContent.toLowerCase().includes(fontFamily.split(' ')[0].toLowerCase())
+                );
+                if (matchingOption) {
+                    fontSelect.value = matchingOption.value;
+                }
+            });
+        });
+
+        // Range slider displays
+        ['hp-base-font-size', 'hp-header-font-size', 'hp-button-font-size', 'hp-card-font-size'].forEach(id => {
+            const input = document.getElementById(id);
+            if (input) {
+                input.addEventListener('input', () => {
+                    const span = input.nextElementSibling;
+                    if (span && span.classList.contains('range-value')) {
+                        span.textContent = input.value + 'px';
+                    }
+                });
+            }
+        });
+
+        // Theme tabs
+        document.querySelectorAll('.theme-tab').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.theme-tab').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            });
+        });
+
+        // Reset fonts button
+        document.getElementById('hp-reset-fonts').addEventListener('click', () => {
+            document.getElementById('hp-font-select').value = 'tech';
+            document.getElementById('hp-custom-font').value = '';
+            document.getElementById('hp-base-font-size').value = 14;
+            document.getElementById('hp-base-font-size').nextElementSibling.textContent = '14px';
+            document.getElementById('hp-header-font-size').value = 26;
+            document.getElementById('hp-header-font-size').nextElementSibling.textContent = '26px';
+            document.getElementById('hp-button-font-size').value = 12;
+            document.getElementById('hp-button-font-size').nextElementSibling.textContent = '12px';
+            document.getElementById('hp-card-font-size').value = 13;
+            document.getElementById('hp-card-font-size').nextElementSibling.textContent = '13px';
+            showStatus('Font settings reset to default.');
+        });
+
+        // Reset colors button
+        document.getElementById('hp-reset-colors').addEventListener('click', () => {
+            // Reset dark colors
+            document.querySelectorAll('#dark-colors .color-picker').forEach(picker => {
+                const colorKey = picker.dataset.color.replace('dark.', '');
+                picker.value = DEFAULTS.colors.dark[colorKey];
+            });
+            // Reset light colors
+            document.querySelectorAll('#light-colors .color-picker').forEach(picker => {
+                const colorKey = picker.dataset.color.replace('light.', '');
+                picker.value = DEFAULTS.colors.light[colorKey];
+            });
+            showStatus('Colors reset to default.');
+        });
+
+        // Reset keybinds button
+        document.getElementById('hp-reset-keybinds').addEventListener('click', () => {
+            document.querySelectorAll('.keybind-key').forEach(input => {
+                const keybindName = input.dataset.keybind;
+                const defaultKey = DEFAULTS.keybinds[keybindName];
+                input.value = defaultKey === ' ' ? 'Space' : defaultKey;
+            });
+            showStatus('Keybinds reset to default.');
+        });
+
+        // Initialize
+        async function init() {
+            await loadFonts();
+            loadForm();
+        }
+
+        // Don't call init immediately, wait for DOM
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    </script>
+</body>
+</html>

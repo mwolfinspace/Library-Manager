@@ -887,6 +887,492 @@
                     "defaults";
             }
         }
+
+        /* Settings Popup Styles */
+        .settings-tabs {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(90, 165, 255, 0.3);
+            background: transparent;
+            color: var(--ink-muted);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn:hover {
+            border-color: rgba(62, 240, 193, 0.5);
+            color: var(--ink);
+        }
+
+        .tab-btn.active {
+            background: rgba(62, 240, 193, 0.15);
+            border-color: rgba(62, 240, 193, 0.6);
+            color: var(--accent);
+        }
+
+        .tab-panel {
+            display: block;
+        }
+
+        .tab-panel[hidden] {
+            display: none;
+        }
+
+        .settings-section {
+            margin-bottom: 16px;
+            padding: 12px;
+            border-radius: 12px;
+            background: rgba(15, 24, 38, 0.6);
+            border: 1px solid rgba(90, 165, 255, 0.15);
+        }
+
+        .settings-section h4 {
+            margin: 0 0 10px;
+            font-size: 13px;
+            color: var(--ink);
+            font-weight: 600;
+        }
+
+        .quick-font-buttons {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .quick-font-btn {
+            padding: 6px 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(90, 165, 255, 0.3);
+            background: transparent;
+            color: var(--ink);
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .quick-font-btn:hover {
+            border-color: rgba(62, 240, 193, 0.6);
+            background: rgba(62, 240, 193, 0.1);
+        }
+
+        .font-select {
+            width: 100%;
+            margin-bottom: 8px;
+        }
+
+        .custom-font-label {
+            display: block;
+            margin-top: 8px;
+        }
+
+        .custom-font-label input {
+            width: 100%;
+            margin-top: 4px;
+        }
+
+        .font-size-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+        }
+
+        .font-size-grid label {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .font-size-grid input[type="range"] {
+            width: 100%;
+        }
+
+        .range-value {
+            font-size: 12px;
+            color: var(--accent);
+        }
+
+        .settings-reset-btn {
+            width: 100%;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 107, 107, 0.4);
+            background: transparent;
+            color: var(--danger);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .settings-reset-btn:hover {
+            background: rgba(255, 107, 107, 0.15);
+            border-color: rgba(255, 107, 107, 0.7);
+        }
+
+        .theme-tabs {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        .theme-tab {
+            flex: 1;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid rgba(90, 165, 255, 0.3);
+            background: transparent;
+            color: var(--ink-muted);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .theme-tab:hover {
+            border-color: rgba(62, 240, 193, 0.5);
+        }
+
+        .theme-tab.active {
+            background: rgba(62, 240, 193, 0.15);
+            border-color: rgba(62, 240, 193, 0.6);
+            color: var(--accent);
+        }
+
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 8px;
+        }
+
+        .color-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 8px;
+            border-radius: 6px;
+            background: rgba(15, 24, 38, 0.8);
+            border: 1px solid rgba(90, 165, 255, 0.2);
+            cursor: pointer;
+            font-size: 11px;
+            color: var(--ink);
+        }
+
+        .color-item:hover {
+            border-color: rgba(62, 240, 193, 0.5);
+        }
+
+        .color-item.active {
+            border-color: rgba(62, 240, 193, 0.7);
+            background: rgba(62, 240, 193, 0.1);
+        }
+
+        .color-swatch {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            border: 1px solid rgba(90, 165, 255, 0.3);
+        }
+
+        .toggle-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .toggle-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 10px;
+            border-radius: 8px;
+            background: rgba(15, 24, 38, 0.8);
+            border: 1px solid rgba(90, 165, 255, 0.2);
+            cursor: pointer;
+        }
+
+        .toggle-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .toggle-icon {
+            font-size: 16px;
+        }
+
+        .toggle-text strong {
+            font-size: 13px;
+            color: var(--ink);
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 40px;
+            height: 22px;
+        }
+
+        .toggle-input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(90, 165, 255, 0.2);
+            transition: 0.3s;
+            border-radius: 22px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 3px;
+            bottom: 3px;
+            background-color: var(--ink-muted);
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        .toggle-input:checked + .toggle-slider {
+            background-color: rgba(62, 240, 193, 0.4);
+        }
+
+        .toggle-input:checked + .toggle-slider:before {
+            transform: translateX(18px);
+            background-color: var(--accent);
+        }
+
+        .keybind-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .keybind-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: rgba(15, 24, 38, 0.8);
+            border: 1px solid rgba(90, 165, 255, 0.2);
+            font-size: 12px;
+        }
+
+        .keybind-item span {
+            color: var(--ink-muted);
+        }
+
+        .keybind-item .key {
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(62, 240, 193, 0.15);
+            color: var(--accent);
+            font-size: 11px;
+        }
+
+        /* Make the settings popup wider */
+        .help-panel.wide {
+            max-width: 90vw;
+            width: 90vw;
+            height: 90vh;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .help-panel.wide .help-body {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        
+        .help-panel.wide .help-header {
+            flex-shrink: 0;
+        }
+        
+        .help-panel.wide .help-actions {
+            flex-shrink: 0;
+        }
+        
+        .help-panel.wide .embedded-help-body {
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
+        
+        .help-panel.wide #homepage-settings-iframe {
+            height: 100%;
+            min-height: unset;
+        }
+
+        /* External link section */
+        .external-link-section {
+            margin: 16px 0;
+        }
+
+        .external-link-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 14px 20px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, rgba(62, 240, 193, 0.2), rgba(90, 165, 255, 0.2));
+            border: 1px solid rgba(62, 240, 193, 0.4);
+            color: var(--ink);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .external-link-btn:hover {
+            background: linear-gradient(135deg, rgba(62, 240, 193, 0.3), rgba(90, 165, 255, 0.3));
+            border-color: rgba(62, 240, 193, 0.7);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(62, 240, 193, 0.2);
+        }
+
+        .external-icon {
+            font-size: 20px;
+        }
+
+        .external-text {
+            flex: 1;
+        }
+
+        .external-arrow {
+            font-size: 16px;
+            opacity: 0.7;
+        }
+
+        /* Settings info box */
+        .settings-info-box {
+            margin-top: 16px;
+            padding: 14px;
+            border-radius: 12px;
+            background: rgba(15, 24, 38, 0.8);
+            border: 1px solid rgba(90, 165, 255, 0.2);
+        }
+
+        .settings-info-box h4 {
+            margin: 0 0 12px;
+            font-size: 13px;
+            color: var(--ink);
+            font-weight: 600;
+        }
+
+        .settings-display {
+            display: grid;
+            gap: 8px;
+        }
+
+        .settings-display .loading {
+            color: var(--ink-muted);
+            font-style: italic;
+            font-size: 12px;
+            margin: 0;
+        }
+
+        .settings-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: rgba(10, 16, 28, 0.6);
+            font-size: 12px;
+        }
+
+        .settings-item-label {
+            color: var(--ink-muted);
+        }
+
+        .settings-item-value {
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        .settings-item-value.enabled {
+            color: #3ef0c1;
+        }
+
+        .settings-item-value.disabled {
+            color: rgba(230, 243, 255, 0.5);
+        }
+        
+        /* Embedded Settings Iframe */
+        .embedded-settings-body {
+            padding: 0 !important;
+            margin: -8px -12px;
+            min-height: 500px;
+            height: calc(90vh - 140px);
+            max-height: calc(90vh - 140px);
+            overflow-y: auto;
+            overflow-x: hidden;
+            background: #0a1018;
+            border-radius: 12px;
+        }
+
+        .settings-iframe {
+            width: 100%;
+            height: 100%;
+            min-height: 500px;
+            border: none;
+            border-radius: 12px;
+            background: transparent;
+        }
+
+        .settings-iframe-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+            color: var(--ink-muted);
+            font-size: 14px;
+        }
+
+        /* Custom scrollbar for embedded iframe */
+        .embedded-settings-body::-webkit-scrollbar,
+        .embedded-help-body::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .embedded-settings-body::-webkit-scrollbar-track,
+        .embedded-help-body::-webkit-scrollbar-track {
+            background: rgba(15, 24, 38, 0.5);
+            border-radius: 4px;
+        }
+
+        .embedded-settings-body::-webkit-scrollbar-thumb,
+        .embedded-help-body::-webkit-scrollbar-thumb {
+            background: rgba(90, 165, 255, 0.4);
+            border-radius: 4px;
+        }
+
+        .embedded-settings-body::-webkit-scrollbar-thumb:hover,
+        .embedded-help-body::-webkit-scrollbar-thumb:hover {
+            background: rgba(62, 240, 193, 0.6);
+        }
     </style>
 </head>
 <body>
@@ -904,6 +1390,8 @@
                 <button class="ghost" id="update-fonts">Update Fonts</button>
                 <button class="ghost" id="fix-missing" type="button">Fix Missing Files</button>
                 <button class="ghost" id="help-btn" type="button">Help</button>
+                <button class="ghost" id="homepage-settings-btn" type="button">🏠 Homepage Settings</button>
+                <button class="ghost" id="viewer-settings-btn" type="button">📖 Viewer Settings</button>
                 <label class="checkbox auto-scan">
                     <input type="checkbox" id="auto-scan">
                     Auto Scan
@@ -1147,6 +1635,86 @@
             <p class="help-body" id="help-body"></p>
             <div class="help-actions">
                 <button class="help-primary" id="help-ok" type="button">Got it</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Homepage Settings - Loaded from external file -->
+    <div class="help-backdrop" id="homepage-settings-modal" aria-hidden="true">
+        <div class="help-panel wide" role="dialog" aria-modal="true" aria-labelledby="homepage-settings-title">
+            <div class="help-header">
+                <div>
+                    <p class="help-eyebrow">Xedryk's Lab System</p>
+                    <h2 id="homepage-settings-title">🏠 Homepage Settings</h2>
+                </div>
+                <button class="help-close" id="homepage-settings-close" type="button" aria-label="Close">✕</button>
+            </div>
+            <div class="help-body embedded-help-body">
+                <iframe id="homepage-settings-iframe" src="database/Homepage_Settings.html" style="width: 100%; min-height: 500px; border: none; background: transparent;"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- Viewer Settings - Full inline UI -->
+    <div class="help-backdrop" id="viewer-settings-modal" aria-hidden="true">
+        <div class="help-panel wide" role="dialog" aria-modal="true" aria-labelledby="viewer-settings-title">
+            <div class="help-header">
+                <div>
+                    <p class="help-eyebrow">Xedryk's Lab System</p>
+                    <h2 id="viewer-settings-title">📖 Viewer Settings</h2>
+                </div>
+                <button class="help-close" id="viewer-settings-close" type="button" aria-label="Close">✕</button>
+            </div>
+            <div class="help-body" style="max-height: 60vh; overflow-y: auto;">
+                <div class="settings-tabs" role="tablist">
+                    <button class="tab-btn active" data-tab="v-appearance" type="button" role="tab">🎨 Appearance</button>
+                    <button class="tab-btn" data-tab="v-reading" type="button" role="tab">📖 Reading</button>
+                    <button class="tab-btn" data-tab="v-input" type="button" role="tab">⌨️ Input</button>
+                </div>
+                
+                <div class="tab-panel active" data-tab-panel="v-appearance">
+                    <div class="settings-section">
+                        <h4>Theme</h4>
+                        <select id="v-theme-select" class="font-select"><option value="dark">🌙 Dark</option><option value="light">☀️ Light</option></select>
+                    </div>
+                    <div class="settings-section">
+                        <h4>Story Font</h4>
+                        <select id="v-font-family" class="font-select"></select>
+                        <label class="full custom-font-label">Custom Font<input type="text" id="v-custom-font" placeholder="e.g. 'Fira Code', monospace"></label>
+                    </div>
+                </div>
+                
+                <div class="tab-panel" data-tab-panel="v-reading" hidden>
+                    <div class="settings-section">
+                        <h4>Font Size</h4>
+                        <input type="range" id="v-font-size" min="14" max="26" step="1"><span class="range-value" id="v-font-size-value">18px</span>
+                    </div>
+                    <div class="settings-section">
+                        <h4>Line Spacing</h4>
+                        <input type="range" id="v-line-spacing" min="1.2" max="2.2" step="0.1"><span class="range-value" id="v-line-spacing-value">1.6</span>
+                    </div>
+                    <div class="settings-section">
+                        <h4>Scroll Step</h4>
+                        <select id="v-scroll-step" class="font-select"><option value="20">20 px</option><option value="40">40 px</option><option value="60">60 px</option></select>
+                    </div>
+                </div>
+                
+                <div class="tab-panel" data-tab-panel="v-input" hidden>
+                    <div class="settings-section">
+                        <h4>Keyboard Mode</h4>
+                        <select id="v-keyboard-mode" class="font-select"><option value="default">Default</option><option value="left">One-Hand Left</option><option value="right">One-Hand Right</option></select>
+                    </div>
+                    <div class="settings-section">
+                        <h4>Options</h4>
+                        <label class="checkbox"><input type="checkbox" id="v-pan-keys">Enable Pan Keys (WASD / Arrows)</label>
+                        <label class="checkbox"><input type="checkbox" id="v-remember-zoom">Remember Zoom Per Story</label>
+                        <label class="checkbox"><input type="checkbox" id="v-remember-view-all">Remember View Across All Stories</label>
+                    </div>
+                </div>
+            </div>
+            <div class="help-actions">
+                <button class="help-primary" id="viewer-settings-save" type="button">💾 Save as Default</button>
+                <button class="ghost" id="viewer-settings-close-btn" type="button">Close</button>
             </div>
         </div>
     </div>
@@ -3048,6 +3616,560 @@
                 importSettingsBtn.disabled = true;
             }
         }
+
+        // Homepage Settings popup functions
+        const homepageSettingsBtn = document.getElementById('homepage-settings-btn');
+        const homepageSettingsModal = document.getElementById('homepage-settings-modal');
+        const homepageSettingsClose = document.getElementById('homepage-settings-close');
+        const homepageSettingsCloseBtn = document.getElementById('homepage-settings-close-btn');
+        const homepageSettingsRefresh = document.getElementById('homepage-settings-refresh');
+        const hpCurrentSettingsEl = document.getElementById('hp-current-settings');
+
+        async function loadHomepageSettings() {
+            if (!state.rootHandle || !hpCurrentSettingsEl) {
+                if (hpCurrentSettingsEl) {
+                    hpCurrentSettingsEl.innerHTML = '<p class="loading">Choose a library folder first...</p>';
+                }
+                return;
+            }
+            
+            try {
+                const databaseDir = await getDatabaseDir();
+                const settings = await readJsonFile(databaseDir, 'settings.json');
+                const fonts = await readJsonFile(databaseDir, 'fonts.json');
+                
+                if (!settings) {
+                    hpCurrentSettingsEl.innerHTML = '<p class="loading">No settings found. Default settings will be used.</p>';
+                    return;
+                }
+
+                const fontName = fonts?.find(f => f.family === settings.fontFamily)?.name || settings.fontFamily || 'Tech Mono';
+                const themeLabel = settings.theme === 'light' ? '☀️ Light' : '🌙 Dark';
+                
+                let html = '';
+                html += `<div class="settings-item"><span class="settings-item-label">Theme</span><span class="settings-item-value">${themeLabel}</span></div>`;
+                html += `<div class="settings-item"><span class="settings-item-label">Font</span><span class="settings-item-value">${fontName}</span></div>`;
+                if (settings.customFont) {
+                    html += `<div class="settings-item"><span class="settings-item-label">Custom Font</span><span class="settings-item-value">${settings.customFont}</span></div>`;
+                }
+                html += `<div class="settings-item"><span class="settings-item-label">Font Size</span><span class="settings-item-value">${settings.fontSize || 16}px</span></div>`;
+                html += `<div class="settings-item"><span class="settings-item-label">Header Size</span><span class="settings-item-value">${settings.headerSize || 26}px</span></div>`;
+                html += `<div class="settings-item"><span class="settings-item-label">Skip Age Verify</span><span class="settings-item-value ${settings.skipAgeVerify ? 'enabled' : 'disabled'}">${settings.skipAgeVerify ? 'Yes' : 'No'}</span></div>`;
+                
+                hpCurrentSettingsEl.innerHTML = html;
+            } catch (error) {
+                hpCurrentSettingsEl.innerHTML = '<p class="loading">Error loading settings.</p>';
+                console.error('Error loading homepage settings:', error);
+            }
+        }
+
+        function openHomepageSettingsModal() {
+            if (!homepageSettingsModal) return;
+            homepageSettingsModal.classList.add('is-open');
+            homepageSettingsModal.setAttribute('aria-hidden', 'false');
+            loadHomepageSettings();
+        }
+
+        function closeHomepageSettingsModal() {
+            if (!homepageSettingsModal) return;
+            homepageSettingsModal.classList.remove('is-open');
+            homepageSettingsModal.setAttribute('aria-hidden', 'true');
+        }
+
+        if (homepageSettingsBtn) {
+            homepageSettingsBtn.addEventListener('click', openHomepageSettingsModal);
+        }
+        if (homepageSettingsClose) {
+            homepageSettingsClose.addEventListener('click', closeHomepageSettingsModal);
+        }
+        if (homepageSettingsCloseBtn) {
+            homepageSettingsCloseBtn.addEventListener('click', closeHomepageSettingsModal);
+        }
+        if (homepageSettingsRefresh) {
+            homepageSettingsRefresh.addEventListener('click', loadHomepageSettings);
+        }
+        if (homepageSettingsModal) {
+            homepageSettingsModal.addEventListener('click', event => {
+                if (event.target === homepageSettingsModal) {
+                    closeHomepageSettingsModal();
+                }
+            });
+        }
+
+        // Viewer Settings popup functions
+        const viewerSettingsBtn = document.getElementById('viewer-settings-btn');
+        const viewerSettingsModal = document.getElementById('viewer-settings-modal');
+        const viewerSettingsClose = document.getElementById('viewer-settings-close');
+        const viewerSettingsCloseBtn = document.getElementById('viewer-settings-close-btn');
+        const viewerSettingsRefresh = document.getElementById('viewer-settings-refresh');
+        const vCurrentSettingsEl = document.getElementById('v-current-settings');
+
+        async function loadViewerSettings() {
+            if (!state.rootHandle || !vCurrentSettingsEl) {
+                if (vCurrentSettingsEl) {
+                    vCurrentSettingsEl.innerHTML = '<p class="loading">Choose a library folder first...</p>';
+                }
+                return;
+            }
+            
+            try {
+                const databaseDir = await getDatabaseDir();
+                const settings = await readJsonFile(databaseDir, 'settings.json');
+                const fonts = await readJsonFile(databaseDir, 'fonts.json');
+                
+                if (!settings) {
+                    vCurrentSettingsEl.innerHTML = '<p class="loading">No settings found. Default settings will be used.</p>';
+                    return;
+                }
+
+                const fontName = fonts?.find(f => f.family === settings.fontFamily)?.name || settings.fontFamily || 'Tech Mono';
+                const themeLabel = settings.theme === 'light' ? '☀️ Light' : '🌙 Dark';
+                const keyboardLabel = settings.keyboardMode === 'left' ? 'One-Hand Left' : settings.keyboardMode === 'right' ? 'One-Hand Right' : 'Default';
+                
+                let html = '';
+                html += `<div class="settings-item"><span class="settings-item-label">Theme</span><span class="settings-item-value">${themeLabel}</span></div>`;
+                html += `<div class="settings-item"><span class="settings-item-label">Font</span><span class="settings-item-value">${fontName}</span></div>`;
+                if (settings.customFont) {
+                    html += `<div class="settings-item"><span class="settings-item-label">Custom Font</span><span class="settings-item-value">${settings.customFont}</span></div>`;
+                }
+                html += `<div class="settings-item"><span class="settings-item-label">Font Size</span><span class="settings-item-value">${settings.fontSize || 16}px</span></div>`;
+                html += `<div class="settings-item"><span class="settings-item-label">Line Spacing</span><span class="settings-item-value">${settings.lineSpacing || 1.6}</span></div>`;
+                html += `<div class="settings-item"><span class="settings-item-label">Scroll Step</span><span class="settings-item-value">${settings.scrollStep || 40}px</span></div>`;
+                html += `<div class="settings-item"><span class="settings-item-label">Keyboard Mode</span><span class="settings-item-value">${keyboardLabel}</span></div>`;
+                html += `<div class="settings-item"><span class="settings-item-label">Pan Keys</span><span class="settings-item-value ${settings.panKeys ? 'enabled' : 'disabled'}">${settings.panKeys ? 'Enabled' : 'Disabled'}</span></div>`;
+                html += `<div class="settings-item"><span class="settings-item-label">Remember Zoom</span><span class="settings-item-value ${settings.rememberZoom ? 'enabled' : 'disabled'}">${settings.rememberZoom ? 'Per Story' : 'No'}</span></div>`;
+                html += `<div class="settings-item"><span class="settings-item-label">Remember View</span><span class="settings-item-value ${settings.rememberViewAll ? 'enabled' : 'disabled'}">${settings.rememberViewAll ? 'All Stories' : 'Per Story'}</span></div>`;
+                
+                vCurrentSettingsEl.innerHTML = html;
+            } catch (error) {
+                vCurrentSettingsEl.innerHTML = '<p class="loading">Error loading settings.</p>';
+                console.error('Error loading viewer settings:', error);
+            }
+        }
+
+        function openViewerSettingsModal() {
+            if (!viewerSettingsModal) return;
+            viewerSettingsModal.classList.add('is-open');
+            viewerSettingsModal.setAttribute('aria-hidden', 'false');
+            loadViewerSettings();
+        }
+
+        function closeViewerSettingsModal() {
+            if (!viewerSettingsModal) return;
+            viewerSettingsModal.classList.remove('is-open');
+            viewerSettingsModal.setAttribute('aria-hidden', 'true');
+        }
+
+        if (viewerSettingsBtn) {
+            viewerSettingsBtn.addEventListener('click', openViewerSettingsModal);
+        }
+        if (viewerSettingsClose) {
+            viewerSettingsClose.addEventListener('click', closeViewerSettingsModal);
+        }
+        if (viewerSettingsCloseBtn) {
+            viewerSettingsCloseBtn.addEventListener('click', closeViewerSettingsModal);
+        }
+        if (viewerSettingsRefresh) {
+            viewerSettingsRefresh.addEventListener('click', loadViewerSettings);
+        }
+        if (viewerSettingsModal) {
+            viewerSettingsModal.addEventListener('click', event => {
+                if (event.target === viewerSettingsModal) {
+                    closeViewerSettingsModal();
+                }
+            });
+        }
+
+        // Tab switching for settings popups
+        document.querySelectorAll('.settings-tabs').forEach(tabContainer => {
+            tabContainer.querySelectorAll('.tab-btn').forEach(tabBtn => {
+                tabBtn.addEventListener('click', () => {
+                    const parent = tabBtn.closest('.help-panel') || tabBtn.closest('.help-body')?.parentElement;
+                    if (!parent) return;
+                    
+                    // Remove active class from all tabs in this container
+                    tabContainer.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+                    tabBtn.classList.add('active');
+                    
+                    // Hide all tab panels in this container
+                    const tabPanels = parent.querySelectorAll('.tab-panel');
+                    tabPanels.forEach(panel => {
+                        panel.classList.remove('active');
+                        panel.setAttribute('hidden', '');
+                    });
+                    
+                    // Show the selected tab panel
+                    const tabId = tabBtn.dataset.tab;
+                    const targetPanel = parent.querySelector(`[data-tab-panel="${tabId}"]`);
+                    if (targetPanel) {
+                        targetPanel.classList.add('active');
+                        targetPanel.removeAttribute('hidden');
+                    }
+                });
+            });
+        });
+
+        // ====== HOMEPAGE SETTINGS POPUP FUNCTIONS ======
+        
+        // Load fonts into Homepage Settings popup select
+        async function loadHpFonts() {
+            try {
+                const dbDir = await getDatabaseDir();
+                const fonts = await readJsonFile(dbDir, 'fonts.json');
+                const hpFontSelect = document.getElementById('hp-font-select');
+                const vFontFamily = document.getElementById('v-font-family');
+                
+                if (fonts) {
+                    const fontOptions = fonts.map(f => `<option value="${f.family}">${f.name}</option>`).join('');
+                    if (hpFontSelect) hpFontSelect.innerHTML = fontOptions;
+                    if (vFontFamily) vFontFamily.innerHTML = fontOptions;
+                }
+            } catch (e) {
+                console.error('Error loading fonts for popup:', e);
+            }
+        }
+        
+        // Populate Homepage Settings form with current values
+        async function loadHpSettingsForm() {
+            if (!state.rootHandle) return;
+            try {
+                const dbDir = await getDatabaseDir();
+                const settings = await readJsonFile(dbDir, 'settings.json');
+                if (!settings) return;
+                
+                // Font settings
+                const hpFontSelect = document.getElementById('hp-font-select');
+                const hpCustomFont = document.getElementById('hp-custom-font');
+                const hpBaseFontSize = document.getElementById('hp-base-font-size');
+                const hpHeaderFontSize = document.getElementById('hp-header-font-size');
+                
+                if (hpFontSelect) hpFontSelect.value = settings.fontFamily || 'tech';
+                if (hpCustomFont) hpCustomFont.value = settings.customFont || '';
+                if (hpBaseFontSize) {
+                    hpBaseFontSize.value = settings.fontSize || 14;
+                    hpBaseFontSize.nextElementSibling.textContent = (settings.fontSize || 14) + 'px';
+                }
+                if (hpHeaderFontSize) {
+                    hpHeaderFontSize.value = settings.headerSize || 26;
+                    hpHeaderFontSize.nextElementSibling.textContent = (settings.headerSize || 26) + 'px';
+                }
+                
+                // Theme
+                const hpThemeTabs = document.querySelectorAll('#homepage-settings-modal .theme-tab');
+                hpThemeTabs.forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.theme === (settings.theme || 'dark'));
+                });
+                
+                // Data settings
+                const hpSkipAgeVerify = document.getElementById('hp-skip-age-verify');
+                if (hpSkipAgeVerify) hpSkipAgeVerify.checked = settings.skipAgeVerify === true;
+                
+            } catch (e) {
+                console.error('Error loading HP settings form:', e);
+            }
+        }
+        
+        // Save Homepage Settings
+        async function saveHpSettings() {
+            if (!state.rootHandle) {
+                setStatus('Choose a library folder first.');
+                return;
+            }
+            try {
+                const dbDir = await getDatabaseDir();
+                const existing = await readJsonFile(dbDir, 'settings.json') || {};
+                
+                const hpFontSelect = document.getElementById('hp-font-select');
+                const hpCustomFont = document.getElementById('hp-custom-font');
+                const hpBaseFontSize = document.getElementById('hp-base-font-size');
+                const hpHeaderFontSize = document.getElementById('hp-header-font-size');
+                const hpSkipAgeVerify = document.getElementById('hp-skip-age-verify');
+                
+                // Get active theme
+                let theme = 'dark';
+                const activeTheme = document.querySelector('#homepage-settings-modal .theme-tab.active');
+                if (activeTheme) theme = activeTheme.dataset.theme;
+                
+                const newSettings = {
+                    ...existing,
+                    fontFamily: hpFontSelect ? hpFontSelect.value : 'tech',
+                    customFont: hpCustomFont ? hpCustomFont.value.trim() : '',
+                    fontSize: hpBaseFontSize ? parseInt(hpBaseFontSize.value, 10) : 14,
+                    headerSize: hpHeaderFontSize ? parseInt(hpHeaderFontSize.value, 10) : 26,
+                    skipAgeVerify: hpSkipAgeVerify ? hpSkipAgeVerify.checked : false,
+                    theme: theme
+                };
+                
+                await writeFile(dbDir, 'settings.json', JSON.stringify(newSettings, null, 2));
+                setStatus('Homepage settings saved to database.');
+                await writeCatalog(state.stories);
+                closeHomepageSettingsModal();
+            } catch (e) {
+                setStatus('Error saving homepage settings: ' + e.message);
+                console.error(e);
+            }
+        }
+        
+        // Quick font buttons for Homepage
+        document.querySelectorAll('#homepage-settings-modal .quick-font-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const hpFontSelect = document.getElementById('hp-font-select');
+                if (hpFontSelect) {
+                    const fontFamily = btn.dataset.font;
+                    // Try to find matching option, otherwise set custom
+                    const matchingOption = Array.from(hpFontSelect.options).find(opt => 
+                        opt.value === fontFamily || opt.textContent.toLowerCase().includes(fontFamily.split(' ')[0].toLowerCase())
+                    );
+                    if (matchingOption) {
+                        hpFontSelect.value = matchingOption.value;
+                    }
+                }
+            });
+        });
+        
+        // Range slider displays for Homepage
+        ['hp-base-font-size', 'hp-header-font-size'].forEach(id => {
+            const input = document.getElementById(id);
+            if (input) {
+                input.addEventListener('input', () => {
+                    const span = input.nextElementSibling;
+                    if (span && span.classList.contains('range-value')) {
+                        span.textContent = input.value + 'px';
+                    }
+                });
+            }
+        });
+        
+        // Theme tabs for Homepage
+        document.querySelectorAll('#homepage-settings-modal .theme-tab').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('#homepage-settings-modal .theme-tab').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            });
+        });
+        
+        // Reset fonts button
+        const hpResetFonts = document.getElementById('hp-reset-fonts');
+        if (hpResetFonts) {
+            hpResetFonts.addEventListener('click', () => {
+                const hpFontSelect = document.getElementById('hp-font-select');
+                const hpCustomFont = document.getElementById('hp-custom-font');
+                if (hpFontSelect) hpFontSelect.value = 'tech';
+                if (hpCustomFont) hpCustomFont.value = '';
+                setStatus('Font settings reset to default.');
+            });
+        }
+        
+        // Homepage settings save button
+        const hpSettingsSave = document.getElementById('homepage-settings-save');
+        if (hpSettingsSave) {
+            hpSettingsSave.addEventListener('click', saveHpSettings);
+        }
+        
+        // ====== VIEWER SETTINGS POPUP FUNCTIONS ======
+        
+        // Populate Viewer Settings form with current values
+        async function loadVSettingsForm() {
+            if (!state.rootHandle) return;
+            try {
+                const dbDir = await getDatabaseDir();
+                const settings = await readJsonFile(dbDir, 'settings.json');
+                if (!settings) return;
+                
+                // Appearance
+                const vThemeSelect = document.getElementById('v-theme-select');
+                const vFontFamily = document.getElementById('v-font-family');
+                const vCustomFont = document.getElementById('v-custom-font');
+                
+                if (vThemeSelect) vThemeSelect.value = settings.theme || 'dark';
+                if (vFontFamily) vFontFamily.value = settings.fontFamily || 'tech';
+                if (vCustomFont) vCustomFont.value = settings.customFont || '';
+                
+                // Reading
+                const vFontSize = document.getElementById('v-font-size');
+                const vLineSpacing = document.getElementById('v-line-spacing');
+                const vScrollStep = document.getElementById('v-scroll-step');
+                
+                if (vFontSize) {
+                    vFontSize.value = settings.fontSize || 18;
+                    const vFontSizeValue = document.getElementById('v-font-size-value');
+                    if (vFontSizeValue) vFontSizeValue.textContent = (settings.fontSize || 18) + 'px';
+                }
+                if (vLineSpacing) {
+                    vLineSpacing.value = settings.lineSpacing || 1.6;
+                    const vLineSpacingValue = document.getElementById('v-line-spacing-value');
+                    if (vLineSpacingValue) vLineSpacingValue.textContent = settings.lineSpacing || 1.6;
+                }
+                if (vScrollStep) vScrollStep.value = settings.scrollStep || 40;
+                
+                // Input
+                const vKeyboardMode = document.getElementById('v-keyboard-mode');
+                const vPanKeys = document.getElementById('v-pan-keys');
+                const vRememberZoom = document.getElementById('v-remember-zoom');
+                const vRememberViewAll = document.getElementById('v-remember-view-all');
+                
+                if (vKeyboardMode) vKeyboardMode.value = settings.keyboardMode || 'default';
+                if (vPanKeys) vPanKeys.checked = settings.panKeys !== false;
+                if (vRememberZoom) vRememberZoom.checked = settings.rememberZoom !== false;
+                if (vRememberViewAll) vRememberViewAll.checked = settings.rememberViewAll === true;
+                
+            } catch (e) {
+                console.error('Error loading V settings form:', e);
+            }
+        }
+        
+        // Save Viewer Settings
+        async function saveVSettings() {
+            if (!state.rootHandle) {
+                setStatus('Choose a library folder first.');
+                return;
+            }
+            try {
+                const dbDir = await getDatabaseDir();
+                const existing = await readJsonFile(dbDir, 'settings.json') || {};
+                
+                const vThemeSelect = document.getElementById('v-theme-select');
+                const vFontFamily = document.getElementById('v-font-family');
+                const vCustomFont = document.getElementById('v-custom-font');
+                const vFontSize = document.getElementById('v-font-size');
+                const vLineSpacing = document.getElementById('v-line-spacing');
+                const vScrollStep = document.getElementById('v-scroll-step');
+                const vKeyboardMode = document.getElementById('v-keyboard-mode');
+                const vPanKeys = document.getElementById('v-pan-keys');
+                const vRememberZoom = document.getElementById('v-remember-zoom');
+                const vRememberViewAll = document.getElementById('v-remember-view-all');
+                
+                const newSettings = {
+                    ...existing,
+                    theme: vThemeSelect ? vThemeSelect.value : 'dark',
+                    fontFamily: vFontFamily ? vFontFamily.value : 'tech',
+                    customFont: vCustomFont ? vCustomFont.value.trim() : '',
+                    fontSize: vFontSize ? parseInt(vFontSize.value, 10) : 18,
+                    lineSpacing: vLineSpacing ? parseFloat(vLineSpacing.value) : 1.6,
+                    scrollStep: vScrollStep ? parseInt(vScrollStep.value, 10) : 40,
+                    keyboardMode: vKeyboardMode ? vKeyboardMode.value : 'default',
+                    panKeys: vPanKeys ? vPanKeys.checked : true,
+                    rememberZoom: vRememberZoom ? vRememberZoom.checked : true,
+                    rememberViewAll: vRememberViewAll ? vRememberViewAll.checked : false
+                };
+                
+                await writeFile(dbDir, 'settings.json', JSON.stringify(newSettings, null, 2));
+                setStatus('Viewer settings saved to database.');
+                await writeCatalog(state.stories);
+                closeViewerSettingsModal();
+            } catch (e) {
+                setStatus('Error saving viewer settings: ' + e.message);
+                console.error(e);
+            }
+        }
+        
+        // Range slider displays for Viewer
+        ['v-font-size', 'v-line-spacing'].forEach(id => {
+            const input = document.getElementById(id);
+            if (input) {
+                input.addEventListener('input', () => {
+                    const valueId = id + '-value';
+                    const span = document.getElementById(valueId);
+                    if (span) {
+                        span.textContent = input.value + (id === 'v-line-spacing' ? '' : 'px');
+                    }
+                });
+            }
+        });
+        
+        // Viewer settings save button
+        const vSettingsSave = document.getElementById('viewer-settings-save');
+        if (vSettingsSave) {
+            vSettingsSave.addEventListener('click', saveVSettings);
+        }
+        
+        // Override open functions to load fonts and populate forms
+        const originalOpenHpModal = openHomepageSettingsModal;
+        openHomepageSettingsModal = async function() {
+            originalOpenHpModal();
+            // Load fonts and populate form values
+            await loadHpFonts();
+            await loadHpSettingsForm();
+        };
+        
+        const originalOpenVModal = openViewerSettingsModal;
+        openViewerSettingsModal = async function() {
+            originalOpenVModal();
+            // Load fonts and populate form values
+            await loadHpFonts(); // Loads fonts for both
+            await loadVSettingsForm();
+        };
+
+        // ====== POSTMESSAGE HANDLER FOR IFRAME COMMUNICATION ======
+        window.addEventListener('message', async function(event) {
+            // Handle messages from embedded iframe
+            if (event.data && event.data.type) {
+                switch (event.data.type) {
+                    case 'getHpFonts':
+                        // Send fonts to iframe
+                        try {
+                            const dbDir = await getDatabaseDir();
+                            const fonts = await readJsonFile(dbDir, 'fonts.json');
+                            const iframe = document.getElementById('homepage-settings-iframe');
+                            if (iframe && iframe.contentWindow) {
+                                iframe.contentWindow.postMessage({ 
+                                    type: 'hpFonts', 
+                                    fonts: fonts || [] 
+                                }, '*');
+                            }
+                        } catch (e) {
+                            console.error('Error sending fonts to iframe:', e);
+                        }
+                        break;
+                        
+                    case 'saveHomepageSettings':
+                        // Save settings from iframe
+                        try {
+                            const dbDir = await getDatabaseDir();
+                            const existing = await readJsonFile(dbDir, 'settings.json') || {};
+                            const newSettings = { ...existing, ...event.data.settings };
+                            await writeFile(dbDir, 'settings.json', JSON.stringify(newSettings, null, 2));
+                            await writeCatalog(state.stories);
+                            setStatus('Homepage settings saved successfully!');
+                        } catch (e) {
+                            console.error('Error saving settings from iframe:', e);
+                            setStatus('Error saving settings: ' + e.message);
+                        }
+                        break;
+                        
+                    case 'closeHomepageSettings':
+                        // Close the popup
+                        closeHomepageSettingsModal();
+                        break;
+                }
+            }
+        });
+
+        // Pre-load settings for iframe before opening
+        async function prepareHpSettingsForIframe() {
+            if (!state.rootHandle) return null;
+            try {
+                const dbDir = await getDatabaseDir();
+                const settings = await readJsonFile(dbDir, 'settings.json');
+                return settings;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        // Modified open function to pass settings via localStorage
+        const originalOpenHpModal2 = openHomepageSettingsModal;
+        openHomepageSettingsModal = async function() {
+            // Prepare settings for iframe
+            const settings = await prepareHpSettingsForIframe();
+            if (settings) {
+                localStorage.setItem('hpFromParent', JSON.stringify(settings));
+            }
+            // Call original
+            originalOpenHpModal2();
+            await loadHpFonts();
+            await loadHpSettingsForm();
+        };
 
         updateRecentInfo();
         renderImagePreview();
