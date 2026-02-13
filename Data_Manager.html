@@ -80,8 +80,15 @@
         .header-actions {
             display: flex;
             gap: 8px;
-            align-items: center;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .header-row {
+            display: flex;
+            gap: 8px;
             flex-wrap: wrap;
+            align-items: center;
         }
 
         button,
@@ -1385,6 +1392,69 @@
         .embedded-help-body::-webkit-scrollbar-thumb:hover {
             background: rgba(62, 240, 193, 0.6);
         }
+
+        /* Toast Notification Styles */
+        .toast-container {
+            position: fixed;
+            bottom: 60px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            pointer-events: none;
+        }
+
+        .toast {
+            padding: 12px 18px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 500;
+            box-shadow: 0 8px 24px rgba(6, 12, 22, 0.5);
+            transform: translateX(120%);
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            opacity: 0;
+            max-width: 320px;
+            pointer-events: auto;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .toast.success {
+            background: linear-gradient(135deg, rgba(62, 240, 193, 0.95), rgba(90, 165, 255, 0.9));
+            color: #041018;
+            border: 1px solid rgba(62, 240, 193, 0.6);
+        }
+
+        .toast.error {
+            background: linear-gradient(135deg, rgba(255, 107, 107, 0.95), rgba(255, 82, 82, 0.9));
+            color: #120606;
+            border: 1px solid rgba(255, 107, 107, 0.6);
+        }
+
+        .toast.info {
+            background: linear-gradient(135deg, rgba(90, 165, 255, 0.95), rgba(62, 240, 193, 0.9));
+            color: #041018;
+            border: 1px solid rgba(90, 165, 255, 0.6);
+        }
+
+        .toast-icon {
+            margin-right: 8px;
+        }
+
+        .toast-close {
+            margin-left: 12px;
+            cursor: pointer;
+            opacity: 0.7;
+            font-size: 16px;
+        }
+
+        .toast-close:hover {
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
@@ -1395,20 +1465,24 @@
                 <h1>Data Manager</h1>
             </div>
             <div class="header-actions">
-                <button id="choose-folder">Choose Library Folder</button>
-                <button class="ghost" id="open-recent" type="button">Open Recent Folder</button>
-                <button class="ghost" id="scan-library">Scan Files</button>
-                <button class="ghost" id="reload-catalog">Reload Catalog</button>
-                <button class="ghost" id="update-fonts">Update Fonts</button>
-                <button class="ghost" id="fix-missing" type="button">Fix Missing Files</button>
-                <button class="ghost" id="help-btn" type="button">Help</button>
-                <button class="ghost" id="homepage-settings-btn" type="button">🏠 Homepage Settings</button>
-                <button class="ghost" id="viewer-settings-btn" type="button">📖 Viewer Settings</button>
-                <label class="checkbox auto-scan">
-                    <input type="checkbox" id="auto-scan">
-                    Auto Scan
-                </label>
-                <a class="link-btn ghost" href="homepage.html">Open Homepage</a>
+                <div class="header-row">
+                    <button id="choose-folder">📁 Choose Library Folder</button>
+                    <button class="ghost" id="open-recent" type="button">📂 Open Recent</button>
+                    <button class="ghost" id="scan-library">🔄 Scan Files</button>
+                    <button class="ghost" id="reload-catalog">📋 Reload Catalog</button>
+                </div>
+                <div class="header-row">
+                    <button class="ghost" id="update-fonts">🔤 Update Fonts</button>
+                    <button class="ghost" id="fix-missing" type="button">🔧 Fix Missing</button>
+                    <button class="ghost" id="help-btn" type="button">❓ Help</button>
+                    <button class="ghost" id="homepage-settings-btn" type="button">🏠 Homepage</button>
+                    <button class="ghost" id="viewer-settings-btn" type="button">📖 Viewer</button>
+                    <label class="checkbox auto-scan">
+                        <input type="checkbox" id="auto-scan">
+                        Auto Scan
+                    </label>
+                    <a class="link-btn ghost" href="homepage.html" target="_blank">🌐 Homepage</a>
+                </div>
             </div>
         </header>
 
@@ -1589,6 +1663,9 @@
         <span id="status-bar-text">Ready.</span>
         <span id="status-bar-recent">Recent folder: none · Recent story: none</span>
     </div>
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container" id="toast-container"></div>
 
     <div class="cover-overlay" id="cover-overlay" hidden>
         <div class="cover-modal">
@@ -1824,6 +1901,45 @@
             }
         }
 
+        // Toast Notification System
+        const toastContainer = document.getElementById('toast-container');
+        
+        function showToast(message, type = 'info', duration = 3000) {
+            if (!toastContainer) return;
+            
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            const iconMap = {
+                success: '✅',
+                error: '❌',
+                info: 'ℹ️'
+            };
+            
+            toast.innerHTML = `
+                <span class="toast-icon">${iconMap[type] || ''}</span>
+                <span class="toast-message">${message}</span>
+                <span class="toast-close" onclick="this.parentElement.remove()">✕</span>
+            `;
+            
+            toastContainer.appendChild(toast);
+            
+            // Trigger animation
+            requestAnimationFrame(() => {
+                toast.classList.add('show');
+            });
+            
+            // Auto remove
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    if (toast.parentElement) {
+                        toast.remove();
+                    }
+                }, 300);
+            }, duration);
+        }
+
         function openHelpModal() {
             if (!helpModal || !helpBody) {
                 return;
@@ -1925,7 +2041,9 @@
             await ensureStructure();
             await loadLibrary();
             await loadFontsIntoSelect();
-            setStatus(`Loaded ${state.stories.length} stories from ${state.rootHandle.name}.`);
+            const count = state.stories.length;
+            setStatus(`Loaded ${count} stories from ${state.rootHandle.name}.`);
+            showToast(`📂 Opened "${state.rootHandle.name}" with ${count} story(ies)`, 'success');
         }
 
         function saveRecentFolder(handle) {
@@ -3447,9 +3565,17 @@
             autoScanToggle.addEventListener('change', () => saveAutoScanSetting(autoScanToggle.checked));
         }
 
-        chooseFolderBtn.addEventListener('click', pickLibraryFolder);
+        chooseFolderBtn.addEventListener('click', async () => {
+            await pickLibraryFolder();
+            if (state.rootHandle) {
+                showToast(`📂 Opened library: ${state.rootHandle.name}`, 'success');
+            }
+        });
         openRecentBtn.addEventListener('click', () => tryUseRecentHandle(false));
-        scanLibraryBtn.addEventListener('click', scanLibrary);
+        scanLibraryBtn.addEventListener('click', async () => {
+            await scanLibrary();
+            showToast(`🔄 Scanned library: ${state.stories.length} stories found`, 'info');
+        });
         if (reloadCatalogBtn) {
             reloadCatalogBtn.addEventListener('click', loadLibrary);
         }
@@ -3477,8 +3603,17 @@
                 }
             });
         }
-        clearFormBtn.addEventListener('click', resetForm);
-        removeSelectedBtn.addEventListener('click', handleRemove);
+        clearFormBtn.addEventListener('click', () => {
+            resetForm();
+            showToast('🗑️ Form cleared', 'info');
+        });
+        removeSelectedBtn.addEventListener('click', async () => {
+            const idsToRemove = selectedStoryIds.size > 0 ? Array.from(selectedStoryIds) : (state.selectedId ? [state.selectedId] : []);
+            if (idsToRemove.length > 0) {
+                await handleRemove();
+                showToast(`🗑️ Removed ${idsToRemove.length} story(ies)`, 'info');
+            }
+        });
         applyViewDefaultsBtn.addEventListener('click', applyViewDefaultsToSelected);
         cleanupSelectedBtn.addEventListener('click', cleanupUnusedImages);
         saveSettingsBtn.addEventListener('click', saveDefaultSettings);
@@ -3520,6 +3655,10 @@
             coverPositionInput.value = '50% 50%';
             applyCoverPosition();
             renderImagePreview();
+            // Show toast for imported images
+            if (selectedImages.length > 0) {
+                showToast(`📷 ${selectedImages.length} image${selectedImages.length > 1 ? 's' : ''} imported`, 'success');
+            }
         });
 
         if (coverPickerBtn) {
