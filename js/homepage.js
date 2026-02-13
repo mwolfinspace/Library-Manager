@@ -189,6 +189,7 @@ let activeFilter = "all";
 let activeLayout = "grid";
 let activeSort = "default";
 let sortDirection = "asc"; // 'asc' for A-Z, 'desc' for Z-A
+let titleSortDirection = "asc"; // For title sort toggle
 let codeRefreshTimer = null;
 let cursorRaf = null;
 let cursorX = 0.5;
@@ -312,7 +313,13 @@ async function loadFonts() {
 
 // Helper function to get the current font family as a string (for dropdown)
 function getCurrentFontFamily() {
-  // Try localStorage first (legacy)
+  // First try DATABASE_SETTINGS (for export/import support)
+  const dbSettings = window.DATABASE_SETTINGS?.getSettings();
+  if (dbSettings?.fontFamily) {
+    return dbSettings.fontFamily;
+  }
+  
+  // Fallback to localStorage (legacy)
   try {
     const raw = localStorage.getItem("homepageFont");
     if (raw) {

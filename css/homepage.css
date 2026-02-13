@@ -1472,37 +1472,6 @@ body[data-theme="light"] .draggable-panel {
     padding-bottom: 6px;
 }
 
-/* Quick Font Buttons */
-.quick-font-buttons {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 8px;
-}
-
-.quick-font-btn {
-    padding: 8px 12px;
-    border: 1px solid var(--btn-border);
-    background: var(--btn);
-    color: var(--ink);
-    border-radius: 10px;
-    cursor: pointer;
-    font-size: 12px;
-    transition: all 0.2s ease;
-    text-align: left;
-    font-family: inherit;
-}
-
-.quick-font-btn:hover {
-    border-color: var(--accent);
-    background: rgba(98, 247, 255, 0.1);
-    box-shadow: 0 0 8px rgba(98, 247, 255, 0.2);
-    transform: translateY(-1px);
-}
-
-.quick-font-btn:active {
-    transform: translateY(0);
-}
-
 /* Font Select */
 .font-select {
     padding: 8px 10px;
@@ -2864,7 +2833,6 @@ body[data-theme="light"] .shortcut-pill-desc {
     border-radius: 12px;
 }
 
-.quick-font-btn.keyboard-focused,
 .theme-tab.keyboard-focused,
 .settings-reset-btn.keyboard-focused {
     outline: none;

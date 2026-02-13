@@ -98,29 +98,6 @@
             font-weight: 600;
         }
 
-        .quick-font-buttons {
-            display: flex;
-            gap: 6px;
-            flex-wrap: wrap;
-            margin-bottom: 12px;
-        }
-
-        .quick-font-btn {
-            padding: 6px 10px;
-            border-radius: 8px;
-            border: 1px solid rgba(90, 165, 255, 0.3);
-            background: transparent;
-            color: var(--ink);
-            font-size: 11px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .quick-font-btn:hover {
-            border-color: rgba(62, 240, 193, 0.6);
-            background: rgba(62, 240, 193, 0.1);
-        }
-
         .font-select {
             width: 100%;
             margin-bottom: 8px;
@@ -508,15 +485,6 @@
 
     <!-- Font Tab -->
     <div class="tab-panel active" data-tab-panel="hp-font">
-        <div class="settings-section">
-            <h4>Quick Font Apply</h4>
-            <div class="quick-font-buttons">
-                <button type="button" class="quick-font-btn" data-font="Share Tech Mono" data-fallback="monospace">🖥️ Tech Mono</button>
-                <button type="button" class="quick-font-btn" data-font="Orbitron" data-fallback="sans-serif">🚀 Orbitron</button>
-                <button type="button" class="quick-font-btn" data-font="VT323" data-fallback="monospace">⌨️ VT323</button>
-                <button type="button" class="quick-font-btn" data-font="Space Mono" data-fallback="monospace">🌌 Space Mono</button>
-            </div>
-        </div>
         <div class="settings-section">
             <h4>Font Family</h4>
             <select id="hp-font-select" class="font-select"></select>
