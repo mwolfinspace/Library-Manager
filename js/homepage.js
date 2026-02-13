@@ -1645,7 +1645,10 @@ window.addEventListener("keydown", (event) => {
 
   // Check if the pressed key matches the blackout keybind
   const blackoutKey = KeybindManager.getKeyFor('blackout');
-  if (event.key.toLowerCase() === blackoutKey.toLowerCase()) {
+  // Normalize space key: "space" (keybind) vs " " (actual keypress)
+  const normalizedKey = event.key === ' ' ? 'space' : event.key.toLowerCase();
+  const normalizedBind = blackoutKey === ' ' ? 'space' : blackoutKey.toLowerCase();
+  if (normalizedKey === normalizedBind) {
     event.preventDefault();
     toggleBlackout();
   }

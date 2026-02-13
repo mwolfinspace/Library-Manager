@@ -10,27 +10,42 @@
     </head>
     <body data-theme="dark">
         <!-- Age Verification Screen (shows FIRST, very lightweight) -->
-        <div id="age-verify-overlay" class="age-verify-overlay" data-age-verify="true">
+        <div
+            id="age-verify-overlay"
+            class="age-verify-overlay"
+            data-age-verify="true"
+        >
             <div class="age-verify-content">
                 <div class="age-verify-icon">🔞</div>
                 <h2 class="age-verify-title">Age Verification Required</h2>
                 <p class="age-verify-message">
-                    This archive contains mature content.<br>
+                    This archive contains mature content.<br />
                     You must be 18 years or older to access.
                 </p>
                 <p class="age-verify-question">Are you over 18?</p>
                 <div class="age-verify-actions">
-                    <button type="button" id="age-yes" class="age-btn age-btn-yes" onclick="handleAgeYes(event)">
+                    <button
+                        type="button"
+                        id="age-yes"
+                        class="age-btn age-btn-yes"
+                        onclick="handleAgeYes(event)"
+                    >
                         <span class="age-btn-icon">✓</span>
                         <span>Yes, I'm 18+</span>
                     </button>
-                    <button type="button" id="age-no" class="age-btn age-btn-no" onclick="handleAgeNo(event)">
+                    <button
+                        type="button"
+                        id="age-no"
+                        class="age-btn age-btn-no"
+                        onclick="handleAgeNo(event)"
+                    >
                         <span class="age-btn-icon">✕</span>
                         <span>No, I'm under 18</span>
                     </button>
                 </div>
                 <p class="age-verify-note">
-                    By clicking "Yes", you confirm that you are of legal age to view this content.
+                    By clicking "Yes", you confirm that you are of legal age to
+                    view this content.
                 </p>
                 <p class="age-verify-bypass">
                     Press <strong>Y</strong> to bypass if stuck
@@ -42,65 +57,77 @@
         <script>
             // Check age verification immediately on page load
             // This must run before any other scripts to prevent popup flash
-            (function() {
-                var overlay = document.getElementById('age-verify-overlay');
+            (function () {
+                var overlay = document.getElementById("age-verify-overlay");
                 if (!overlay) return;
-                
+
                 // Check both sessionStorage (current session) and the skip preference
-                var ageVerified = sessionStorage.getItem('ageVerified') === 'true';
+                var ageVerified =
+                    sessionStorage.getItem("ageVerified") === "true";
                 var skipPref = false;
-                
+
                 try {
-                    var prefsRaw = localStorage.getItem('skipPreferences');
+                    var prefsRaw = localStorage.getItem("skipPreferences");
                     if (prefsRaw) {
                         var prefs = JSON.parse(prefsRaw);
                         skipPref = prefs && prefs.skipAgeVerify === true;
                     }
-                } catch(e) {}
-                
+                } catch (e) {}
+
                 // If already verified or skip preference is on, hide overlay immediately
                 if (ageVerified || skipPref) {
-                    overlay.style.display = 'none';
-                    overlay.setAttribute('data-age-verify', 'false');
-                    console.log('Age verify skipped (session verified: ' + ageVerified + ', pref: ' + skipPref + ')');
+                    overlay.style.display = "none";
+                    overlay.setAttribute("data-age-verify", "false");
+                    console.log(
+                        "Age verify skipped (session verified: " +
+                            ageVerified +
+                            ", pref: " +
+                            skipPref +
+                            ")",
+                    );
                 } else {
                     // Show overlay
                 }
             })();
-            
+
             // Global handlers for age verification buttons
-            window.handleAgeYes = function(e) {
+            window.handleAgeYes = function (e) {
                 if (e) e.preventDefault();
-                
+
                 // Save age verified state in sessionStorage (persists until F5/tab close)
-                sessionStorage.setItem('ageVerified', 'true');
-                
-                var overlay = document.getElementById('age-verify-overlay');
+                sessionStorage.setItem("ageVerified", "true");
+
+                var overlay = document.getElementById("age-verify-overlay");
                 if (overlay) {
-                    overlay.style.display = 'none';
-                    overlay.setAttribute('data-age-verify', 'false');
+                    overlay.style.display = "none";
+                    overlay.setAttribute("data-age-verify", "false");
                 }
                 // Start loading - call the global function
-                if (typeof window.startAgeVerifiedLoading === 'function') {
+                if (typeof window.startAgeVerifiedLoading === "function") {
                     window.startAgeVerifiedLoading();
                 }
             };
-            
-            window.handleAgeNo = function(e) {
+
+            window.handleAgeNo = function (e) {
                 if (e) e.preventDefault();
-                console.log('Age No clicked - closing tab');
+                console.log("Age No clicked - closing tab");
                 // Close the tab - works in most browsers
                 window.close();
                 // Fallback: if window.close() doesn't work, show a message
-                setTimeout(function() {
-                    document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#03050b;color:#e8f1ff;font-family:sans-serif;text-align:center;padding:20px;"><div><h1>Access Denied</h1><p>You must be 18 or older to access this archive.</p><p style="margin-top:20px;font-size:12px;color:#e8f1ff66;">You can close this tab manually.</p></div></div>';
+                setTimeout(function () {
+                    document.body.innerHTML =
+                        '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#03050b;color:#e8f1ff;font-family:sans-serif;text-align:center;padding:20px;"><div><h1>Access Denied</h1><p>You must be 18 or older to access this archive.</p><p style="margin-top:20px;font-size:12px;color:#e8f1ff66;">You can close this tab manually.</p></div></div>';
                 }, 100);
             };
-            
+
             // Keyboard bypass - press Y to bypass age verification
-            document.addEventListener('keydown', function(e) {
-                var overlay = document.getElementById('age-verify-overlay');
-                if (overlay && overlay.style.display !== 'none' && e.key.toLowerCase() === 'y') {
+            document.addEventListener("keydown", function (e) {
+                var overlay = document.getElementById("age-verify-overlay");
+                if (
+                    overlay &&
+                    overlay.style.display !== "none" &&
+                    e.key.toLowerCase() === "y"
+                ) {
                     handleAgeYes(e);
                 }
             });
@@ -124,7 +151,7 @@
             <header class="hero">
                 <div class="hero-left">
                     <p class="eyebrow">Xedryk's Archive</p>
-                    <h1>Extracted Report: Part 01</h1>
+                    <h1>Extracted Report: DEMO</h1>
                 </div>
                 <div class="hero-right">
                     <div class="search-panel">
@@ -268,7 +295,8 @@
             <section class="grid" id="story-grid" data-layout="grid"></section>
 
             <p class="empty-state" id="empty-state">
-                No reports available. Pin ⭐/📌 some reports to make them appear here.
+                No reports available. Pin ⭐/📌 some reports to make them appear
+                here.
             </p>
         </div>
 
@@ -292,7 +320,10 @@
                         🔍
                     </button>
                 </div>
-                <div class="blackout-text" id="blackout-resume-text">Press <span id="blackout-resume-key">spacebar</span> again to resume</div>
+                <div class="blackout-text" id="blackout-resume-text">
+                    Press <span id="blackout-resume-key">spacebar</span> again
+                    to resume
+                </div>
             </div>
         </div>
 
@@ -372,22 +403,50 @@
                         <div class="font-size-grid">
                             <label>
                                 Base Size
-                                <input type="range" id="base-font-size" min="10" max="24" step="1" value="14">
+                                <input
+                                    type="range"
+                                    id="base-font-size"
+                                    min="10"
+                                    max="24"
+                                    step="1"
+                                    value="14"
+                                />
                                 <span class="range-value">14px</span>
                             </label>
                             <label>
                                 Headers
-                                <input type="range" id="header-font-size" min="16" max="48" step="2" value="26">
+                                <input
+                                    type="range"
+                                    id="header-font-size"
+                                    min="16"
+                                    max="48"
+                                    step="2"
+                                    value="26"
+                                />
                                 <span class="range-value">26px</span>
                             </label>
                             <label>
                                 Buttons
-                                <input type="range" id="button-font-size" min="10" max="20" step="1" value="12">
+                                <input
+                                    type="range"
+                                    id="button-font-size"
+                                    min="10"
+                                    max="20"
+                                    step="1"
+                                    value="12"
+                                />
                                 <span class="range-value">12px</span>
                             </label>
                             <label>
                                 Cards
-                                <input type="range" id="card-font-size" min="10" max="24" step="1" value="13">
+                                <input
+                                    type="range"
+                                    id="card-font-size"
+                                    min="10"
+                                    max="24"
+                                    step="1"
+                                    value="13"
+                                />
                                 <span class="range-value">13px</span>
                             </label>
                         </div>
@@ -437,21 +496,37 @@
                 >
                     <div class="settings-section">
                         <h4>Startup Screens</h4>
-                        <p class="settings-description" style="font-size: 12px; color: var(--muted); margin-bottom: 16px;">
-                            Control which screens appear when loading the archive. These settings are saved to your browser.
+                        <p
+                            class="settings-description"
+                            style="
+                                font-size: 12px;
+                                color: var(--muted);
+                                margin-bottom: 16px;
+                            "
+                        >
+                            Control which screens appear when loading the
+                            archive. These settings are saved to your browser.
                         </p>
-                        
+
                         <div class="toggle-list">
                             <label class="toggle-item">
                                 <div class="toggle-info">
                                     <span class="toggle-icon">🔞</span>
                                     <div class="toggle-text">
                                         <strong>Skip Age Verification</strong>
-                                        <span class="toggle-desc">Skip the 18+ check on every page reload. Verification will NOT appear after refreshing (F5).</span>
+                                        <span class="toggle-desc"
+                                            >Skip the 18+ check on every page
+                                            reload. Verification will NOT appear
+                                            after refreshing (F5).</span
+                                        >
                                     </div>
                                 </div>
                                 <div class="toggle-switch">
-                                    <input type="checkbox" id="skip-age-verify" class="toggle-input">
+                                    <input
+                                        type="checkbox"
+                                        id="skip-age-verify"
+                                        class="toggle-input"
+                                    />
                                     <span class="toggle-slider"></span>
                                 </div>
                             </label>
@@ -461,81 +536,241 @@
                                     <span class="toggle-icon">👋</span>
                                     <div class="toggle-text">
                                         <strong>Skip Welcome Screen</strong>
-                                        <span class="toggle-desc">Don't show the welcome guide for new users</span>
+                                        <span class="toggle-desc"
+                                            >Don't show the welcome guide for
+                                            new users</span
+                                        >
                                     </div>
                                 </div>
                                 <div class="toggle-switch">
-                                    <input type="checkbox" id="skip-welcome" class="toggle-input">
+                                    <input
+                                        type="checkbox"
+                                        id="skip-welcome"
+                                        class="toggle-input"
+                                    />
                                     <span class="toggle-slider"></span>
                                 </div>
                             </label>
                         </div>
 
-                        <div class="settings-note" style="margin-top: 20px; padding: 12px; background: rgba(98, 247, 255, 0.05); border-radius: 8px; border: 1px solid rgba(98, 247, 255, 0.1);">
-                            <p style="font-size: 11px; color: var(--muted); margin: 0;">
-                                💡 <strong>Tip:</strong> Age verification shows on every F5 reload by default. Toggle ON to permanently skip it. Use "Reset All Settings" to make it appear again.
+                        <div
+                            class="settings-note"
+                            style="
+                                margin-top: 20px;
+                                padding: 12px;
+                                background: rgba(98, 247, 255, 0.05);
+                                border-radius: 8px;
+                                border: 1px solid rgba(98, 247, 255, 0.1);
+                            "
+                        >
+                            <p
+                                style="
+                                    font-size: 11px;
+                                    color: var(--muted);
+                                    margin: 0;
+                                "
+                            >
+                                💡 <strong>Tip:</strong> Age verification shows
+                                on every F5 reload by default. Toggle ON to
+                                permanently skip it. Use "Reset All Settings" to
+                                make it appear again.
                             </p>
                         </div>
 
                         <!-- Database Import/Export -->
-                        <div class="settings-section" style="margin-top: 24px; border-top: 1px solid rgba(98, 247, 255, 0.1); padding-top: 20px;">
-                            <h4 style="margin-bottom: 12px; color: var(--accent);">💾 Database Import/Export</h4>
-                            <p class="settings-description" style="font-size: 12px; color: var(--muted); margin-bottom: 16px;">
-                                Export all your settings, favorites, pins, and reading progress to a file. Import on another computer to restore everything.
+                        <div
+                            class="settings-section"
+                            style="
+                                margin-top: 24px;
+                                border-top: 1px solid rgba(98, 247, 255, 0.1);
+                                padding-top: 20px;
+                            "
+                        >
+                            <h4
+                                style="
+                                    margin-bottom: 12px;
+                                    color: var(--accent);
+                                "
+                            >
+                                💾 Database Import/Export
+                            </h4>
+                            <p
+                                class="settings-description"
+                                style="
+                                    font-size: 12px;
+                                    color: var(--muted);
+                                    margin-bottom: 16px;
+                                "
+                            >
+                                Export all your settings, favorites, pins, and
+                                reading progress to a file. Import on another
+                                computer to restore everything.
                             </p>
-                            <div class="import-export-buttons" style="display: flex; gap: 12px; flex-wrap: wrap;">
-                                <button type="button" id="db-export-btn" class="settings-btn-primary" style="background: var(--accent); color: #000; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                            <div
+                                class="import-export-buttons"
+                                style="
+                                    display: flex;
+                                    gap: 12px;
+                                    flex-wrap: wrap;
+                                "
+                            >
+                                <button
+                                    type="button"
+                                    id="db-export-btn"
+                                    class="settings-btn-primary"
+                                    style="
+                                        background: var(--accent);
+                                        color: #000;
+                                        border: none;
+                                        padding: 10px 20px;
+                                        border-radius: 6px;
+                                        cursor: pointer;
+                                        font-weight: 600;
+                                    "
+                                >
                                     📤 Export Settings
                                 </button>
-                                <label type="button" class="settings-btn-secondary" style="background: transparent; color: var(--accent); border: 1px solid var(--accent); padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; display: inline-block;">
+                                <label
+                                    type="button"
+                                    class="settings-btn-secondary"
+                                    style="
+                                        background: transparent;
+                                        color: var(--accent);
+                                        border: 1px solid var(--accent);
+                                        padding: 10px 20px;
+                                        border-radius: 6px;
+                                        cursor: pointer;
+                                        font-weight: 600;
+                                        display: inline-block;
+                                    "
+                                >
                                     📥 Import Settings
-                                    <input type="file" id="db-import-input" accept=".json" style="display: none;">
+                                    <input
+                                        type="file"
+                                        id="db-import-input"
+                                        accept=".json"
+                                        style="display: none"
+                                    />
                                 </label>
                             </div>
-                            <p id="db-import-status" style="font-size: 11px; color: var(--muted); margin-top: 12px;"></p>
+                            <p
+                                id="db-import-status"
+                                style="
+                                    font-size: 11px;
+                                    color: var(--muted);
+                                    margin-top: 12px;
+                                "
+                            ></p>
                         </div>
 
                         <!-- Reset Data Section -->
-                        <div class="settings-section" style="margin-top: 24px; border-top: 1px solid rgba(98, 247, 255, 0.1); padding-top: 20px;">
-                            <h4 style="margin-bottom: 12px; color: var(--accent);">🗑️ Reset Data</h4>
-                            <p class="settings-description" style="font-size: 12px; color: var(--muted); margin-bottom: 16px;">
-                                ⚠️ These actions cannot be undone. Use with caution.
+                        <div
+                            class="settings-section"
+                            style="
+                                margin-top: 24px;
+                                border-top: 1px solid rgba(98, 247, 255, 0.1);
+                                padding-top: 20px;
+                            "
+                        >
+                            <h4
+                                style="
+                                    margin-bottom: 12px;
+                                    color: var(--accent);
+                                "
+                            >
+                                🗑️ Reset Data
+                            </h4>
+                            <p
+                                class="settings-description"
+                                style="
+                                    font-size: 12px;
+                                    color: var(--muted);
+                                    margin-bottom: 16px;
+                                "
+                            >
+                                ⚠️ These actions cannot be undone. Use with
+                                caution.
                             </p>
                             <div class="reset-grid">
                                 <div class="reset-item">
-                                    <button type="button" class="reset-btn" data-reset="pin-favorite">
+                                    <button
+                                        type="button"
+                                        class="reset-btn"
+                                        data-reset="pin-favorite"
+                                    >
                                         <span class="reset-btn-icon">⭐📌</span>
-                                        <span class="reset-btn-text">Reset Pin + Favorite</span>
+                                        <span class="reset-btn-text"
+                                            >Reset Pin + Favorite</span
+                                        >
                                     </button>
-                                    <div class="reset-desc">Remove all pinned and favorited stories. Recent timestamps remain intact.</div>
+                                    <div class="reset-desc">
+                                        Remove all pinned and favorited stories.
+                                        Recent timestamps remain intact.
+                                    </div>
                                 </div>
                                 <div class="reset-item">
-                                    <button type="button" class="reset-btn" data-reset="pin">
+                                    <button
+                                        type="button"
+                                        class="reset-btn"
+                                        data-reset="pin"
+                                    >
                                         <span class="reset-btn-icon">📌</span>
-                                        <span class="reset-btn-text">Reset Pin Only</span>
+                                        <span class="reset-btn-text"
+                                            >Reset Pin Only</span
+                                        >
                                     </button>
-                                    <div class="reset-desc">Remove all pinned stories only. Favorites and timestamps preserved.</div>
+                                    <div class="reset-desc">
+                                        Remove all pinned stories only.
+                                        Favorites and timestamps preserved.
+                                    </div>
                                 </div>
                                 <div class="reset-item">
-                                    <button type="button" class="reset-btn" data-reset="favorite">
+                                    <button
+                                        type="button"
+                                        class="reset-btn"
+                                        data-reset="favorite"
+                                    >
                                         <span class="reset-btn-icon">⭐</span>
-                                        <span class="reset-btn-text">Reset Favorite Only</span>
+                                        <span class="reset-btn-text"
+                                            >Reset Favorite Only</span
+                                        >
                                     </button>
-                                    <div class="reset-desc">Remove all favorited stories only. Pins and timestamps preserved.</div>
+                                    <div class="reset-desc">
+                                        Remove all favorited stories only. Pins
+                                        and timestamps preserved.
+                                    </div>
                                 </div>
                                 <div class="reset-item">
-                                    <button type="button" class="reset-btn reset-btn-danger" data-reset="reading">
+                                    <button
+                                        type="button"
+                                        class="reset-btn reset-btn-danger"
+                                        data-reset="reading"
+                                    >
                                         <span class="reset-btn-icon">📖</span>
-                                        <span class="reset-btn-text">Reset Reading Status</span>
+                                        <span class="reset-btn-text"
+                                            >Reset Reading Status</span
+                                        >
                                     </button>
-                                    <div class="reset-desc">Remove all pins, favorites, and timestamps. All posts become new/unread.</div>
+                                    <div class="reset-desc">
+                                        Remove all pins, favorites, and
+                                        timestamps. All posts become new/unread.
+                                    </div>
                                 </div>
                                 <div class="reset-item">
-                                    <button type="button" class="reset-btn reset-btn-danger" data-reset="settings">
+                                    <button
+                                        type="button"
+                                        class="reset-btn reset-btn-danger"
+                                        data-reset="settings"
+                                    >
                                         <span class="reset-btn-icon">⚙️</span>
-                                        <span class="reset-btn-text">Reset All Settings</span>
+                                        <span class="reset-btn-text"
+                                            >Reset All Settings</span
+                                        >
                                     </button>
-                                    <div class="reset-desc">Reset colors, fonts, sizes, and all per-report settings to default.</div>
+                                    <div class="reset-desc">
+                                        Reset colors, fonts, sizes, and all
+                                        per-report settings to default.
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -551,8 +786,17 @@
                 >
                     <div class="settings-section">
                         <h4>Keyboard Shortcuts</h4>
-                        <p class="shortcuts-instructions" style="font-size: 12px; color: var(--muted); margin-bottom: 16px;">
-                            Click <strong>Assign</strong> then press a key to bind. Press <strong>Backspace</strong> to clear. Press <strong>Esc</strong> to cancel.
+                        <p
+                            class="shortcuts-instructions"
+                            style="
+                                font-size: 12px;
+                                color: var(--muted);
+                                margin-bottom: 16px;
+                            "
+                        >
+                            Click <strong>Assign</strong> then press a key to
+                            bind. Press <strong>Backspace</strong> to clear.
+                            Press <strong>Esc</strong> to cancel.
                         </p>
                         <div class="keybind-list" id="keybind-list">
                             <!-- Keybinds will be rendered here by JavaScript -->
@@ -605,67 +849,139 @@
 
                 <div class="modal-body" id="help-body">
                     <!-- SECRET Statistics Tab -->
-                    <div class="modal-tab-content secret-tab" data-content="secret">
+                    <div
+                        class="modal-tab-content secret-tab"
+                        data-content="secret"
+                    >
                         <div class="secret-header-row">
                             <span class="secret-icon-sm">🤫</span>
                             <span class="secret-title-text">Secret Stats</span>
                             <span class="secret-version">v1.0</span>
-                            <button type="button" id="reset-stats" class="stats-reset-btn-inline" title="Reset all secret stats">🗑️</button>
+                            <button
+                                type="button"
+                                id="reset-stats"
+                                class="stats-reset-btn-inline"
+                                title="Reset all secret stats"
+                            >
+                                🗑️
+                            </button>
                         </div>
 
                         <!-- Stats Grid - Compact with tooltips -->
                         <div class="stats-grid-inline" id="stats-grid">
-                            <div class="stat-inline" title="Total time on archive">
+                            <div
+                                class="stat-inline"
+                                title="Total time on archive"
+                            >
                                 <span class="stat-inline-icon">⏱️</span>
-                                <span class="stat-inline-value" id="stat-total-time">--:--:--</span>
+                                <span
+                                    class="stat-inline-value"
+                                    id="stat-total-time"
+                                    >--:--:--</span
+                                >
                             </div>
-                            <div class="stat-inline" title="Days since first visit">
+                            <div
+                                class="stat-inline"
+                                title="Days since first visit"
+                            >
                                 <span class="stat-inline-icon">📅</span>
-                                <span class="stat-inline-value" id="stat-days-since">0d</span>
+                                <span
+                                    class="stat-inline-value"
+                                    id="stat-days-since"
+                                    >0d</span
+                                >
                             </div>
                             <div class="stat-inline" title="Total mouse clicks">
                                 <span class="stat-inline-icon">🖱️</span>
-                                <span class="stat-inline-value" id="stat-total-clicks">0</span>
+                                <span
+                                    class="stat-inline-value"
+                                    id="stat-total-clicks"
+                                    >0</span
+                                >
                             </div>
                             <div class="stat-inline" title="Keyboard presses">
                                 <span class="stat-inline-icon">⌨️</span>
-                                <span class="stat-inline-value" id="stat-keypresses">0</span>
+                                <span
+                                    class="stat-inline-value"
+                                    id="stat-keypresses"
+                                    >0</span
+                                >
                             </div>
                             <div class="stat-inline" title="Reports opened">
                                 <span class="stat-inline-icon">📖</span>
-                                <span class="stat-inline-value" id="stat-reports-opened">0</span>
+                                <span
+                                    class="stat-inline-value"
+                                    id="stat-reports-opened"
+                                    >0</span
+                                >
                             </div>
                             <div class="stat-inline" title="Pins/Unpins">
                                 <span class="stat-inline-icon">⭐</span>
-                                <span class="stat-inline-value" id="stat-pins">0</span>
+                                <span class="stat-inline-value" id="stat-pins"
+                                    >0</span
+                                >
                             </div>
                             <div class="stat-inline" title="Searches performed">
                                 <span class="stat-inline-icon">🔍</span>
-                                <span class="stat-inline-value" id="stat-searches">0</span>
+                                <span
+                                    class="stat-inline-value"
+                                    id="stat-searches"
+                                    >0</span
+                                >
                             </div>
                             <div class="stat-inline" title="Dark mode uses">
                                 <span class="stat-inline-icon">🌙</span>
-                                <span class="stat-inline-value" id="stat-dark-uses">0</span>
+                                <span
+                                    class="stat-inline-value"
+                                    id="stat-dark-uses"
+                                    >0</span
+                                >
                             </div>
                         </div>
 
                         <!-- Quick Pills Inline with tooltips -->
                         <div class="quick-pills-inline">
-                            <div class="pill-inline" title="Fastest click recorded">
+                            <div
+                                class="pill-inline"
+                                title="Fastest click recorded"
+                            >
                                 <span class="pill-inline-icon">🚀</span>
-                                <span class="pill-inline-value" id="stat-fastest-click">--ms</span>
+                                <span
+                                    class="pill-inline-value"
+                                    id="stat-fastest-click"
+                                    >--ms</span
+                                >
                             </div>
-                            <div class="pill-inline" title="Longest session duration">
+                            <div
+                                class="pill-inline"
+                                title="Longest session duration"
+                            >
                                 <span class="pill-inline-icon">💤</span>
-                                <span class="pill-inline-value" id="stat-longest-session">--</span>
+                                <span
+                                    class="pill-inline-value"
+                                    id="stat-longest-session"
+                                    >--</span
+                                >
                             </div>
-                            <div class="pill-inline" title="Click accuracy rate">
+                            <div
+                                class="pill-inline"
+                                title="Click accuracy rate"
+                            >
                                 <span class="pill-inline-icon">🎯</span>
-                                <span class="pill-inline-value" id="stat-accuracy">--%</span>
+                                <span
+                                    class="pill-inline-value"
+                                    id="stat-accuracy"
+                                    >--%</span
+                                >
                             </div>
-                            <div class="pill-inline" title="Current streak (days)">
+                            <div
+                                class="pill-inline"
+                                title="Current streak (days)"
+                            >
                                 <span class="pill-inline-icon">🔥</span>
-                                <span class="pill-inline-value" id="stat-streak">0d</span>
+                                <span class="pill-inline-value" id="stat-streak"
+                                    >0d</span
+                                >
                             </div>
                         </div>
 
@@ -673,7 +989,9 @@
                         <div class="top-section-inline">
                             <h3 class="top-title-inline">🏆 Top Reports</h3>
                             <div class="top-list-inline" id="top-reports">
-                                <div class="top-empty-inline">No data yet...</div>
+                                <div class="top-empty-inline">
+                                    No data yet...
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -682,9 +1000,12 @@
                         <!-- Keyboard Shortcuts Section - Pill Design -->
                         <div class="help-section">
                             <h3>🎮 Keyboard Navigation</h3>
-                            
+
                             <!-- Direct Shortcuts - Dynamically Rendered -->
-                            <div class="shortcuts-category" id="help-direct-shortcuts">
+                            <div
+                                class="shortcuts-category"
+                                id="help-direct-shortcuts"
+                            >
                                 <!-- Rendered by JavaScript -->
                             </div>
 
@@ -694,7 +1015,10 @@
                             </div>
 
                             <!-- Control Navigation - Dynamically Rendered -->
-                            <div class="shortcuts-category" id="help-control-nav">
+                            <div
+                                class="shortcuts-category"
+                                id="help-control-nav"
+                            >
                                 <!-- Rendered by JavaScript -->
                             </div>
 
@@ -702,16 +1026,30 @@
                                 <h4>🔍 Search Box Special</h4>
                                 <div class="shortcuts-pill-grid">
                                     <div class="shortcut-pill">
-                                        <span class="shortcut-pill-key">ENTER</span>
-                                        <span class="shortcut-pill-desc">Focus search (when control selected)</span>
+                                        <span class="shortcut-pill-key"
+                                            >ENTER</span
+                                        >
+                                        <span class="shortcut-pill-desc"
+                                            >Focus search (when control
+                                            selected)</span
+                                        >
                                     </div>
                                     <div class="shortcut-pill">
-                                        <span class="shortcut-pill-key">ESC</span>
-                                        <span class="shortcut-pill-desc">Unfocus search / Return to cards</span>
+                                        <span class="shortcut-pill-key"
+                                            >ESC</span
+                                        >
+                                        <span class="shortcut-pill-desc"
+                                            >Unfocus search / Return to
+                                            cards</span
+                                        >
                                     </div>
                                     <div class="shortcut-pill">
-                                        <span class="shortcut-pill-key">Type</span>
-                                        <span class="shortcut-pill-desc">Normal typing when focused</span>
+                                        <span class="shortcut-pill-key"
+                                            >Type</span
+                                        >
+                                        <span class="shortcut-pill-desc"
+                                            >Normal typing when focused</span
+                                        >
                                     </div>
                                 </div>
                             </div>
@@ -720,22 +1058,45 @@
                                 <h4>⚡ Global Shortcuts</h4>
                                 <div class="shortcuts-pill-grid">
                                     <div class="shortcut-pill">
-                                        <span class="shortcut-pill-key">ESC</span>
-                                        <span class="shortcut-pill-desc">Unfocus / Close modals</span>
+                                        <span class="shortcut-pill-key"
+                                            >ESC</span
+                                        >
+                                        <span class="shortcut-pill-desc"
+                                            >Unfocus / Close modals</span
+                                        >
                                     </div>
                                     <div class="shortcut-pill">
-                                        <span class="shortcut-pill-key">SPACEBAR</span>
-                                        <span class="shortcut-pill-desc">Blackout mode</span>
+                                        <span class="shortcut-pill-key"
+                                            >SPACEBAR</span
+                                        >
+                                        <span class="shortcut-pill-desc"
+                                            >Blackout mode</span
+                                        >
                                     </div>
                                     <div class="shortcut-pill">
-                                        <span class="shortcut-pill-key">F11</span>
-                                        <span class="shortcut-pill-desc">Fullscreen</span>
+                                        <span class="shortcut-pill-key"
+                                            >F11</span
+                                        >
+                                        <span class="shortcut-pill-desc"
+                                            >Fullscreen</span
+                                        >
                                     </div>
                                 </div>
                             </div>
-                            
-                            <p style="font-size: 11px; color: var(--muted); margin-top: 12px; padding: 8px; background: rgba(98, 247, 255, 0.05); border-radius: 8px;">
-                                💡 <strong>Tip:</strong> Direct shortcuts work anytime unless a popup (Settings/Help) is open or you're typing in the search box.
+
+                            <p
+                                style="
+                                    font-size: 11px;
+                                    color: var(--muted);
+                                    margin-top: 12px;
+                                    padding: 8px;
+                                    background: rgba(98, 247, 255, 0.05);
+                                    border-radius: 8px;
+                                "
+                            >
+                                💡 <strong>Tip:</strong> Direct shortcuts work
+                                anytime unless a popup (Settings/Help) is open
+                                or you're typing in the search box.
                             </p>
                         </div>
 
@@ -744,27 +1105,50 @@
                             <h3>🔍 Search Guide</h3>
                             <div class="search-guide-pills">
                                 <div class="search-guide-pill">
-                                    <span class="search-query-pill">tag1 tag2</span>
-                                    <span class="search-desc-pill">Stories with either tag1 OR tag2</span>
+                                    <span class="search-query-pill"
+                                        >tag1 tag2</span
+                                    >
+                                    <span class="search-desc-pill"
+                                        >Stories with either tag1 OR tag2</span
+                                    >
                                 </div>
                                 <div class="search-guide-pill">
-                                    <span class="search-query-pill">+tag1 +tag2</span>
-                                    <span class="search-desc-pill">Stories with BOTH tags (required)</span>
+                                    <span class="search-query-pill"
+                                        >+tag1 +tag2</span
+                                    >
+                                    <span class="search-desc-pill"
+                                        >Stories with BOTH tags (required)</span
+                                    >
                                 </div>
                                 <div class="search-guide-pill">
                                     <span class="search-query-pill">-tag1</span>
-                                    <span class="search-desc-pill">Exclude stories with tag1</span>
+                                    <span class="search-desc-pill"
+                                        >Exclude stories with tag1</span
+                                    >
                                 </div>
                                 <div class="search-guide-pill">
-                                    <span class="search-query-pill">tag1 | tag2</span>
-                                    <span class="search-desc-pill">Stories with tag1 OR tag2 (pipe separator)</span>
+                                    <span class="search-query-pill"
+                                        >tag1 | tag2</span
+                                    >
+                                    <span class="search-desc-pill"
+                                        >Stories with tag1 OR tag2 (pipe
+                                        separator)</span
+                                    >
                                 </div>
                                 <div class="search-guide-pill">
-                                    <span class="search-query-pill">action +sci-fi -romance</span>
-                                    <span class="search-desc-pill">Action that is sci-fi but NOT romance</span>
+                                    <span class="search-query-pill"
+                                        >action +sci-fi -romance</span
+                                    >
+                                    <span class="search-desc-pill"
+                                        >Action that is sci-fi but NOT
+                                        romance</span
+                                    >
                                 </div>
                             </div>
-                            <p class="search-tip-pill">💡 Click tags on story cards to auto-add them to search</p>
+                            <p class="search-tip-pill">
+                                💡 Click tags on story cards to auto-add them to
+                                search
+                            </p>
                         </div>
 
                         <div class="help-section">
@@ -773,25 +1157,33 @@
                                 <div class="control-item">
                                     <div class="control-icon">🔍</div>
                                     <div class="control-desc">
-                                        <strong>Search:</strong> Filter reports by title, description, or tags. Supports fuzzy matching and OR/AND operators.
+                                        <strong>Search:</strong> Filter reports
+                                        by title, description, or tags. Supports
+                                        fuzzy matching and OR/AND operators.
                                     </div>
                                 </div>
                                 <div class="control-item">
                                     <div class="control-icon">📊</div>
                                     <div class="control-desc">
-                                        <strong>Filters:</strong> Toggle between All (🌐), Favorites (⭐), or Pinned (📌) views.
+                                        <strong>Filters:</strong> Toggle between
+                                        All (🌐), Favorites (⭐), or Pinned (📌)
+                                        views.
                                     </div>
                                 </div>
                                 <div class="control-item">
                                     <div class="control-icon">🖥️</div>
                                     <div class="control-desc">
-                                        <strong>Layouts:</strong> Grid (▦), List (☰), Compact (▤), or Spotlight (⬚) modes.
+                                        <strong>Layouts:</strong> Grid (▦), List
+                                        (☰), Compact (▤), or Spotlight (⬚)
+                                        modes.
                                     </div>
                                 </div>
                                 <div class="control-item">
                                     <div class="control-icon">🔄</div>
                                     <div class="control-desc">
-                                        <strong>Sort:</strong> By Default, Title, Recent, or Priority (Fav > Pin > Normal).
+                                        <strong>Sort:</strong> By Default,
+                                        Title, Recent, or Priority (Fav > Pin >
+                                        Normal).
                                     </div>
                                 </div>
                             </div>
@@ -803,19 +1195,24 @@
                                 <div class="custom-item">
                                     <div class="custom-icon">⚙️</div>
                                     <div class="custom-desc">
-                                        <strong>Settings:</strong> Draggable panel for fonts, colors, and keyboard shortcuts. All changes persist locally.
+                                        <strong>Settings:</strong> Draggable
+                                        panel for fonts, colors, and keyboard
+                                        shortcuts. All changes persist locally.
                                     </div>
                                 </div>
                                 <div class="custom-item">
                                     <div class="custom-icon">🎨</div>
                                     <div class="custom-desc">
-                                        <strong>Colors:</strong> Customize all UI elements - text, backgrounds, accents, and gradients.
+                                        <strong>Colors:</strong> Customize all
+                                        UI elements - text, backgrounds,
+                                        accents, and gradients.
                                     </div>
                                 </div>
                                 <div class="custom-item">
                                     <div class="custom-icon">📱</div>
                                     <div class="custom-desc">
-                                        <strong>Theme:</strong> Toggle Dark (🌙) / Light (☀️) mode. Preference is saved.
+                                        <strong>Theme:</strong> Toggle Dark (🌙)
+                                        / Light (☀️) mode. Preference is saved.
                                     </div>
                                 </div>
                             </div>
@@ -824,20 +1221,73 @@
                         <div class="help-section">
                             <h3>🔧 Features</h3>
                             <ul class="advanced-list">
-                                <li><strong>🔞 Age Verification:</strong> 18+ age check on first visit. Can be disabled in Settings → Data tab.</li>
-                                <li><strong>👋 Welcome Screen:</strong> Guide for new users showing help button and search bar. Can be disabled in Settings → Data tab.</li>
-                                <li><strong>📌 Pin System:</strong> Pin reports for quick access. Pinned items get priority sorting.</li>
-                                <li><strong>🔖 Bookmarks:</strong> Auto-saves reading position. Resume where you left off.</li>
-                                <li><strong>⭐ Favorites:</strong> Star reports for filtering and top priority.</li>
-                                <li><strong>💾 Backup & Restore:</strong> Export all settings, favorites, pins, bookmarks, and theme colors. Import on another device to restore.</li>
-                                <li><strong>🔍 Real-time Search:</strong> Instant filtering with tag support.</li>
-                                <li><strong>📐 Responsive:</strong> Auto-adjusts layout for any screen size.</li>
-                                <li><strong>⚙️ Settings Panel:</strong> Draggable panel with Font, Color, Data, and Shortcuts tabs.</li>
-                                <li><strong>🎨 Customization:</strong> Full control over fonts, colors, and keyboard shortcuts.</li>
-                                <li><strong>🗑️ Reset Options:</strong> Multiple reset levels from pins/favorites to complete fresh start (see Settings → Data tab).</li>
+                                <li>
+                                    <strong>🔞 Age Verification:</strong> 18+
+                                    age check on first visit. Can be disabled in
+                                    Settings → Data tab.
+                                </li>
+                                <li>
+                                    <strong>👋 Welcome Screen:</strong> Guide
+                                    for new users showing help button and search
+                                    bar. Can be disabled in Settings → Data tab.
+                                </li>
+                                <li>
+                                    <strong>📌 Pin System:</strong> Pin reports
+                                    for quick access. Pinned items get priority
+                                    sorting.
+                                </li>
+                                <li>
+                                    <strong>🔖 Bookmarks:</strong> Auto-saves
+                                    reading position. Resume where you left off.
+                                </li>
+                                <li>
+                                    <strong>⭐ Favorites:</strong> Star reports
+                                    for filtering and top priority.
+                                </li>
+                                <li>
+                                    <strong>💾 Backup & Restore:</strong> Export
+                                    all settings, favorites, pins, bookmarks,
+                                    and theme colors. Import on another device
+                                    to restore.
+                                </li>
+                                <li>
+                                    <strong>🔍 Real-time Search:</strong>
+                                    Instant filtering with tag support.
+                                </li>
+                                <li>
+                                    <strong>📐 Responsive:</strong> Auto-adjusts
+                                    layout for any screen size.
+                                </li>
+                                <li>
+                                    <strong>⚙️ Settings Panel:</strong>
+                                    Draggable panel with Font, Color, Data, and
+                                    Shortcuts tabs.
+                                </li>
+                                <li>
+                                    <strong>🎨 Customization:</strong> Full
+                                    control over fonts, colors, and keyboard
+                                    shortcuts.
+                                </li>
+                                <li>
+                                    <strong>🗑️ Reset Options:</strong> Multiple
+                                    reset levels from pins/favorites to complete
+                                    fresh start (see Settings → Data tab).
+                                </li>
                             </ul>
-                            <p style="font-size: 11px; color: var(--muted); margin-top: 12px; padding: 8px; background: rgba(98, 247, 255, 0.05); border-radius: 8px;">
-                                💡 <strong>Tip:</strong> Use "Reset All Settings" when preparing the archive for a new user. This will clear all preferences and show age verification + welcome screen on next load.
+                            <p
+                                style="
+                                    font-size: 11px;
+                                    color: var(--muted);
+                                    margin-top: 12px;
+                                    padding: 8px;
+                                    background: rgba(98, 247, 255, 0.05);
+                                    border-radius: 8px;
+                                "
+                            >
+                                💡 <strong>Tip:</strong> Use "Reset All
+                                Settings" when preparing the archive for a new
+                                user. This will clear all preferences and show
+                                age verification + welcome screen on next load.
                             </p>
                         </div>
                     </div>
@@ -1025,15 +1475,36 @@
 
         <!-- Custom Confirmation Popup -->
         <div id="confirm-overlay" class="confirm-overlay" hidden>
-            <div class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+            <div
+                class="confirm-modal"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="confirm-title"
+            >
                 <div class="confirm-header">
                     <span class="confirm-icon">⚠️</span>
-                    <h3 id="confirm-title" class="confirm-title">Confirm Reset</h3>
+                    <h3 id="confirm-title" class="confirm-title">
+                        Confirm Reset
+                    </h3>
                 </div>
-                <p id="confirm-message" class="confirm-message">Are you sure you want to proceed?</p>
+                <p id="confirm-message" class="confirm-message">
+                    Are you sure you want to proceed?
+                </p>
                 <div class="confirm-actions">
-                    <button type="button" id="confirm-cancel" class="confirm-btn confirm-btn-secondary">Cancel</button>
-                    <button type="button" id="confirm-ok" class="confirm-btn confirm-btn-danger">Reset</button>
+                    <button
+                        type="button"
+                        id="confirm-cancel"
+                        class="confirm-btn confirm-btn-secondary"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        id="confirm-ok"
+                        class="confirm-btn confirm-btn-danger"
+                    >
+                        Reset
+                    </button>
                 </div>
             </div>
         </div>
@@ -1044,25 +1515,30 @@
                 <div class="welcome-icon">👋</div>
                 <h2 class="welcome-title">Welcome to Xedryk Archive</h2>
                 <p class="welcome-message">
-                    Thank you for visiting! Here's a quick guide to get you started:
+                    Thank you for visiting! Here's a quick guide to get you
+                    started:
                 </p>
                 <div class="welcome-features">
                     <div class="welcome-feature">
                         <span class="welcome-feature-icon">❓</span>
                         <div class="welcome-feature-text">
-                            <strong>Help Button</strong> - Press this for keyboard shortcuts, search tips, and all features guide
+                            <strong>Help Button</strong> - Press this for
+                            keyboard shortcuts, search tips, and all features
+                            guide
                         </div>
                     </div>
                     <div class="welcome-feature">
                         <span class="welcome-feature-icon">🔍</span>
                         <div class="welcome-feature-text">
-                            <strong>Search Bar</strong> - Find reports by title, tags, or description. Supports advanced operators!
+                            <strong>Search Bar</strong> - Find reports by title,
+                            tags, or description. Supports advanced operators!
                         </div>
                     </div>
                     <div class="welcome-feature">
                         <span class="welcome-feature-icon">⚙️</span>
                         <div class="welcome-feature-text">
-                            <strong>Settings</strong> - Customize fonts, colors, and keyboard shortcuts
+                            <strong>Settings</strong> - Customize fonts, colors,
+                            and keyboard shortcuts
                         </div>
                     </div>
                 </div>
@@ -1078,3 +1554,4 @@
         <script src="database/catalog.js"></script>
         <script src="js/homepage.js"></script>
     </body>
+</html>
