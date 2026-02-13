@@ -770,6 +770,7 @@
 
     <script>
         const MODE = window.parent === window ? 'homepage' : 'datamanager';
+        const STORAGE_KEY = 'homepageSettings';
 
         class SettingsManager {
             constructor(defaults, storageKey) {
@@ -803,10 +804,12 @@
             }
 
             saveSettings(settings) {
+                // Always save to localStorage first (works in both modes)
+                localStorage.setItem(this.STORAGE_KEY, JSON.stringify(settings));
+                
                 if (MODE === 'datamanager') {
+                    // Also tell parent to save to hardcode file
                     window.parent.postMessage({ type: 'saveHomepageSettings', settings: settings }, '*');
-                } else {
-                    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(settings));
                 }
             }
 
@@ -819,6 +822,54 @@
                 }, 3000);
             }
         }
+        
+        // Also create global save/close functions for Data Manager to call
+        window.saveAndClose = function() {
+            const settings = window.getCurrentSettings ? window.getCurrentSettings() : {};
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+            if (MODE === 'datamanager') {
+                window.parent.postMessage({ type: 'saveHomepageSettings', settings: settings }, '*');
+            }
+            window.parent.postMessage({ type: 'closeHomepageSettings' }, '*');
+        };
+        
+        window.closeSettings = function() {
+            if (MODE === 'datamanager') {
+                window.parent.postMessage({ type: 'closeHomepageSettings' }, '*');
+            }
+        };
+        
+        window.getCurrentSettings = function() {
+            // Gather all current settings from the form
+            const settings = {};
+            
+            // Font settings
+            const fontSelect = document.getElementById('hp-font-select');
+            const customFont = document.getElementById('hp-custom-font');
+            const baseFontSize = document.getElementById('hp-base-font-size');
+            const headerFontSize = document.getElementById('hp-header-font-size');
+            const buttonFontSize = document.getElementById('hp-button-font-size');
+            const cardFontSize = document.getElementById('hp-card-font-size');
+            
+            if (fontSelect) settings.fontFamily = fontSelect.value;
+            if (customFont) settings.customFont = customFont.value;
+            if (baseFontSize) settings.fontSize = parseInt(baseFontSize.value, 10);
+            if (headerFontSize) settings.headerSize = parseInt(headerFontSize.value, 10);
+            if (buttonFontSize) settings.buttonFontSize = parseInt(buttonFontSize.value, 10);
+            if (cardFontSize) settings.cardFontSize = parseInt(cardFontSize.value, 10);
+            
+            // Theme
+            const activeTheme = document.querySelector('.theme-tab.active');
+            if (activeTheme) settings.theme = activeTheme.dataset.theme;
+            
+            // Data settings
+            const skipAgeVerify = document.getElementById('hp-skip-age-verify');
+            const skipWelcome = document.getElementById('hp-skip-welcome');
+            if (skipAgeVerify) settings.skipAgeVerify = skipAgeVerify.checked;
+            if (skipWelcome) settings.skipWelcome = skipWelcome.checked;
+            
+            return settings;
+        };
 
         class FontManager {
             constructor(settingsManager) {
@@ -869,7 +920,25 @@
 
             fontManager.loadFonts();
 
-            // other initializations
+            // Attach button handlers
+            const saveBtn = document.getElementById('save-btn');
+            const closeBtn = document.getElementById('close-btn');
+            
+            if (saveBtn) {
+                saveBtn.addEventListener('click', () => {
+                    if (window.saveAndClose) {
+                        window.saveAndClose();
+                    }
+                });
+            }
+            
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => {
+                    if (window.closeSettings) {
+                        window.closeSettings();
+                    }
+                });
+            }
         });
     </script>
 </body>

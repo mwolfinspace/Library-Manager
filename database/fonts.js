@@ -1,50 +1,47 @@
 window.FONTS = [
   {
-    "name": "IBM Plex Mono",
-    "family": "'IBMPlexMono', monospace",
-    "fallback": "monospace",
+    "name": "Geo",
+    "family": "'Geo', sans-serif",
     "source": "local"
   },
   {
-    "name": "Orbitron",
-    "family": "'Orbitron', sans-serif",
-    "fallback": "sans-serif",
+    "name": "IBMPlexMono",
+    "family": "'IBMPlexMono', sans-serif",
+    "source": "local"
+  },
+  {
+    "name": "Orbitron VariableFont wght",
+    "family": "'Orbitron VariableFont wght', sans-serif",
     "source": "local"
   },
   {
     "name": "Quantico",
     "family": "'Quantico', sans-serif",
-    "fallback": "sans-serif",
     "source": "local"
   },
   {
-    "name": "Roboto Mono",
-    "family": "'RobotoMono', monospace",
-    "fallback": "monospace",
+    "name": "RobotoMono VariableFont wght",
+    "family": "'RobotoMono VariableFont wght', sans-serif",
     "source": "local"
   },
   {
-    "name": "Share Tech Mono",
-    "family": "'ShareTechMono', monospace",
-    "fallback": "monospace",
+    "name": "ShareTechMono",
+    "family": "'ShareTechMono', sans-serif",
     "source": "local"
   },
   {
-    "name": "SN Pro",
-    "family": "'SNPro', sans-serif",
-    "fallback": "sans-serif",
+    "name": "SNPro VariableFont wght",
+    "family": "'SNPro VariableFont wght', sans-serif",
     "source": "local"
   },
   {
-    "name": "Space Mono",
-    "family": "'SpaceMono', monospace",
-    "fallback": "monospace",
+    "name": "SpaceMono",
+    "family": "'SpaceMono', sans-serif",
     "source": "local"
   },
   {
     "name": "VT323",
-    "family": "'VT323', monospace",
-    "fallback": "monospace",
+    "family": "'VT323', sans-serif",
     "source": "local"
   }
 ];

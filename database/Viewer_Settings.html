@@ -694,6 +694,7 @@
 
     <script>
         const MODE = window.parent === window ? 'viewer' : 'datamanager';
+        const STORAGE_KEY = 'viewerSettings';
 
         class SettingsManager {
             constructor(defaults, storageKey) {
@@ -727,10 +728,12 @@
             }
 
             saveSettings(settings) {
+                // Always save to localStorage first (works in both modes)
+                localStorage.setItem(this.STORAGE_KEY, JSON.stringify(settings));
+                
                 if (MODE === 'datamanager') {
+                    // Also tell parent to save to hardcode file
                     window.parent.postMessage({ type: 'saveViewerSettings', settings: settings }, '*');
-                } else {
-                    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(settings));
                 }
             }
 
@@ -743,6 +746,60 @@
                 }, 3000);
             }
         }
+        
+        // Also create global save/close functions for Data Manager to call
+        window.saveAndClose = function() {
+            const settings = window.getCurrentSettings ? window.getCurrentSettings() : {};
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+            if (MODE === 'datamanager') {
+                window.parent.postMessage({ type: 'saveViewerSettings', settings: settings }, '*');
+            }
+            window.parent.postMessage({ type: 'closeViewerSettings' }, '*');
+        };
+        
+        window.closeSettings = function() {
+            if (MODE === 'datamanager') {
+                window.parent.postMessage({ type: 'closeViewerSettings' }, '*');
+            }
+        };
+        
+        window.getCurrentSettings = function() {
+            // Gather all current settings from the form
+            const settings = {};
+            
+            // Appearance settings
+            const themeSelect = document.getElementById('v-theme-select');
+            const fontSelect = document.getElementById('v-font-family');
+            const customFont = document.getElementById('v-custom-font');
+            
+            if (themeSelect) settings.theme = themeSelect.value;
+            if (fontSelect) settings.fontFamily = fontSelect.value;
+            if (customFont) settings.customFont = customFont.value;
+            
+            // Reading settings
+            const fontSize = document.getElementById('v-font-size');
+            const lineSpacing = document.getElementById('v-line-spacing');
+            const scrollStep = document.getElementById('v-scroll-step');
+            const zoomStep = document.getElementById('v-zoom-step');
+            
+            if (fontSize) settings.fontSize = parseInt(fontSize.value, 10);
+            if (lineSpacing) settings.lineSpacing = parseFloat(lineSpacing.value);
+            if (scrollStep) settings.scrollStep = parseInt(scrollStep.value, 10);
+            if (zoomStep) settings.zoomStep = parseFloat(zoomStep.value);
+            
+            // Input settings
+            const keyboardMode = document.getElementById('v-keyboard-mode');
+            const panKeys = document.getElementById('v-pan-keys');
+            const rememberZoom = document.getElementById('v-remember-zoom');
+            const rememberViewAll = document.getElementById('v-remember-view-all');
+            
+            if (keyboardMode) settings.keyboardMode = keyboardMode.value;
+            if (panKeys) settings.panKeys = panKeys.checked;
+            if (rememberZoom) settings.rememberZoom = rememberZoom.checked;
+            if (rememberViewAll) settings.rememberViewAll = rememberViewAll.checked;
+            
+            return settings;
+        };
 
         class FontManager {
             constructor(settingsManager) {
@@ -793,7 +850,25 @@
 
             fontManager.loadFonts();
 
-            // other initializations
+            // Attach button handlers
+            const saveBtn = document.getElementById('save-btn');
+            const closeBtn = document.getElementById('close-btn');
+            
+            if (saveBtn) {
+                saveBtn.addEventListener('click', () => {
+                    if (window.saveAndClose) {
+                        window.saveAndClose();
+                    }
+                });
+            }
+            
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => {
+                    if (window.closeSettings) {
+                        window.closeSettings();
+                    }
+                });
+            }
         });
     </script>
 </body>

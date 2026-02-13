@@ -1277,12 +1277,10 @@ function showAgeVerificationForStartup() {
 
 // Register global function for inline onclick handler
 window.startAgeVerifiedLoading = function() {
-  console.log('Age verified, starting loading...');
   startLoadingScreen();
 };
 
 function handleYesClick() {
-  console.log('Yes button clicked');
   // Save age verified state in sessionStorage (persists until F5/tab close)
   sessionStorage.setItem('ageVerified', 'true');
   const overlay = document.getElementById('age-verify-overlay');
@@ -1294,7 +1292,6 @@ function handleYesClick() {
 }
 
 function handleNoClick() {
-  console.log('No button clicked');
   document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#03050b;color:#e8f1ff;font-family:sans-serif;text-align:center;padding:20px;"><div><h1>Access Denied</h1><p>You must be 18 or older to access this archive.</p><p style="margin-top:20px;font-size:12px;color:#e8f1ff66;">If this is a mistake, <button onclick="localStorage.removeItem(\'skipPreferences\');location.reload();" style="background:transparent;border:1px solid #e8f1ff;color:#e8f1ff;padding:8px 16px;cursor:pointer;">Reset & Reload</button></p></div></div>';
 }
 
@@ -1452,7 +1449,6 @@ async function startLoadingScreen() {
 
 // Keep init as the entry point but change flow
 async function init() {
-  console.log('=== INIT CALLED ===');
   startApp();
   
   // Modal tabs initialization (was inside DOMContentLoaded)

@@ -310,7 +310,7 @@ window.VIEWER_SETTINGS = {
     "pinned": [],
     "bookmarks": {}
   },
-  "fontFamily": "'SN Pro', sans-serif",
+  "fontFamily": "'Geo', sans-serif",
   "customFont": "",
   "fontSize": 18,
   "headerSize": 26,

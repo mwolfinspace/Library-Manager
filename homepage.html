@@ -64,14 +64,13 @@
                     overlay.setAttribute('data-age-verify', 'false');
                     console.log('Age verify skipped (session verified: ' + ageVerified + ', pref: ' + skipPref + ')');
                 } else {
-                    console.log('Age verify required - showing overlay');
+                    // Show overlay
                 }
             })();
             
             // Global handlers for age verification buttons
             window.handleAgeYes = function(e) {
                 if (e) e.preventDefault();
-                console.log('Age Yes clicked (inline handler)');
                 
                 // Save age verified state in sessionStorage (persists until F5/tab close)
                 sessionStorage.setItem('ageVerified', 'true');
@@ -102,7 +101,6 @@
             document.addEventListener('keydown', function(e) {
                 var overlay = document.getElementById('age-verify-overlay');
                 if (overlay && overlay.style.display !== 'none' && e.key.toLowerCase() === 'y') {
-                    console.log('Age bypass via Y key');
                     handleAgeYes(e);
                 }
             });

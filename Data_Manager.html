@@ -2739,13 +2739,17 @@
                 const cssDir = await getDirectory('css', true);
                 await writeFile(cssDir, 'fonts.css', fontCss);
 
-                const dbDir = await getDatabaseDir();
-                await writeFile(dbDir, 'fonts.json', JSON.stringify(fontsJson, null, 2));
+        const dbDir = await getDatabaseDir();
+        await writeFile(dbDir, 'fonts.json', JSON.stringify(fontsJson, null, 2));
 
-                await loadFontsIntoSelect();
+        // Also update fonts.js for homepage and viewer to use
+        const fontsJsContent = 'window.FONTS = ' + JSON.stringify(fontsJson, null, 2) + ';\n';
+        await writeFile(dbDir, 'fonts.js', fontsJsContent);
 
-                setStatus(`Successfully updated ${fontFileGroups.size} font families.`);
-                showToast(`🔤 Updated ${fontFileGroups.size} font families.`, 'success');
+        await loadFontsIntoSelect();
+
+        setStatus(`Successfully updated ${fontFileGroups.size} font families.`);
+        showToast(`🔤 Updated ${fontFileGroups.size} font families.`, 'success');
 
             } catch (e) {
                 setStatus(`Error updating fonts: ${e.message}`);
@@ -4318,6 +4322,8 @@
                             const existing = await readJsonFile(dbDir, 'settings.json') || {};
                             const newSettings = { ...existing, ...event.data.settings };
                             await writeFile(dbDir, 'settings.json', JSON.stringify(newSettings, null, 2));
+                            // Also save to localStorage so homepage/viewer can read immediately
+                            localStorage.setItem('homepageSettings', JSON.stringify(newSettings));
                             await writeCatalog(state.stories);
                             setStatus('Homepage settings saved successfully!');
                         } catch (e) {
@@ -4366,6 +4372,8 @@
                             const existing = await readJsonFile(dbDir, 'settings.json') || {};
                             const newSettings = { ...existing, ...event.data.settings };
                             await writeFile(dbDir, 'settings.json', JSON.stringify(newSettings, null, 2));
+                            // Also save to localStorage so viewer can read immediately
+                            localStorage.setItem('viewerSettings', JSON.stringify(newSettings));
                             await writeCatalog(state.stories);
                             setStatus('Viewer settings saved successfully!');
                         } catch (e) {
