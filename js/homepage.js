@@ -1167,6 +1167,7 @@ sortButtons.forEach((button) => {
     }
     
     applySortPreference({ type: activeSort, direction: sortDirection });
+    saveFilterState();
     render();
   });
 });
