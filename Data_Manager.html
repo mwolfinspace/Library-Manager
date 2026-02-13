@@ -2632,64 +2632,110 @@
         async function updateFonts() {
             if (!state.rootHandle) {
                 setStatus('Choose a library folder first.');
+                showToast('Choose a library folder first.', 'error');
                 return;
             }
 
             setStatus('Scanning for fonts...');
-            const fontsDir = await getFontsDir();
-            const fontFamilies = new Map();
-            const validExtensions = ['.woff', '.woff2', '.ttf', '.otf', '.eot'];
+            showToast('Scanning for fonts...', 'info');
 
-            for await (const [fontFolderName, fontFolderHandle] of fontsDir.entries()) {
-                if (fontFolderHandle.kind !== 'directory') continue;
-                
-                const fontFamily = fontFolderName.replace(/[-_]/g, ' ');
-                const sources = [];
+            try {
+                const fontsDir = await getFontsDir();
+                const fontFileGroups = new Map();
+                const validExtensions = ['.woff', '.woff2', '.ttf', '.otf'];
 
-                for await (const [fileName, fileHandle] of fontFolderHandle.entries()) {
-                    if (fileHandle.kind !== 'file') continue;
+                const parseFontName = (fileName, folderName) => {
+                    const name = fileName.split('.')[0];
+                    let weight = 400;
+                    let style = 'normal';
+                    let family = folderName.replace(/[-_]/g, ' ');
+
+                    const keywords = {
+                        'thin': 100, 'extralight': 200, 'light': 300, 'regular': 400,
+                        'medium': 500, 'semibold': 600, 'bold': 700, 'extrabold': 800,
+                        'black': 900, 'heavy': 900,
+                        'italic': 'italic', 'oblique': 'oblique'
+                    };
+
+                    const parts = name.replace(/[-_]/g, ' ').split(' ');
+                    const familyParts = [];
+
+                    for (const part of parts) {
+                        const lowerPart = part.toLowerCase();
+                        if (keywords[lowerPart]) {
+                            if (typeof keywords[lowerPart] === 'number') {
+                                weight = keywords[lowerPart];
+                            } else {
+                                style = keywords[lowerPart];
+                            }
+                        } else {
+                            familyParts.push(part);
+                        }
+                    }
+
+                    if (familyParts.length > 0) {
+                        family = familyParts.join(' ');
+                    }
                     
-                    const fileExtension = fileName.slice(fileName.lastIndexOf('.')).toLowerCase();
-                    if (validExtensions.includes(fileExtension)) {
-                        const formatMap = {
-                            '.woff': 'woff',
-                            '.woff2': 'woff2',
-                            '.ttf': 'truetype',
-                            '.otf': 'opentype',
-                            '.eot': 'embedded-opentype',
-                        };
-                        const format = formatMap[fileExtension];
-                        sources.push(`url(../fonts/${fontFolderName}/${fileName}) format('${format}')`);
+                    if (name.toLowerCase().includes('bolditalic')) {
+                        weight = 700;
+                        style = 'italic';
+                    }
+
+                    return { family, weight, style };
+                };
+
+                const findFonts = async (dirHandle, pathPrefix = '') => {
+                    for await (const [name, handle] of dirHandle.entries()) {
+                        if (handle.kind === 'directory') {
+                            await findFonts(handle, `${pathPrefix}${name}/`);
+                        } else if (handle.kind === 'file') {
+                            const fileExtension = name.slice(name.lastIndexOf('.')).toLowerCase();
+                            if (validExtensions.includes(fileExtension)) {
+                                const { family, weight, style } = parseFontName(name, dirHandle.name);
+                                const formatMap = { '.woff': 'woff', '.woff2': 'woff2', '.ttf': 'truetype', '.otf': 'opentype' };
+                                const format = formatMap[fileExtension];
+                                const src = `url(../fonts/${pathPrefix}${name}) format('${format}')`;
+
+                                if (!fontFileGroups.has(family)) {
+                                    fontFileGroups.set(family, []);
+                                }
+                                fontFileGroups.get(family).push({ weight, style, src });
+                            }
+                        }
+                    }
+                };
+
+                await findFonts(fontsDir, '');
+
+                if (fontFileGroups.size === 0) {
+                    setStatus('No valid font files found.');
+                    showToast('No valid font files found in the /fonts directory.', 'error');
+                    return;
+                }
+
+                let fontCss = '/* Generated by Data Manager */\n\n';
+                const fontsJson = [];
+
+                for (const [family, variations] of fontFileGroups.entries()) {
+                    variations.forEach(v => {
+                        fontCss += `@font-face {\n`;
+                        fontCss += `  font-family: '${family}';\n`;
+                        fontCss += `  font-style: ${v.style};\n`;
+                        fontCss += `  font-weight: ${v.weight};\n`;
+                        fontCss += `  src: ${v.src};\n`;
+                        fontCss += `}\n\n`;
+                    });
+
+                    if (!fontsJson.some(f => f.name === family)) {
+                        fontsJson.push({
+                            name: family,
+                            family: `'${family}', sans-serif`,
+                            source: 'local'
+                        });
                     }
                 }
 
-                if (sources.length > 0) {
-                    fontFamilies.set(fontFamily, sources);
-                }
-            }
-            
-            if (fontFamilies.size === 0) {
-                setStatus('No font files found in the fonts directory.');
-                return;
-            }
-            
-            let fontCss = '/* Generated by Data Manager */\n\n';
-            const fontsJson = [];
-
-            for (const [family, sources] of fontFamilies.entries()) {
-                fontCss += `@font-face {\n`;
-                fontCss += `  font-family: '${family}';\n`;
-                fontCss += `  src: ${sources.join(',\n       ')};\n`;
-                fontCss += `}\n\n`;
-                
-                fontsJson.push({
-                    name: family,
-                    family: `'${family}', sans-serif`, // a reasonable fallback
-                    source: 'local'
-                });
-            }
-            
-            try {
                 const cssDir = await getDirectory('css', true);
                 await writeFile(cssDir, 'fonts.css', fontCss);
 
@@ -2698,9 +2744,12 @@
 
                 await loadFontsIntoSelect();
 
-                setStatus(`Successfully updated ${fontFamilies.size} font(s).`);
+                setStatus(`Successfully updated ${fontFileGroups.size} font families.`);
+                showToast(`🔤 Updated ${fontFileGroups.size} font families.`, 'success');
+
             } catch (e) {
-                setStatus(`Error writing font files: ${e.message}`);
+                setStatus(`Error updating fonts: ${e.message}`);
+                showToast(`Error updating fonts: ${e.message}`, 'error');
                 console.error(e);
             }
         }

@@ -1,12 +1,47 @@
 [
   {
-    "name": "ibm plex mono",
-    "family": "'ibm plex mono', sans-serif",
+    "name": "IBMPlexMono",
+    "family": "'IBMPlexMono', sans-serif",
     "source": "local"
   },
   {
-    "name": "orbitron",
-    "family": "'orbitron', sans-serif",
+    "name": "IBMPlexMono BoldItalic",
+    "family": "'IBMPlexMono BoldItalic', sans-serif",
+    "source": "local"
+  },
+  {
+    "name": "IBMPlexMono ExtraLightItalic",
+    "family": "'IBMPlexMono ExtraLightItalic', sans-serif",
+    "source": "local"
+  },
+  {
+    "name": "IBMPlexMono LightItalic",
+    "family": "'IBMPlexMono LightItalic', sans-serif",
+    "source": "local"
+  },
+  {
+    "name": "IBMPlexMono MediumItalic",
+    "family": "'IBMPlexMono MediumItalic', sans-serif",
+    "source": "local"
+  },
+  {
+    "name": "IBMPlexMono SemiBoldItalic",
+    "family": "'IBMPlexMono SemiBoldItalic', sans-serif",
+    "source": "local"
+  },
+  {
+    "name": "IBMPlexMono ThinItalic",
+    "family": "'IBMPlexMono ThinItalic', sans-serif",
+    "source": "local"
+  },
+  {
+    "name": "Orbitron VariableFont wght",
+    "family": "'Orbitron VariableFont wght', sans-serif",
+    "source": "local"
+  },
+  {
+    "name": "Orbitron",
+    "family": "'Orbitron', sans-serif",
     "source": "local"
   },
   {
@@ -15,28 +50,113 @@
     "source": "local"
   },
   {
-    "name": "roboto mono",
-    "family": "'roboto mono', sans-serif",
+    "name": "Quantico BoldItalic",
+    "family": "'Quantico BoldItalic', sans-serif",
     "source": "local"
   },
   {
-    "name": "share tech mono",
-    "family": "'share tech mono', sans-serif",
+    "name": "RobotoMono VariableFont wght",
+    "family": "'RobotoMono VariableFont wght', sans-serif",
     "source": "local"
   },
   {
-    "name": "SN Pro",
-    "family": "'SN Pro', sans-serif",
+    "name": "RobotoMono",
+    "family": "'RobotoMono', sans-serif",
     "source": "local"
   },
   {
-    "name": "space mono",
-    "family": "'space mono', sans-serif",
+    "name": "RobotoMono BoldItalic",
+    "family": "'RobotoMono BoldItalic', sans-serif",
     "source": "local"
   },
   {
-    "name": "vt323",
-    "family": "'vt323', sans-serif",
+    "name": "RobotoMono ExtraLightItalic",
+    "family": "'RobotoMono ExtraLightItalic', sans-serif",
+    "source": "local"
+  },
+  {
+    "name": "RobotoMono LightItalic",
+    "family": "'RobotoMono LightItalic', sans-serif",
+    "source": "local"
+  },
+  {
+    "name": "RobotoMono MediumItalic",
+    "family": "'RobotoMono MediumItalic', sans-serif",
+    "source": "local"
+  },
+  {
+    "name": "RobotoMono SemiBoldItalic",
+    "family": "'RobotoMono SemiBoldItalic', sans-serif",
+    "source": "local"
+  },
+  {
+    "name": "RobotoMono ThinItalic",
+    "family": "'RobotoMono ThinItalic', sans-serif",
+    "source": "local"
+  },
+  {
+    "name": "ShareTechMono",
+    "family": "'ShareTechMono', sans-serif",
+    "source": "local"
+  },
+  {
+    "name": "SNPro VariableFont wght",
+    "family": "'SNPro VariableFont wght', sans-serif",
+    "source": "local"
+  },
+  {
+    "name": "SNPro",
+    "family": "'SNPro', sans-serif",
+    "source": "local"
+  },
+  {
+    "name": "SNPro BlackItalic",
+    "family": "'SNPro BlackItalic', sans-serif",
+    "source": "local"
+  },
+  {
+    "name": "SNPro BoldItalic",
+    "family": "'SNPro BoldItalic', sans-serif",
+    "source": "local"
+  },
+  {
+    "name": "SNPro ExtraBoldItalic",
+    "family": "'SNPro ExtraBoldItalic', sans-serif",
+    "source": "local"
+  },
+  {
+    "name": "SNPro ExtraLightItalic",
+    "family": "'SNPro ExtraLightItalic', sans-serif",
+    "source": "local"
+  },
+  {
+    "name": "SNPro LightItalic",
+    "family": "'SNPro LightItalic', sans-serif",
+    "source": "local"
+  },
+  {
+    "name": "SNPro MediumItalic",
+    "family": "'SNPro MediumItalic', sans-serif",
+    "source": "local"
+  },
+  {
+    "name": "SNPro SemiBoldItalic",
+    "family": "'SNPro SemiBoldItalic', sans-serif",
+    "source": "local"
+  },
+  {
+    "name": "SpaceMono",
+    "family": "'SpaceMono', sans-serif",
+    "source": "local"
+  },
+  {
+    "name": "SpaceMono BoldItalic",
+    "family": "'SpaceMono BoldItalic', sans-serif",
+    "source": "local"
+  },
+  {
+    "name": "VT323",
+    "family": "'VT323', sans-serif",
     "source": "local"
   }
 ]

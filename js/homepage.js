@@ -301,11 +301,28 @@ async function loadFonts() {
         option.textContent = font.name;
         fontSelect.appendChild(option);
       });
-      fontSelect.value = loadFont();
+      // Get the font family string (not object) and set it as selected
+      const currentFont = getCurrentFontFamily();
+      fontSelect.value = currentFont;
     }
   } catch (error) {
     console.error("Error loading fonts:", error);
   }
+}
+
+// Helper function to get the current font family as a string (for dropdown)
+function getCurrentFontFamily() {
+  // Try localStorage first (legacy)
+  try {
+    const raw = localStorage.getItem("homepageFont");
+    if (raw) {
+      const fontSetting = JSON.parse(raw);
+      return fontSetting.family || "'Share Tech Mono', monospace";
+    }
+  } catch (error) {
+    // Fallback to default
+  }
+  return "'Share Tech Mono', monospace";
 }
 
 function loadSettings() {
@@ -352,22 +369,65 @@ function applyColors() {
   });
 }
 
-function loadFont() {
-  try {
-    const raw = localStorage.getItem("fontFamily");
-    return raw ? raw : "'Share Tech Mono', monospace";
-  } catch (error) {
-    return "'Share Tech Mono', monospace";
+function applyFont(fontFamily, fallback) {
+  const root = document.documentElement;
+  if (root) {
+    // First try to find the font in our FONTS array by name to get the proper family value
+    let fontValue = null;
+    
+    if (window.FONTS) {
+      const fontObj = window.FONTS.find(f => f.name === fontFamily || f.family === fontFamily);
+      if (fontObj) {
+        fontValue = fontObj.family;
+      }
+    }
+    
+    // If not found in FONTS, use the provided value with fallback
+    if (!fontValue) {
+      // Check if it's already a complete font-family string
+      if (fontFamily && fontFamily.includes(',')) {
+        fontValue = fontFamily;
+      } else {
+        // It's just a font name, add quotes and fallback
+        fontValue = `'${fontFamily}', ${fallback || 'sans-serif'}`;
+      }
+    }
+    
+    root.style.setProperty('--font-family-main', fontValue);
+    
+    // Also update body font for immediate effect
+    document.body.style.fontFamily = fontValue;
   }
 }
 
-function saveFont(font) {
-  localStorage.setItem("fontFamily", font);
-  applyFont(font);
+// Save font to both localStorage (for immediate use) and DATABASE_SETTINGS (for export)
+function saveFont(fontFamily, fallback) {
+  // Save to localStorage for immediate use
+  const fontSetting = { family: fontFamily, fallback: fallback };
+  localStorage.setItem("homepageFont", JSON.stringify(fontSetting));
+  
+  // Also save to DATABASE_SETTINGS for export/import functionality
+  window.DATABASE_SETTINGS?.setSettings({ fontFamily: fontFamily });
+  
+  // Apply the font
+  applyFont(fontFamily, fallback);
 }
 
-function applyFont(font) {
-  document.body.style.fontFamily = font;
+// Load font - returns string for dropdown, applies to page
+function loadFont() {
+  // Try localStorage first (legacy)
+  try {
+    const raw = localStorage.getItem("homepageFont");
+    if (raw) {
+      const fontSetting = JSON.parse(raw);
+      applyFont(fontSetting.family, fontSetting.fallback);
+      return fontSetting.family;
+    }
+  } catch (error) {
+    // Fallback to default
+  }
+  applyFont('Share Tech Mono', 'monospace');
+  return "'Share Tech Mono', monospace";
 }
 
 function loadPanelSettings() {
@@ -1991,34 +2051,6 @@ function initSettingsTabs() {
   });
 }
 
-// Quick font button functionality
-function initQuickFontButtons() {
-  const quickFontBtns = Array.from(settingsPanel.querySelectorAll(".quick-font-btn"));
-  const fontSelect = document.getElementById("font-select");
-
-  quickFontBtns.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const fontFamily = btn.dataset.font;
-      if (fontSelect) {
-        // Find matching option or set custom
-        const options = Array.from(fontSelect.options);
-        const matchingOption = options.find(opt => opt.value === fontFamily);
-        if (matchingOption) {
-          fontSelect.value = fontFamily;
-        } else {
-          // Set as custom font
-          const customFontInput = document.getElementById("custom-font");
-          if (customFontInput) {
-            customFontInput.value = fontFamily;
-          }
-        }
-        // Apply the font
-        saveFont(fontFamily);
-        applyFont(fontFamily);
-      }
-    });
-  });
-}
 
 // Font size controls
 function initFontSizeControls() {
@@ -2177,7 +2209,6 @@ if (settingsBtn) {
   settingsBtn.addEventListener("click", () => {
     openSettings();
     initSettingsTabs();
-    initQuickFontButtons();
     initFontSizeControls();
     initCustomFontInput();
     initInputSettings();
@@ -3002,10 +3033,9 @@ const KeyboardNavigation = {
     // Settings panel using custom keybind
     if (key === this.getKeyForAction('settingsTab')) {
       event.preventDefault();
-      openSettings();
-      initSettingsTabs();
-      initQuickFontButtons();
-      initFontSizeControls();
+    openSettings();
+    initSettingsTabs();
+    initFontSizeControls();
       initCustomFontInput();
       this.showModeIndicator('⚙️ Settings Opened');
       return;

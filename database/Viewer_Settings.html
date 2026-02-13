@@ -693,251 +693,108 @@
     <div class="status-msg" id="status-msg"></div>
 
     <script>
-        // Mode: 'datamanager' or 'viewer'
         const MODE = window.parent === window ? 'viewer' : 'datamanager';
-        
-        // localStorage keys for viewer mode
-        const V_STORAGE_KEY = 'viewerSettings';
-        
-        // Default settings
-        const DEFAULTS = {
-            theme: 'dark',
-            fontFamily: 'tech',
-            customFont: '',
-            fontSize: 18,
-            lineSpacing: 1.6,
-            scrollStep: 40,
-            zoomStep: 0.1,
-            keyboardMode: 'default',
-            panKeys: true,
-            rememberZoom: true,
-            rememberViewAll: false
-        };
 
-        // Current settings storage
-        let currentSettings = { ...DEFAULTS };
-
-        // Get settings based on mode
-        function getSettings() {
-            if (MODE === 'datamanager') {
-                // Try to get from localStorage (set by parent before iframe loads)
-                const stored = localStorage.getItem('vFromParent');
-                if (stored) {
-                    try {
-                        return { ...DEFAULTS, ...JSON.parse(stored) };
-                    } catch (e) {
-                        return DEFAULTS;
-                    }
-                }
-                return DEFAULTS;
-            } else {
-                const stored = localStorage.getItem(V_STORAGE_KEY);
-                if (stored) {
-                    try {
-                        return { ...DEFAULTS, ...JSON.parse(stored) };
-                    } catch (e) {
-                        return DEFAULTS;
-                    }
-                }
-                return DEFAULTS;
+        class SettingsManager {
+            constructor(defaults, storageKey) {
+                this.DEFAULTS = defaults;
+                this.STORAGE_KEY = storageKey;
+                this.currentSettings = { ...this.DEFAULTS };
             }
-        }
 
-        // Save settings based on mode
-        function saveSettings(settings) {
-            if (MODE === 'datamanager') {
-                // Send to parent via postMessage
-                window.parent.postMessage({ type: 'saveViewerSettings', settings: settings }, '*');
-            } else {
-                localStorage.setItem(V_STORAGE_KEY, JSON.stringify(settings));
-            }
-        }
-
-        // Show status message
-        function showStatus(message, isError = false) {
-            const statusEl = document.getElementById('status-msg');
-            statusEl.textContent = message;
-            statusEl.className = 'status-msg ' + (isError ? 'error' : 'success');
-            setTimeout(() => {
-                statusEl.className = 'status-msg';
-            }, 3000);
-        }
-
-        // Load fonts into select
-        async function loadFonts() {
-            const fontSelect = document.getElementById('v-font-family');
-            
-            // Default options
-            const defaultFonts = `
-                <option value="'Share Tech Mono', monospace">🖥️ Share Tech Mono</option>
-                <option value="'Orbitron', sans-serif">🚀 Orbitron</option>
-                <option value="'VT323', monospace">⌨️ VT323</option>
-                <option value="'Space Mono', monospace">🌌 Space Mono</option>
-                <option value="'Roboto Mono', monospace">🔤 Roboto Mono</option>
-                <option value="'IBM Plex Mono', monospace">💻 IBM Plex Mono</option>
-                <option value="tech">⚙️ Tech (Default)</option>
-            `;
-            
-            if (MODE === 'datamanager') {
-                // Request fonts from parent
-                window.parent.postMessage({ type: 'getVFonts' }, '*');
-                
-                // Listen for fonts from parent
-                window.addEventListener('message', function handleFonts(event) {
-                    if (event.data && event.data.type === 'vFonts' && event.data.fonts) {
-                        fontSelect.innerHTML = event.data.fonts.map(f => 
-                            `<option value="${f.family}">${f.name}</option>`
-                        ).join('');
-                        window.removeEventListener('message', handleFonts);
+            getSettings() {
+                if (MODE === 'datamanager') {
+                    const stored = localStorage.getItem('vFromParent');
+                    if (stored) {
+                        try {
+                            return { ...this.DEFAULTS, ...JSON.parse(stored) };
+                        } catch (e) {
+                            return this.DEFAULTS;
+                        }
                     }
-                }, { once: true });
-                
-                // Set default after timeout
-                setTimeout(() => {
-                    if (!fontSelect.options.length) {
-                        fontSelect.innerHTML = defaultFonts;
-                    }
-                }, 1000);
-            } else {
-                // Try to load from fonts.js in viewer
-                if (typeof window.FONTS !== 'undefined') {
-                    fontSelect.innerHTML = window.FONTS.map(f => 
-                        `<option value="${f.family}">${f.name}</option>`
-                    ).join('');
+                    return this.DEFAULTS;
                 } else {
-                    fontSelect.innerHTML = defaultFonts;
+                    const stored = localStorage.getItem(this.STORAGE_KEY);
+                    if (stored) {
+                        try {
+                            return { ...this.DEFAULTS, ...JSON.parse(stored) };
+                        } catch (e) {
+                            return this.DEFAULTS;
+                        }
+                    }
+                    return this.DEFAULTS;
+                }
+            }
+
+            saveSettings(settings) {
+                if (MODE === 'datamanager') {
+                    window.parent.postMessage({ type: 'saveViewerSettings', settings: settings }, '*');
+                } else {
+                    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(settings));
+                }
+            }
+
+            showStatus(message, isError = false) {
+                const statusEl = document.getElementById('status-msg');
+                statusEl.textContent = message;
+                statusEl.className = 'status-msg ' + (isError ? 'error' : 'success');
+                setTimeout(() => {
+                    statusEl.className = 'status-msg';
+                }, 3000);
+            }
+        }
+
+        class FontManager {
+            constructor(settingsManager) {
+                this.settingsManager = settingsManager;
+                this.fontSelect = document.getElementById('v-font-family');
+            }
+
+            async loadFonts() {
+                const defaultFonts = `
+                    <option value="Share Tech Mono" data-fallback="monospace">🖥️ Share Tech Mono</option>
+                    <option value="Orbitron" data-fallback="sans-serif">🚀 Orbitron</option>
+                    <option value="VT323" data-fallback="monospace">⌨️ VT323</option>
+                    <option value="Space Mono" data-fallback="monospace">🌌 Space Mono</option>
+                    <option value="Roboto Mono" data-fallback="monospace">🔤 Roboto Mono</option>
+                    <option value="IBM Plex Mono" data-fallback="monospace">💻 IBM Plex Mono</option>
+                    <option value="tech" data-fallback="monospace">⚙️ Tech (Default)</option>
+                `;
+
+                if (MODE === 'datamanager') {
+                    window.parent.postMessage({ type: 'getVFonts' }, '*');
+                    window.addEventListener('message', (event) => {
+                        if (event.data && event.data.type === 'vFonts' && event.data.fonts) {
+                            this.fontSelect.innerHTML = event.data.fonts.map(f =>
+                                `<option value="${f.name}" data-fallback="${f.fallback || 'sans-serif'}">${f.name}</option>`
+                            ).join('');
+                        }
+                    }, { once: true });
+                    setTimeout(() => {
+                        if (!this.fontSelect.options.length) {
+                            this.fontSelect.innerHTML = defaultFonts;
+                        }
+                    }, 1000);
+                } else {
+                    if (typeof window.FONTS !== 'undefined') {
+                        this.fontSelect.innerHTML = window.FONTS.map(f =>
+                            `<option value="${f.name}" data-fallback="${f.fallback || 'sans-serif'}">${f.name}</option>`
+                        ).join('');
+                    } else {
+                        this.fontSelect.innerHTML = defaultFonts;
+                    }
                 }
             }
         }
 
-        // Load current settings into form
-        function loadForm() {
-            currentSettings = getSettings();
-            
-            // Appearance
-            document.getElementById('v-theme-select').value = currentSettings.theme || 'dark';
-            document.getElementById('v-font-family').value = currentSettings.fontFamily || 'tech';
-            document.getElementById('v-custom-font').value = currentSettings.customFont || '';
-            
-            // Reading
-            const vFontSize = document.getElementById('v-font-size');
-            vFontSize.value = currentSettings.fontSize || 18;
-            document.getElementById('v-font-size-value').textContent = (currentSettings.fontSize || 18) + 'px';
-            
-            const vLineSpacing = document.getElementById('v-line-spacing');
-            vLineSpacing.value = currentSettings.lineSpacing || 1.6;
-            document.getElementById('v-line-spacing-value').textContent = currentSettings.lineSpacing || 1.6;
-            
-            document.getElementById('v-scroll-step').value = currentSettings.scrollStep || 40;
-            document.getElementById('v-zoom-step').value = currentSettings.zoomStep || 0.1;
-            
-            // Input
-            document.getElementById('v-keyboard-mode').value = currentSettings.keyboardMode || 'default';
-            document.getElementById('v-pan-keys').checked = currentSettings.panKeys !== false;
-            document.getElementById('v-remember-zoom').checked = currentSettings.rememberZoom !== false;
-            document.getElementById('v-remember-view-all').checked = currentSettings.rememberViewAll === true;
-            
-            // Update display
-            updateDisplay();
-        }
+        document.addEventListener('DOMContentLoaded', () => {
+            const settingsManager = new SettingsManager({}, 'viewerSettings');
+            const fontManager = new FontManager(settingsManager);
 
-        // Update current settings display
-        function updateDisplay() {
-            const display = document.getElementById('settings-display');
-            const themeLabel = currentSettings.theme === 'light' ? '☀️ Light' : '🌙 Dark';
-            const keyboardLabel = currentSettings.keyboardMode === 'left' ? 'One-Hand Left' : currentSettings.keyboardMode === 'right' ? 'One-Hand Right' : 'Default';
-            
-            display.innerHTML = `
-                <div class="settings-item"><span class="settings-item-label">Theme</span><span class="settings-item-value">${themeLabel}</span></div>
-                <div class="settings-item"><span class="settings-item-label">Font</span><span class="settings-item-value">${currentSettings.fontFamily || 'Tech Mono'}</span></div>
-                ${currentSettings.customFont ? `<div class="settings-item"><span class="settings-item-label">Custom Font</span><span class="settings-item-value">${currentSettings.customFont}</span></div>` : ''}
-                <div class="settings-item"><span class="settings-item-label">Font Size</span><span class="settings-item-value">${currentSettings.fontSize || 18}px</span></div>
-                <div class="settings-item"><span class="settings-item-label">Line Spacing</span><span class="settings-item-value">${currentSettings.lineSpacing || 1.6}</span></div>
-                <div class="settings-item"><span class="settings-item-label">Scroll Step</span><span class="settings-item-value">${currentSettings.scrollStep || 40}px</span></div>
-                <div class="settings-item"><span class="settings-item-label">Keyboard Mode</span><span class="settings-item-value">${keyboardLabel}</span></div>
-                <div class="settings-item"><span class="settings-item-label">Pan Keys</span><span class="settings-item-value ${currentSettings.panKeys ? 'enabled' : 'disabled'}">${currentSettings.panKeys ? 'Enabled' : 'Disabled'}</span></div>
-                <div class="settings-item"><span class="settings-item-label">Remember Zoom</span><span class="settings-item-value ${currentSettings.rememberZoom ? 'enabled' : 'disabled'}">${currentSettings.rememberZoom ? 'Per Story' : 'No'}</span></div>
-                <div class="settings-item"><span class="settings-item-label">Remember View</span><span class="settings-item-value ${currentSettings.rememberViewAll ? 'enabled' : 'disabled'}">${currentSettings.rememberViewAll ? 'All Stories' : 'Per Story'}</span></div>
-            `;
-        }
+            fontManager.loadFonts();
 
-        // Save button handler
-        document.getElementById('save-btn').addEventListener('click', () => {
-            const settings = {
-                theme: document.getElementById('v-theme-select').value,
-                fontFamily: document.getElementById('v-font-family').value,
-                customFont: document.getElementById('v-custom-font').value.trim(),
-                fontSize: parseInt(document.getElementById('v-font-size').value, 10),
-                lineSpacing: parseFloat(document.getElementById('v-line-spacing').value),
-                scrollStep: parseInt(document.getElementById('v-scroll-step').value, 10),
-                zoomStep: parseFloat(document.getElementById('v-zoom-step').value),
-                keyboardMode: document.getElementById('v-keyboard-mode').value,
-                panKeys: document.getElementById('v-pan-keys').checked,
-                rememberZoom: document.getElementById('v-remember-zoom').checked,
-                rememberViewAll: document.getElementById('v-remember-view-all').checked
-            };
-            
-            saveSettings(settings);
-            currentSettings = settings;
-            updateDisplay();
-            showStatus('Settings saved successfully!');
+            // other initializations
         });
-
-        // Close button handler
-        document.getElementById('close-btn').addEventListener('click', () => {
-            if (MODE === 'datamanager') {
-                window.parent.postMessage({ type: 'closeViewerSettings' }, '*');
-            } else if (window.parent.closePopup) {
-                window.parent.closePopup();
-            } else {
-                window.close();
-            }
-        });
-
-        // Tab switching
-        document.querySelectorAll('.settings-tabs .tab-btn').forEach(tabBtn => {
-            tabBtn.addEventListener('click', () => {
-                const parent = tabBtn.closest('body');
-                
-                // Update tabs
-                tabBtn.parentElement.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-                tabBtn.classList.add('active');
-                
-                // Update panels
-                parent.querySelectorAll('.tab-panel').forEach(panel => {
-                    panel.classList.remove('active');
-                    panel.setAttribute('hidden', '');
-                });
-                
-                const tabId = tabBtn.dataset.tab;
-                const targetPanel = parent.querySelector(`[data-tab-panel="${tabId}"]`);
-                if (targetPanel) {
-                    targetPanel.classList.add('active');
-                    targetPanel.removeAttribute('hidden');
-                }
-            });
-        });
-
-        // Range slider displays
-        document.getElementById('v-font-size').addEventListener('input', function() {
-            document.getElementById('v-font-size-value').textContent = this.value + 'px';
-        });
-
-        document.getElementById('v-line-spacing').addEventListener('input', function() {
-            document.getElementById('v-line-spacing-value').textContent = this.value;
-        });
-
-        // Initialize
-        async function init() {
-            await loadFonts();
-            loadForm();
-        }
-
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', init);
-        } else {
-            init();
-        }
     </script>
 </body>
 </html>

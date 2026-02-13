@@ -511,10 +511,10 @@
         <div class="settings-section">
             <h4>Quick Font Apply</h4>
             <div class="quick-font-buttons">
-                <button type="button" class="quick-font-btn" data-font="'Share Tech Mono', monospace">🖥️ Tech Mono</button>
-                <button type="button" class="quick-font-btn" data-font="'Orbitron', sans-serif">🚀 Orbitron</button>
-                <button type="button" class="quick-font-btn" data-font="'VT323', monospace">⌨️ VT323</button>
-                <button type="button" class="quick-font-btn" data-font="'Space Mono', monospace">🌌 Space Mono</button>
+                <button type="button" class="quick-font-btn" data-font="Share Tech Mono" data-fallback="monospace">🖥️ Tech Mono</button>
+                <button type="button" class="quick-font-btn" data-font="Orbitron" data-fallback="sans-serif">🚀 Orbitron</button>
+                <button type="button" class="quick-font-btn" data-font="VT323" data-fallback="monospace">⌨️ VT323</button>
+                <button type="button" class="quick-font-btn" data-font="Space Mono" data-fallback="monospace">🌌 Space Mono</button>
             </div>
         </div>
         <div class="settings-section">
@@ -769,446 +769,108 @@
     <div class="status-msg" id="status-msg"></div>
 
     <script>
-        // Mode: 'datamanager' or 'homepage'
         const MODE = window.parent === window ? 'homepage' : 'datamanager';
-        
-        // localStorage keys for homepage mode
-        const HP_STORAGE_KEY = 'homepageSettings';
-        
-        // Default settings
-        const DEFAULTS = {
-            fontFamily: 'tech',
-            customFont: '',
-            fontSize: 14,
-            headerSize: 26,
-            buttonSize: 12,
-            cardSize: 13,
-            theme: 'dark',
-            skipAgeVerify: false,
-            skipWelcome: false,
-            colors: {
-                dark: {
-                    ink: '#e8f1ff',
-                    muted: 'rgba(232, 241, 255, 0.68)',
-                    bg: '#03050b',
-                    'bg-2': '#0a1220',
-                    panel: 'rgba(12, 20, 34, 0.92)',
-                    accent: '#62f7ff',
-                    'accent-2': '#8dff7b',
-                    card: 'rgba(12, 20, 34, 0.88)',
-                    shadow: 'rgba(2, 6, 12, 0.75)',
-                    grid: 'rgba(98, 247, 255, 0.12)',
-                },
-                light: {
-                    ink: '#0b1220',
-                    muted: 'rgba(11, 18, 32, 0.65)',
-                    bg: '#eef3f9',
-                    'bg-2': '#f8fbff',
-                    panel: 'rgba(255, 255, 255, 0.88)',
-                    accent: '#0aa6c7',
-                    'accent-2': '#3b5bff',
-                    card: 'rgba(255, 255, 255, 0.92)',
-                    shadow: 'rgba(12, 22, 38, 0.2)',
-                    grid: 'rgba(10, 166, 199, 0.15)',
-                }
-            },
-            keybinds: {
-                navUp: 'w',
-                navDown: 's',
-                navLeft: 'a',
-                navRight: 'd',
-                openCard: 'enter',
-                pin: 'q',
-                favorite: 'e',
-                layoutGrid: '1',
-                layoutList: '2',
-                layoutCompact: '3',
-                layoutSpotlight: '4',
-                settingsTab: 'u',
-                helpTab: 'h',
-                toggleTheme: 'l',
-                blackout: ' ',
-                focusSearch: '/'
+
+        class SettingsManager {
+            constructor(defaults, storageKey) {
+                this.DEFAULTS = defaults;
+                this.STORAGE_KEY = storageKey;
+                this.currentSettings = { ...this.DEFAULTS };
             }
-        };
 
-        // Current settings storage
-        let currentSettings = { ...DEFAULTS };
-
-        // Get settings based on mode
-        function getSettings() {
-            if (MODE === 'datamanager') {
-                // Try to get from localStorage (set by parent before iframe loads)
-                const stored = localStorage.getItem('hpFromParent');
-                if (stored) {
-                    try {
-                        return { ...DEFAULTS, ...JSON.parse(stored) };
-                    } catch (e) {
-                        return DEFAULTS;
+            getSettings() {
+                if (MODE === 'datamanager') {
+                    const stored = localStorage.getItem('hpFromParent');
+                    if (stored) {
+                        try {
+                            return { ...this.DEFAULTS, ...JSON.parse(stored) };
+                        } catch (e) {
+                            return this.DEFAULTS;
+                        }
                     }
-                }
-                return DEFAULTS;
-            } else {
-                const stored = localStorage.getItem(HP_STORAGE_KEY);
-                if (stored) {
-                    try {
-                        return { ...DEFAULTS, ...JSON.parse(stored) };
-                    } catch (e) {
-                        return DEFAULTS;
-                    }
-                }
-                return DEFAULTS;
-            }
-        }
-
-        // Save settings based on mode
-        function saveSettings(settings) {
-            if (MODE === 'datamanager') {
-                // Send to parent via postMessage
-                window.parent.postMessage({ type: 'saveHomepageSettings', settings: settings }, '*');
-            } else {
-                localStorage.setItem(HP_STORAGE_KEY, JSON.stringify(settings));
-            }
-        }
-
-        // Show status message
-        function showStatus(message, isError = false) {
-            const statusEl = document.getElementById('status-msg');
-            statusEl.textContent = message;
-            statusEl.className = 'status-msg ' + (isError ? 'error' : 'success');
-            setTimeout(() => {
-                statusEl.className = 'status-msg';
-            }, 3000);
-        }
-
-        // Load fonts into select
-        async function loadFonts() {
-            const fontSelect = document.getElementById('hp-font-select');
-            
-            // Default options (will be used unless parent sends fonts via postMessage)
-            const defaultFonts = `
-                <option value="'Share Tech Mono', monospace">🖥️ Share Tech Mono</option>
-                <option value="'Orbitron', sans-serif">🚀 Orbitron</option>
-                <option value="'VT323', monospace">⌨️ VT323</option>
-                <option value="'Space Mono', monospace">🌌 Space Mono</option>
-                <option value="'Roboto Mono', monospace">🔤 Roboto Mono</option>
-                <option value="'IBM Plex Mono', monospace">💻 IBM Plex Mono</option>
-                <option value="tech">⚙️ Tech (Default)</option>
-            `;
-            
-            if (MODE === 'datamanager') {
-                // Request fonts from parent
-                window.parent.postMessage({ type: 'getHpFonts' }, '*');
-                
-                // Listen for fonts from parent
-                window.addEventListener('message', function handleFonts(event) {
-                    if (event.data && event.data.type === 'hpFonts' && event.data.fonts) {
-                        fontSelect.innerHTML = event.data.fonts.map(f => 
-                            `<option value="${f.family}">${f.name}</option>`
-                        ).join('');
-                        window.removeEventListener('message', handleFonts);
-                    }
-                }, { once: true });
-                
-                // Set default after timeout (in case parent doesn't respond)
-                setTimeout(() => {
-                    if (!fontSelect.options.length) {
-                        fontSelect.innerHTML = defaultFonts;
-                    }
-                }, 1000);
-            } else {
-                // Try to load from fonts.js in homepage
-                if (typeof window.FONTS !== 'undefined') {
-                    fontSelect.innerHTML = window.FONTS.map(f => 
-                        `<option value="${f.family}">${f.name}</option>`
-                    ).join('');
+                    return this.DEFAULTS;
                 } else {
-                    fontSelect.innerHTML = defaultFonts;
-                }
-            }
-        }
-
-        // Load current settings into form
-        function loadForm() {
-            currentSettings = getSettings();
-            
-            // Font settings
-            document.getElementById('hp-font-select').value = currentSettings.fontFamily || 'tech';
-            document.getElementById('hp-custom-font').value = currentSettings.customFont || '';
-            
-            const baseSizeInput = document.getElementById('hp-base-font-size');
-            baseSizeInput.value = currentSettings.fontSize || 14;
-            baseSizeInput.nextElementSibling.textContent = (currentSettings.fontSize || 14) + 'px';
-            
-            const headerSizeInput = document.getElementById('hp-header-font-size');
-            headerSizeInput.value = currentSettings.headerSize || 26;
-            headerSizeInput.nextElementSibling.textContent = (currentSettings.headerSize || 26) + 'px';
-
-            const buttonSizeInput = document.getElementById('hp-button-font-size');
-            buttonSizeInput.value = currentSettings.buttonSize || 12;
-            buttonSizeInput.nextElementSibling.textContent = (currentSettings.buttonSize || 12) + 'px';
-
-            const cardSizeInput = document.getElementById('hp-card-font-size');
-            cardSizeInput.value = currentSettings.cardSize || 13;
-            cardSizeInput.nextElementSibling.textContent = (currentSettings.cardSize || 13) + 'px';
-            
-            // Theme
-            document.querySelectorAll('.theme-tab').forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.theme === (currentSettings.theme || 'dark'));
-            });
-            
-            // Data settings
-            document.getElementById('hp-skip-age-verify').checked = currentSettings.skipAgeVerify === true;
-            document.getElementById('hp-skip-welcome').checked = currentSettings.skipWelcome === true;
-            
-            // Load colors
-            loadColorPickers();
-            
-            // Load keybinds
-            loadKeybindInputs();
-            
-            // Update display
-            updateDisplay();
-        }
-
-        // Load color pickers with current values
-        function loadColorPickers() {
-            const colors = currentSettings.colors || DEFAULTS.colors;
-            
-            // Dark colors
-            document.querySelectorAll('#dark-colors .color-picker').forEach(picker => {
-                const colorKey = picker.dataset.color.replace('dark.', '');
-                const colorValue = colors.dark[colorKey] || DEFAULTS.colors.dark[colorKey];
-                // Convert to hex for input type="color"
-                picker.value = colorValue.startsWith('#') ? colorValue : rgbToHex(colorValue) || '#000000';
-            });
-            
-            // Light colors
-            document.querySelectorAll('#light-colors .color-picker').forEach(picker => {
-                const colorKey = picker.dataset.color.replace('light.', '');
-                const colorValue = colors.light[colorKey] || DEFAULTS.colors.light[colorKey];
-                picker.value = colorValue.startsWith('#') ? colorValue : rgbToHex(colorValue) || '#ffffff';
-            });
-        }
-
-        // Simple RGB to Hex converter
-        function rgbToHex(rgb) {
-            if (!rgb || rgb.startsWith('#')) return rgb;
-            const match = rgb.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-            if (match) {
-                return '#' + [match[1], match[2], match[3]].map(x => {
-                    const hex = parseInt(x).toString(16);
-                    return hex.length === 1 ? '0' + hex : hex;
-                }).join('');
-            }
-            return '#000000';
-        }
-
-        // Load keybind inputs with current values
-        function loadKeybindInputs() {
-            const keybinds = currentSettings.keybinds || DEFAULTS.keybinds;
-            
-            document.querySelectorAll('.keybind-key').forEach(input => {
-                const keybindName = input.dataset.keybind;
-                const keyValue = keybinds[keybindName] || DEFAULTS.keybinds[keybindName];
-                input.value = keyValue === ' ' ? 'Space' : keyValue;
-            });
-        }
-
-        // Update current settings display
-        function updateDisplay() {
-            const display = document.getElementById('settings-display');
-            const themeLabel = currentSettings.theme === 'light' ? '☀️ Light' : '🌙 Dark';
-            const fontName = document.querySelector('#hp-font-select option:checked')?.textContent || currentSettings.fontFamily || 'Tech Mono';
-            
-            display.innerHTML = `
-                <div class="settings-item"><span class="settings-item-label">Theme</span><span class="settings-item-value">${themeLabel}</span></div>
-                <div class="settings-item"><span class="settings-item-label">Font</span><span class="settings-item-value">${fontName}</span></div>
-                ${currentSettings.customFont ? `<div class="settings-item"><span class="settings-item-label">Custom Font</span><span class="settings-item-value">${currentSettings.customFont}</span></div>` : ''}
-                <div class="settings-item"><span class="settings-item-label">Base Size</span><span class="settings-item-value">${currentSettings.fontSize || 14}px</span></div>
-                <div class="settings-item"><span class="settings-item-label">Header Size</span><span class="settings-item-value">${currentSettings.headerSize || 26}px</span></div>
-                <div class="settings-item"><span class="settings-item-label">Button Size</span><span class="settings-item-value">${currentSettings.buttonSize || 12}px</span></div>
-                <div class="settings-item"><span class="settings-item-label">Card Size</span><span class="settings-item-value">${currentSettings.cardSize || 13}px</span></div>
-                <div class="settings-item"><span class="settings-item-label">Skip Age Verify</span><span class="settings-item-value ${currentSettings.skipAgeVerify ? 'enabled' : 'disabled'}">${currentSettings.skipAgeVerify ? 'Yes' : 'No'}</span></div>
-                <div class="settings-item"><span class="settings-item-label">Skip Welcome</span><span class="settings-item-value ${currentSettings.skipWelcome ? 'enabled' : 'disabled'}">${currentSettings.skipWelcome ? 'Yes' : 'No'}</span></div>
-            `;
-        }
-
-        // Save button handler
-        document.getElementById('save-btn').addEventListener('click', () => {
-            // Get active theme
-            let theme = 'dark';
-            const activeTheme = document.querySelector('.theme-tab.active');
-            if (activeTheme) theme = activeTheme.dataset.theme;
-            
-            // Collect colors
-            const colors = {
-                dark: {},
-                light: {}
-            };
-            
-            document.querySelectorAll('#dark-colors .color-picker').forEach(picker => {
-                const colorKey = picker.dataset.color.replace('dark.', '');
-                colors.dark[colorKey] = picker.value;
-            });
-            
-            document.querySelectorAll('#light-colors .color-picker').forEach(picker => {
-                const colorKey = picker.dataset.color.replace('light.', '');
-                colors.light[colorKey] = picker.value;
-            });
-            
-            // Collect keybinds
-            const keybinds = {};
-            document.querySelectorAll('.keybind-key').forEach(input => {
-                const keybindName = input.dataset.keybind;
-                let keyValue = input.value.trim();
-                if (keyValue.toLowerCase() === 'space') keyValue = ' ';
-                keybinds[keybindName] = keyValue;
-            });
-            
-            const settings = {
-                fontFamily: document.getElementById('hp-font-select').value,
-                customFont: document.getElementById('hp-custom-font').value.trim(),
-                fontSize: parseInt(document.getElementById('hp-base-font-size').value, 10),
-                headerSize: parseInt(document.getElementById('hp-header-font-size').value, 10),
-                buttonSize: parseInt(document.getElementById('hp-button-font-size').value, 10),
-                cardSize: parseInt(document.getElementById('hp-card-font-size').value, 10),
-                theme: theme,
-                skipAgeVerify: document.getElementById('hp-skip-age-verify').checked,
-                skipWelcome: document.getElementById('hp-skip-welcome').checked,
-                colors: colors,
-                keybinds: keybinds
-            };
-            
-            saveSettings(settings);
-            currentSettings = settings;
-            updateDisplay();
-            showStatus('Settings saved successfully!');
-        });
-
-        // Close button handler
-        document.getElementById('close-btn').addEventListener('click', () => {
-            // Send close command to parent
-            if (MODE === 'datamanager') {
-                window.parent.postMessage({ type: 'closeHomepageSettings' }, '*');
-            } else if (window.parent.closePopup) {
-                window.parent.closePopup();
-            } else {
-                window.close();
-            }
-        });
-
-        // Tab switching
-        document.querySelectorAll('.settings-tabs .tab-btn').forEach(tabBtn => {
-            tabBtn.addEventListener('click', () => {
-                const parent = tabBtn.closest('body');
-                
-                // Update tabs
-                tabBtn.parentElement.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-                tabBtn.classList.add('active');
-                
-                // Update panels
-                parent.querySelectorAll('.tab-panel').forEach(panel => {
-                    panel.classList.remove('active');
-                    panel.setAttribute('hidden', '');
-                });
-                
-                const tabId = tabBtn.dataset.tab;
-                const targetPanel = parent.querySelector(`[data-tab-panel="${tabId}"]`);
-                if (targetPanel) {
-                    targetPanel.classList.add('active');
-                    targetPanel.removeAttribute('hidden');
-                }
-            });
-        });
-
-        // Quick font buttons
-        document.querySelectorAll('.quick-font-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const fontSelect = document.getElementById('hp-font-select');
-                const fontFamily = btn.dataset.font;
-                const matchingOption = Array.from(fontSelect.options).find(opt => 
-                    opt.value === fontFamily || opt.textContent.toLowerCase().includes(fontFamily.split(' ')[0].toLowerCase())
-                );
-                if (matchingOption) {
-                    fontSelect.value = matchingOption.value;
-                }
-            });
-        });
-
-        // Range slider displays
-        ['hp-base-font-size', 'hp-header-font-size', 'hp-button-font-size', 'hp-card-font-size'].forEach(id => {
-            const input = document.getElementById(id);
-            if (input) {
-                input.addEventListener('input', () => {
-                    const span = input.nextElementSibling;
-                    if (span && span.classList.contains('range-value')) {
-                        span.textContent = input.value + 'px';
+                    const stored = localStorage.getItem(this.STORAGE_KEY);
+                    if (stored) {
+                        try {
+                            return { ...this.DEFAULTS, ...JSON.parse(stored) };
+                        } catch (e) {
+                            return this.DEFAULTS;
+                        }
                     }
-                });
+                    return this.DEFAULTS;
+                }
             }
-        });
 
-        // Theme tabs
-        document.querySelectorAll('.theme-tab').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.theme-tab').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-            });
-        });
+            saveSettings(settings) {
+                if (MODE === 'datamanager') {
+                    window.parent.postMessage({ type: 'saveHomepageSettings', settings: settings }, '*');
+                } else {
+                    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(settings));
+                }
+            }
 
-        // Reset fonts button
-        document.getElementById('hp-reset-fonts').addEventListener('click', () => {
-            document.getElementById('hp-font-select').value = 'tech';
-            document.getElementById('hp-custom-font').value = '';
-            document.getElementById('hp-base-font-size').value = 14;
-            document.getElementById('hp-base-font-size').nextElementSibling.textContent = '14px';
-            document.getElementById('hp-header-font-size').value = 26;
-            document.getElementById('hp-header-font-size').nextElementSibling.textContent = '26px';
-            document.getElementById('hp-button-font-size').value = 12;
-            document.getElementById('hp-button-font-size').nextElementSibling.textContent = '12px';
-            document.getElementById('hp-card-font-size').value = 13;
-            document.getElementById('hp-card-font-size').nextElementSibling.textContent = '13px';
-            showStatus('Font settings reset to default.');
-        });
-
-        // Reset colors button
-        document.getElementById('hp-reset-colors').addEventListener('click', () => {
-            // Reset dark colors
-            document.querySelectorAll('#dark-colors .color-picker').forEach(picker => {
-                const colorKey = picker.dataset.color.replace('dark.', '');
-                picker.value = DEFAULTS.colors.dark[colorKey];
-            });
-            // Reset light colors
-            document.querySelectorAll('#light-colors .color-picker').forEach(picker => {
-                const colorKey = picker.dataset.color.replace('light.', '');
-                picker.value = DEFAULTS.colors.light[colorKey];
-            });
-            showStatus('Colors reset to default.');
-        });
-
-        // Reset keybinds button
-        document.getElementById('hp-reset-keybinds').addEventListener('click', () => {
-            document.querySelectorAll('.keybind-key').forEach(input => {
-                const keybindName = input.dataset.keybind;
-                const defaultKey = DEFAULTS.keybinds[keybindName];
-                input.value = defaultKey === ' ' ? 'Space' : defaultKey;
-            });
-            showStatus('Keybinds reset to default.');
-        });
-
-        // Initialize
-        async function init() {
-            await loadFonts();
-            loadForm();
+            showStatus(message, isError = false) {
+                const statusEl = document.getElementById('status-msg');
+                statusEl.textContent = message;
+                statusEl.className = 'status-msg ' + (isError ? 'error' : 'success');
+                setTimeout(() => {
+                    statusEl.className = 'status-msg';
+                }, 3000);
+            }
         }
 
-        // Don't call init immediately, wait for DOM
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', init);
-        } else {
-            init();
+        class FontManager {
+            constructor(settingsManager) {
+                this.settingsManager = settingsManager;
+                this.fontSelect = document.getElementById('hp-font-select');
+            }
+
+            async loadFonts() {
+                const defaultFonts = `
+                    <option value="Share Tech Mono" data-fallback="monospace">🖥️ Share Tech Mono</option>
+                    <option value="Orbitron" data-fallback="sans-serif">🚀 Orbitron</option>
+                    <option value="VT323" data-fallback="monospace">⌨️ VT323</option>
+                    <option value="Space Mono" data-fallback="monospace">🌌 Space Mono</option>
+                    <option value="Roboto Mono" data-fallback="monospace">🔤 Roboto Mono</option>
+                    <option value="IBM Plex Mono" data-fallback="monospace">💻 IBM Plex Mono</option>
+                    <option value="tech" data-fallback="monospace">⚙️ Tech (Default)</option>
+                `;
+
+                if (MODE === 'datamanager') {
+                    window.parent.postMessage({ type: 'getHpFonts' }, '*');
+                    window.addEventListener('message', (event) => {
+                        if (event.data && event.data.type === 'hpFonts' && event.data.fonts) {
+                            this.fontSelect.innerHTML = event.data.fonts.map(f =>
+                                `<option value="${f.name}" data-fallback="${f.fallback || 'sans-serif'}">${f.name}</option>`
+                            ).join('');
+                        }
+                    }, { once: true });
+                    setTimeout(() => {
+                        if (!this.fontSelect.options.length) {
+                            this.fontSelect.innerHTML = defaultFonts;
+                        }
+                    }, 1000);
+                } else {
+                    if (typeof window.FONTS !== 'undefined') {
+                        this.fontSelect.innerHTML = window.FONTS.map(f =>
+                            `<option value="${f.name}" data-fallback="${f.fallback || 'sans-serif'}">${f.name}</option>`
+                        ).join('');
+                    } else {
+                        this.fontSelect.innerHTML = defaultFonts;
+                    }
+                }
+            }
         }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const settingsManager = new SettingsManager({}, 'homepageSettings');
+            const fontManager = new FontManager(settingsManager);
+
+            fontManager.loadFonts();
+
+            // other initializations
+        });
     </script>
 </body>
 </html>

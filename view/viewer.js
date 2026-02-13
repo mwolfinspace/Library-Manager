@@ -359,15 +359,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function applySettings() {
     document.body.dataset.theme = settings.theme;
-    const fontChoice =
-      (settings.customFont || "").trim() ||
-      (window.FONTS.find((f) => f.name === settings.fontFamily) || {}).family ||
-      "monospace";
-    if (els.storyPanel) {
-      els.storyPanel.style.fontFamily = fontChoice;
-    } else {
-      els.storyContent.style.fontFamily = fontChoice;
+    
+    // Find the font object from FONTS array by name
+    const fontObj = window.FONTS?.find((f) => f.name === settings.fontFamily) || {};
+    const fontFamily = fontObj.family || (settings.customFont ? `'${settings.customFont}'` : null);
+    const fallback = fontObj.fallback || 'monospace';
+    
+    // If custom font is set, use it instead
+    const finalFontFamily = (settings.customFont || "").trim() 
+      ? `'${settings.customFont}'` 
+      : (fontFamily || "monospace");
+    
+    const root = document.documentElement;
+    if (root) {
+        const fontValue = `${finalFontFamily}, ${fallback}`;
+        root.style.setProperty('--font-family-main', fontValue);
     }
+
     els.storyContent.style.fontSize = `${settings.fontSize}px`;
     els.storyContent.style.lineHeight = settings.lineSpacing;
 
@@ -379,10 +387,17 @@ document.addEventListener("DOMContentLoaded", () => {
           const option = document.createElement("option");
           option.value = font.name;
           option.textContent = font.name;
+          option.dataset.fallback = font.fallback || 'sans-serif';
           els.fontFamily.appendChild(option);
         });
       }
-      els.fontFamily.value = settings.fontFamily || "tech";
+      // Try to match font family, or default to first available font
+      const fontNames = window.FONTS?.map(f => f.name) || [];
+      if (fontNames.includes(settings.fontFamily)) {
+        els.fontFamily.value = settings.fontFamily;
+      } else if (fontNames.length > 0) {
+        els.fontFamily.value = fontNames[0];
+      }
     }
     if (els.customFont) els.customFont.value = settings.customFont || "";
     if (els.fontSize) els.fontSize.value = settings.fontSize;
@@ -425,35 +440,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function saveSettingsToDatabase() {
     try {
-      // Create a settings object to save (exclude transient data)
-      const settingsToSave = {
-        theme: settings.theme,
-        fontSize: settings.fontSize,
-        lineSpacing: settings.lineSpacing,
-        scrollStep: settings.scrollStep,
-        zoomStep: settings.zoomStep,
-        keyboardMode: settings.keyboardMode,
-        panKeys: settings.panKeys,
-        rememberZoom: settings.rememberZoom,
-        fontFamily: settings.fontFamily,
-        customFont: settings.customFont,
-        customBindings: settings.customBindings,
-        rememberViewAll: settings.rememberViewAll,
-      };
-
-      // Try to save via API endpoint if available
-      const response = await fetch("../api/save-settings", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(settingsToSave),
-      });
-
-      if (!response.ok) {
-        // API not available, settings remain in localStorage only
-        console.log("Settings saved to localStorage (API not available)");
-      }
+      // API saving is disabled for local file usage.
+      // Settings are saved to localStorage in saveSettings().
+      console.log("Settings saved to localStorage (API not available).");
     } catch (error) {
       // API not available, localStorage is the fallback
       console.log("Settings saved to localStorage");
@@ -1750,7 +1739,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   els.settingsBtn.addEventListener("click", () => {
     showSettings();
-    SFX.panel();
+    SFX.settingsOpen();
   });
   els.closeSettings.addEventListener("click", () => {
     hideSettings();
@@ -1936,8 +1925,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (storedSettings) {
       settings = { ...settings, ...storedSettings };
     }
-    if (!settings.fontFamily) {
-      settings.fontFamily = "tech";
+    if (!settings.fontFamily || settings.fontFamily === "tech") {
+      settings.fontFamily = "Share Tech Mono";
     }
     if (!settings.customBindings) {
       settings.customBindings = {};

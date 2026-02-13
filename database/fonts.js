@@ -1,42 +1,50 @@
 window.FONTS = [
   {
-    "name": "ibm plex mono",
-    "family": "'ibm plex mono', sans-serif",
+    "name": "IBM Plex Mono",
+    "family": "'IBMPlexMono', monospace",
+    "fallback": "monospace",
     "source": "local"
   },
   {
-    "name": "orbitron",
-    "family": "'orbitron', sans-serif",
+    "name": "Orbitron",
+    "family": "'Orbitron', sans-serif",
+    "fallback": "sans-serif",
     "source": "local"
   },
   {
     "name": "Quantico",
     "family": "'Quantico', sans-serif",
+    "fallback": "sans-serif",
     "source": "local"
   },
   {
-    "name": "roboto mono",
-    "family": "'roboto mono', sans-serif",
+    "name": "Roboto Mono",
+    "family": "'RobotoMono', monospace",
+    "fallback": "monospace",
     "source": "local"
   },
   {
-    "name": "share tech mono",
-    "family": "'share tech mono', sans-serif",
+    "name": "Share Tech Mono",
+    "family": "'ShareTechMono', monospace",
+    "fallback": "monospace",
     "source": "local"
   },
   {
     "name": "SN Pro",
-    "family": "'SN Pro', sans-serif",
+    "family": "'SNPro', sans-serif",
+    "fallback": "sans-serif",
     "source": "local"
   },
   {
-    "name": "space mono",
-    "family": "'space mono', sans-serif",
+    "name": "Space Mono",
+    "family": "'SpaceMono', monospace",
+    "fallback": "monospace",
     "source": "local"
   },
   {
-    "name": "vt323",
-    "family": "'vt323', sans-serif",
+    "name": "VT323",
+    "family": "'VT323', monospace",
+    "fallback": "monospace",
     "source": "local"
   }
 ];

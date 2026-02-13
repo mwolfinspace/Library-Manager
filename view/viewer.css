@@ -182,9 +182,8 @@ body {
     margin: 0;
     height: 100vh;
     overflow: hidden;
-    font-family:
-        "Share Tech Mono", "Lucida Console", "Consolas", "Courier New",
-        monospace;
+    font-family: var(--font-family-main, "Share Tech Mono", "Lucida Console", "Consolas", "Courier New",
+        monospace);
     background:
         radial-gradient(
             circle at top left,
