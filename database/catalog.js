@@ -310,9 +310,9 @@ window.VIEWER_SETTINGS = {
     "pinned": [],
     "bookmarks": {}
   },
-  "fontFamily": "'Geo', sans-serif",
+  "fontFamily": "Quantico",
   "customFont": "",
-  "fontSize": 18,
+  "fontSize": 20,
   "headerSize": 26,
   "buttonSize": 12,
   "cardSize": 13,
@@ -337,12 +337,14 @@ window.VIEWER_SETTINGS = {
     "blackout": " ",
     "focusSearch": "/"
   },
-  "lineSpacing": 1.6,
-  "scrollStep": 40,
-  "zoomStep": 0.1,
+  "lineSpacing": 1.7,
+  "scrollStep": 20,
+  "zoomStep": 0.05,
   "keyboardMode": "default",
-  "panKeys": true,
-  "rememberZoom": true,
+  "panKeys": false,
+  "rememberZoom": false,
   "rememberViewAll": false,
-  "customBindings": {}
+  "customBindings": {},
+  "buttonFontSize": 12,
+  "cardFontSize": 13
 };
