@@ -732,6 +732,19 @@ document.addEventListener("DOMContentLoaded", () => {
     localStorage.setItem("favorites", JSON.stringify(Array.from(favorites)));
   }
 
+  function loadPins() {
+    try {
+      const raw = localStorage.getItem("pinned");
+      return new Set(raw ? JSON.parse(raw) : []);
+    } catch (error) {
+      return new Set();
+    }
+  }
+
+  function savePins(pins) {
+    localStorage.setItem("pinned", JSON.stringify(Array.from(pins)));
+  }
+
   function updateFavoriteButton() {
     const favorites = loadFavorites();
     if (storyId && favorites.has(storyId)) {
@@ -770,8 +783,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function updateBookmarkButton() {
-    const bookmark = getBookmark();
-    if (bookmark) {
+    const pins = loadPins();
+    if (storyId && pins.has(storyId)) {
       els.bookmarkBtn.classList.add("active");
     } else {
       els.bookmarkBtn.classList.remove("active");
@@ -926,16 +939,13 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!storyId) {
       return;
     }
-    if (getBookmark()) {
-      localStorage.removeItem(`bookmark:${storyId}`);
+    const pins = loadPins();
+    if (pins.has(storyId)) {
+      pins.delete(storyId);
     } else {
-      const payload = {
-        photoIndex: currentPhotoIndex,
-        scrollPosition: els.storyContent.scrollTop,
-        timestamp: new Date().toISOString(),
-      };
-      localStorage.setItem(`bookmark:${storyId}`, JSON.stringify(payload));
+      pins.add(storyId);
     }
+    savePins(pins);
     updateBookmarkButton();
   }
 
@@ -2079,27 +2089,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Reset functions
   function resetPinAndFavorite() {
-    // Remove all bookmarks (pins) but keep timestamps
-    const keys = Object.keys(localStorage);
-    keys.forEach(key => {
-      if (key.startsWith('bookmark:')) {
-        // Keep the key but remove pin status, preserve timestamp
-        const data = localStorage.getItem(key);
-        if (data) {
-          try {
-            const parsed = JSON.parse(data);
-            // Only remove if it has photoIndex (meaning it's a real bookmark, not just timestamp)
-            if (parsed.photoIndex !== undefined) {
-              localStorage.removeItem(key);
-            }
-          } catch (e) {
-            localStorage.removeItem(key);
-          }
-        }
-      }
-    });
-    
-    // Remove all favorites
+    localStorage.removeItem('pinned');
     localStorage.removeItem('favorites');
     
     // Update UI
@@ -2108,24 +2098,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function resetPinOnly() {
-    // Remove all bookmarks (pins) only
-    const keys = Object.keys(localStorage);
-    keys.forEach(key => {
-      if (key.startsWith('bookmark:')) {
-        const data = localStorage.getItem(key);
-        if (data) {
-          try {
-            const parsed = JSON.parse(data);
-            // Only remove if it has photoIndex (meaning it's a real bookmark)
-            if (parsed.photoIndex !== undefined) {
-              localStorage.removeItem(key);
-            }
-          } catch (e) {
-            localStorage.removeItem(key);
-          }
-        }
-      }
-    });
+    localStorage.removeItem('pinned');
     
     // Update UI
     updateBookmarkButton();

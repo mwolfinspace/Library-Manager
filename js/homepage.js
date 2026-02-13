@@ -3961,6 +3961,22 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   // Initialize import/export functionality
   setupImportExport();
+
+  // Handle search input focus for keyboard shortcuts
+  const searchInput = document.getElementById('search-input');
+  if (searchInput) {
+    searchInput.addEventListener('focus', () => {
+      if (KeyboardNavigation) {
+        KeyboardNavigation.isSearchFocused = true;
+        KeyboardNavigation.showModeIndicator('⌨️ Search Mode - ESC to exit');
+      }
+    });
+    searchInput.addEventListener('blur', () => {
+      if (KeyboardNavigation) {
+        KeyboardNavigation.isSearchFocused = false;
+      }
+    });
+  }
   
   // Initialize secret stats
   SecretStats.init();
