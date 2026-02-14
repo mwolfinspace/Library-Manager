@@ -437,7 +437,7 @@
         function updateRecentInfo() {
             const folder = localStorage.getItem(RECENT_FOLDER_KEY);
             const folderTime = localStorage.getItem(RECENT_FOLDER_TIME_KEY);
-            const timeText = folderTime ? ` ï¿½ ${new Date(folderTime).toLocaleString()}` : '';
+            const timeText = folderTime ? ` • ${new Date(folderTime).toLocaleString()}` : '';
             if (statusBarRecent) {
                 statusBarRecent.textContent = folder ? `Recent folder: ${folder}${timeText}` : 'Recent folder: none';
             }

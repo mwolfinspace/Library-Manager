@@ -101,6 +101,8 @@
         const VIEWER_ENTRY_CANDIDATES = ['view/viewer.html', 'viewer.html'];
         const libraryPreviewAssetUrlCache = new Map();
         const libraryPreviewPageUrls = new Set();
+        const libraryFileLookupCache = new Map();
+        const LIBRARY_FILE_SEARCH_MAX_DEPTH = 6;
         const DEFAULT_SETTINGS = {
             theme: 'dark',
             fontSize: 16,
@@ -450,6 +452,7 @@
         let imageCardHeight = 148;
         let pendingReplaceMediaId = null;
         const mediaObjectUrls = new Map();
+        let imageManagerRefreshQueued = false;
 
         function setStatus(message) {
             if (statusEl) {
@@ -485,8 +488,8 @@
 
         function getToastIcon(type) {
             const iconMap = {
-                success: '?',
-                error: '?',
+                success: '✅',
+                error: '❌',
                 warning: '⚠️',
                 info: 'ℹ️',
             };
@@ -512,7 +515,7 @@
             closeBtn.type = 'button';
             closeBtn.className = 'toast-close';
             closeBtn.setAttribute('aria-label', 'Close notification');
-            closeBtn.textContent = '?';
+            closeBtn.textContent = '✕';
             closeBtn.addEventListener('click', () => {
                 toast.remove();
             });
@@ -545,9 +548,9 @@
         function getDialogIconByType(type) {
             const map = {
                 info: 'ℹ️',
-                success: '?',
+                success: '✅',
                 warning: '⚠️',
-                error: '?',
+                error: '❌',
             };
             return map[type] || map.info;
         }
@@ -819,15 +822,15 @@
             const folder = localStorage.getItem(RECENT_FOLDER_KEY);
             const storyTitle = localStorage.getItem(RECENT_STORY_TITLE_KEY);
             const folderTime = localStorage.getItem(RECENT_FOLDER_TIME_KEY);
-            const timeText = folderTime ? ` ï¿½ ${new Date(folderTime).toLocaleString()}` : '';
+            const timeText = folderTime ? ` • ${new Date(folderTime).toLocaleString()}` : '';
 
             const folderText = folder ? `Recent folder: ${folder}${timeText}` : 'Recent folder: none';
             const storyText = storyTitle ? `Recent story: ${storyTitle}` : 'Recent story: none';
             if (recentInfoEl) {
-                recentInfoEl.textContent = `${folderText} ï¿½ ${storyText}`;
+                recentInfoEl.textContent = `${folderText} • ${storyText}`;
             }
             if (statusBarRecent) {
-                statusBarRecent.textContent = `${folderText} ï¿½ ${storyText}`;
+                statusBarRecent.textContent = `${folderText} • ${storyText}`;
             }
             if (openRecentBtn) {
                 openRecentBtn.disabled = !folder;
@@ -854,6 +857,8 @@
             }
 
             state.rootHandle = handle;
+            clearLibraryPreviewCaches();
+            releaseAllMediaUrls();
             await ensureStructure();
             await loadLibrary();
             await loadFontsIntoSelect();
@@ -1113,6 +1118,9 @@
                 path: '',
                 name: file.name,
                 mediaType: detectCoverMediaType(file.name, file.type),
+                previewUrl: '',
+                previewMissing: false,
+                previewPending: false,
             };
         }
 
@@ -1125,6 +1133,9 @@
                 path,
                 name,
                 mediaType: detectCoverMediaType(name),
+                previewUrl: '',
+                previewMissing: false,
+                previewPending: false,
             };
         }
 
@@ -1142,12 +1153,99 @@
             return url;
         }
 
+        function queueImageManagerRefresh() {
+            if (imageManagerRefreshQueued) {
+                return;
+            }
+            imageManagerRefreshQueued = true;
+            Promise.resolve().then(() => {
+                imageManagerRefreshQueued = false;
+                renderImageManager();
+            });
+        }
+
+        async function resolveExistingMediaPreviewUrl(item, force = false) {
+            if (!item) {
+                return '';
+            }
+            if (item.source === 'new' && item.file) {
+                return getMediaObjectUrl(item.id, item.file);
+            }
+            if (!item.path) {
+                item.previewUrl = '';
+                item.previewMissing = true;
+                return '';
+            }
+            if (item.previewUrl && !force) {
+                return item.previewUrl;
+            }
+            if (item.previewPending) {
+                return item.previewUrl || '';
+            }
+            if (item.previewMissing && !force) {
+                return '';
+            }
+
+            item.previewPending = true;
+            try {
+                const resolved = await resolveLibraryPreviewAssetUrl(item.path);
+                item.previewUrl = resolved || '';
+                item.previewMissing = !resolved;
+                return item.previewUrl;
+            } finally {
+                item.previewPending = false;
+            }
+        }
+
+        async function resolveExternalCoverPreviewUrl(force = false) {
+            if (!externalCoverMedia) {
+                return '';
+            }
+            if (externalCoverMedia.source === 'new' && externalCoverMedia.file) {
+                return getMediaObjectUrl('__external_cover__', externalCoverMedia.file);
+            }
+            if (!externalCoverMedia.path) {
+                externalCoverMedia.previewUrl = '';
+                externalCoverMedia.previewMissing = true;
+                return '';
+            }
+            if (externalCoverMedia.previewUrl && !force) {
+                return externalCoverMedia.previewUrl;
+            }
+            if (externalCoverMedia.previewPending) {
+                return externalCoverMedia.previewUrl || '';
+            }
+            if (externalCoverMedia.previewMissing && !force) {
+                return '';
+            }
+
+            externalCoverMedia.previewPending = true;
+            try {
+                const resolved = await resolveLibraryPreviewAssetUrl(externalCoverMedia.path);
+                externalCoverMedia.previewUrl = resolved || '';
+                externalCoverMedia.previewMissing = !resolved;
+                return externalCoverMedia.previewUrl;
+            } finally {
+                externalCoverMedia.previewPending = false;
+            }
+        }
+
         function getMediaPreviewUrl(item) {
             if (!item) return '';
             if (item.source === 'new' && item.file) {
                 return getMediaObjectUrl(item.id, item.file);
             }
-            return item.path || '';
+            if (item.previewUrl) {
+                return item.previewUrl;
+            }
+            if (!item.previewPending && !item.previewMissing && item.path) {
+                void resolveExistingMediaPreviewUrl(item).then(() => {
+                    queueImageManagerRefresh();
+                }).catch(() => {
+                    queueImageManagerRefresh();
+                });
+            }
+            return '';
         }
 
         function getExternalCoverPreviewUrl() {
@@ -1155,7 +1253,17 @@
             if (externalCoverMedia.source === 'new' && externalCoverMedia.file) {
                 return getMediaObjectUrl('__external_cover__', externalCoverMedia.file);
             }
-            return externalCoverMedia.path || '';
+            if (externalCoverMedia.previewUrl) {
+                return externalCoverMedia.previewUrl;
+            }
+            if (!externalCoverMedia.previewPending && !externalCoverMedia.previewMissing && externalCoverMedia.path) {
+                void resolveExternalCoverPreviewUrl().then(() => {
+                    queueImageManagerRefresh();
+                }).catch(() => {
+                    queueImageManagerRefresh();
+                });
+            }
+            return '';
         }
 
         function releaseUnusedMediaUrls() {
@@ -1427,19 +1535,19 @@
             if (coverSelection && coverSelection.kind === 'external' && externalCoverMedia) {
                 const label = `${formatMediaTypeLabel(externalCoverMedia.mediaType)} cover`;
                 const name = externalCoverMedia.name || getFileName(externalCoverMedia.path) || 'cover media';
-                coverSummary.textContent = `Cover: ${label} (${name}) ï¿½ Homepage only ï¿½ Position: ${posLabel}`;
+                coverSummary.textContent = `Cover: ${label} (${name}) • Homepage only • Position: ${posLabel}`;
                 return;
             }
 
             if (coverSelection && coverSelection.kind === 'image') {
                 const item = getMediaItemById(coverSelection.itemId);
                 if (item) {
-                    coverSummary.textContent = `Cover: ${item.name} ï¿½ Position: ${posLabel}`;
+                    coverSummary.textContent = `Cover: ${item.name} • Position: ${posLabel}`;
                     return;
                 }
             }
 
-            coverSummary.textContent = `Cover: none ï¿½ Position: ${posLabel}`;
+            coverSummary.textContent = `Cover: none • Position: ${posLabel}`;
         }
 
         function updateImageManagerSummary() {
@@ -1453,7 +1561,7 @@
             } else if (coverSelection && coverSelection.kind === 'image') {
                 coverText = 'Story media cover';
             }
-            imageManagerSummary.textContent = `${total} media item(s) in story ï¿½ ${selected} selected ï¿½ ${coverText}`;
+            imageManagerSummary.textContent = `${total} media item(s) in story • ${selected} selected • ${coverText}`;
         }
 
         function normalizeKey(key) {
@@ -1505,6 +1613,18 @@
             if (coverSelection && coverSelection.kind === 'image') {
                 const item = getMediaItemById(coverSelection.itemId);
                 return getMediaPreviewUrl(item);
+            }
+            return '';
+        }
+
+        async function resolveCurrentCoverPreviewUrl(force = false) {
+            normalizeCoverSelection();
+            if (coverSelection && coverSelection.kind === 'external') {
+                return resolveExternalCoverPreviewUrl(force);
+            }
+            if (coverSelection && coverSelection.kind === 'image') {
+                const item = getMediaItemById(coverSelection.itemId);
+                return resolveExistingMediaPreviewUrl(item, force);
             }
             return '';
         }
@@ -1605,15 +1725,22 @@
             imageCardGrid.classList.add('drag-active');
         }
 
-        function openMediaPreview(item) {
+        async function openMediaPreview(item) {
             if (!item || !mediaPreviewOverlay || !mediaPreviewImage || !mediaPreviewVideo) {
                 return;
             }
-            const src = item.kind === 'external' ? getExternalCoverPreviewUrl() : getMediaPreviewUrl(item);
             const mediaType = item.kind === 'external'
                 ? (externalCoverMedia ? externalCoverMedia.mediaType : '')
                 : (item.mediaType || 'image');
+            const src = item.kind === 'external'
+                ? await resolveExternalCoverPreviewUrl(true)
+                : await resolveExistingMediaPreviewUrl(item, true);
             if (!src) {
+                const missingName = item.kind === 'external'
+                    ? (externalCoverMedia ? externalCoverMedia.name : 'cover media')
+                    : (item.name || getFileName(item.path) || 'media');
+                setStatus(`Media file missing: ${missingName}.`);
+                showToast(`Media file missing: ${missingName}`, 'warning');
                 return;
             }
 
@@ -1672,7 +1799,9 @@
                 const previewUrl = getExternalCoverPreviewUrl();
                 if (externalCoverMedia.mediaType === 'video') {
                     const video = document.createElement('video');
-                    video.src = previewUrl;
+                    if (previewUrl) {
+                        video.src = previewUrl;
+                    }
                     video.muted = true;
                     video.loop = true;
                     video.playsInline = true;
@@ -1681,7 +1810,9 @@
                     thumb.appendChild(video);
                 } else {
                     const img = document.createElement('img');
-                    img.src = previewUrl;
+                    if (previewUrl) {
+                        img.src = previewUrl;
+                    }
                     img.alt = externalCoverMedia.name || 'Cover media';
                     img.addEventListener('click', () => openMediaPreview({ kind: 'external' }));
                     thumb.appendChild(img);
@@ -1769,7 +1900,9 @@
                 const mediaSrc = getMediaPreviewUrl(item);
                 if (item.mediaType === 'video') {
                     const video = document.createElement('video');
-                    video.src = mediaSrc;
+                    if (mediaSrc) {
+                        video.src = mediaSrc;
+                    }
                     video.muted = true;
                     video.loop = true;
                     video.playsInline = true;
@@ -1778,7 +1911,9 @@
                     thumb.appendChild(video);
                 } else {
                     const img = document.createElement('img');
-                    img.src = mediaSrc;
+                    if (mediaSrc) {
+                        img.src = mediaSrc;
+                    }
                     img.alt = item.name || `Media ${index + 1}`;
                     img.addEventListener('click', () => openMediaPreview(item));
                     thumb.appendChild(img);
@@ -1948,6 +2083,9 @@
                 path: '',
                 name: file.name,
                 mediaType: fileType,
+                previewUrl: '',
+                previewMissing: false,
+                previewPending: false,
             };
             return true;
         }
@@ -1998,7 +2136,7 @@
             if (coverPresetHint) {
                 const spec = getCoverLayoutViewportSpec(activeMode);
                 const label = spec.label || (activeMode.charAt(0).toUpperCase() + activeMode.slice(1));
-                coverPresetHint.textContent = `${label} layout crop box shown ï¿½ drag image with mouse, move crop box with arrows, then click "Save This Layout".`;
+                coverPresetHint.textContent = `${label} layout crop box shown • drag image with mouse, move crop box with arrows, then click "Save This Layout".`;
             }
             updateCoverLayoutViewport();
         }
@@ -2093,7 +2231,7 @@
             applyCoverPosition();
         }
 
-        function renderCoverPositionPreview() {
+        async function renderCoverPositionPreview() {
             if (!coverPositionFrame) {
                 return;
             }
@@ -2103,7 +2241,7 @@
             }
             coverPositionPreviewEl = null;
 
-            const src = getCurrentCoverPreviewUrl();
+            const src = await resolveCurrentCoverPreviewUrl(true);
             const mediaType = getCurrentCoverMediaType();
             if (!src) {
                 coverPositionFrame.style.backgroundImage = '';
@@ -2131,9 +2269,9 @@
             applyCoverPosition();
         }
 
-        function openCoverPositionEditor() {
+        async function openCoverPositionEditor() {
             normalizeCoverSelection();
-            const src = getCurrentCoverPreviewUrl();
+            const src = await resolveCurrentCoverPreviewUrl(true);
             if (!src) {
                 setStatus('Choose a story cover or homepage cover first.');
                 return;
@@ -2148,7 +2286,7 @@
             coverViewportPositionBeforeEdit = { ...coverViewportPosition };
             updateCoverPresetModeButtons();
             renderCoverPresetGrid();
-            renderCoverPositionPreview();
+            await renderCoverPositionPreview();
             if (coverPositionOverlay) {
                 coverPositionOverlay.hidden = false;
                 requestAnimationFrame(() => {
@@ -2390,6 +2528,8 @@
 
             try {
                 state.rootHandle = await window.showDirectoryPicker();
+                clearLibraryPreviewCaches();
+                releaseAllMediaUrls();
                 await ensureStructure();
                 saveRecentFolder(state.rootHandle);
                 if (autoScanToggle && autoScanToggle.checked) {
@@ -2467,30 +2607,256 @@
                 .replace(/\/{2,}/g, '/');
         }
 
-        async function libraryPathExists(relativePath) {
-            if (!state.rootHandle) return false;
+        function clearLibraryPreviewAssetUrls() {
+            const uniqueUrls = new Set(libraryPreviewAssetUrlCache.values());
+            uniqueUrls.forEach(url => {
+                try {
+                    URL.revokeObjectURL(url);
+                } catch (error) {
+                    // ignore stale object URL errors
+                }
+            });
+            libraryPreviewAssetUrlCache.clear();
+        }
+
+        function clearLibraryPreviewCaches() {
+            clearLibraryPreviewAssetUrls();
+            libraryFileLookupCache.clear();
+            libraryPreviewPageUrls.clear();
+        }
+
+        function isDirectAssetUrl(path = '') {
+            const raw = String(path || '').trim();
+            if (!raw) {
+                return false;
+            }
+            if (raw.startsWith('blob:') || raw.startsWith('data:')) {
+                return true;
+            }
+            try {
+                const url = new URL(raw);
+                return url.protocol === 'file:' || url.protocol === 'http:' || url.protocol === 'https:';
+            } catch (error) {
+                return false;
+            }
+        }
+
+        function buildLibraryPathCandidates(rawPath = '') {
+            const normalized = normalizeRelativePath(rawPath);
+            const candidates = [];
+            const seen = new Set();
+            const push = candidate => {
+                const next = normalizeRelativePath(candidate);
+                const key = next.toLowerCase();
+                if (!next || seen.has(key)) {
+                    return;
+                }
+                seen.add(key);
+                candidates.push(next);
+            };
+
+            if (normalized) {
+                push(normalized);
+                try {
+                    const decoded = decodeURIComponent(normalized);
+                    if (decoded && decoded !== normalized) {
+                        push(decoded);
+                    }
+                } catch (error) {
+                    // ignore invalid encoding
+                }
+            }
+
+            const fileName = getFileName(normalized);
+            if (fileName) {
+                if (normalized.toLowerCase() === fileName.toLowerCase()) {
+                    push(`media-scr/${fileName}`);
+                }
+                if (!normalized.toLowerCase().startsWith('media-scr/')) {
+                    push(`media-scr/${fileName}`);
+                }
+            }
+
+            return candidates;
+        }
+
+        async function getLibraryFileFromRelativePath(relativePath) {
+            if (!state.rootHandle) {
+                return null;
+            }
             const normalizedPath = normalizeRelativePath(relativePath);
-            if (!normalizedPath) return false;
+            if (!normalizedPath) {
+                return null;
+            }
 
             const segments = normalizedPath.split('/').filter(Boolean);
-            if (segments.length === 0) return false;
+            if (segments.length === 0) {
+                return null;
+            }
 
             let dirHandle = state.rootHandle;
             for (let index = 0; index < segments.length - 1; index += 1) {
                 try {
                     dirHandle = await dirHandle.getDirectoryHandle(segments[index]);
                 } catch (error) {
-                    return false;
+                    return null;
                 }
             }
 
-            return fileExists(dirHandle, segments[segments.length - 1]);
+            try {
+                const fileHandle = await dirHandle.getFileHandle(segments[segments.length - 1]);
+                return fileHandle.getFile();
+            } catch (error) {
+                return null;
+            }
+        }
+
+        async function findLibraryFilePathByName(fileName, { maxDepth = LIBRARY_FILE_SEARCH_MAX_DEPTH, preferredFolders = [] } = {}) {
+            if (!state.rootHandle) {
+                return '';
+            }
+            const targetName = String(fileName || '').trim().toLowerCase();
+            if (!targetName) {
+                return '';
+            }
+
+            const normalizedPreferred = preferredFolders
+                .map(name => String(name || '').trim().toLowerCase())
+                .filter(Boolean);
+            const cacheKey = `${targetName}|${maxDepth}|${normalizedPreferred.join(',')}`;
+            if (libraryFileLookupCache.has(cacheKey)) {
+                return libraryFileLookupCache.get(cacheKey) || '';
+            }
+
+            const queue = [{ handle: state.rootHandle, path: '', depth: 0 }];
+            let fallbackMatch = '';
+
+            while (queue.length > 0) {
+                const current = queue.shift();
+                let preferredMatch = '';
+
+                for await (const [name, handle] of current.handle.entries()) {
+                    if (handle.kind === 'file') {
+                        if (name.toLowerCase() !== targetName) {
+                            continue;
+                        }
+                        const candidatePath = current.path ? `${current.path}/${name}` : name;
+                        if (!fallbackMatch) {
+                            fallbackMatch = candidatePath;
+                        }
+                        const parentDir = current.path.split('/').pop().toLowerCase();
+                        if (normalizedPreferred.includes(parentDir)) {
+                            preferredMatch = candidatePath;
+                            break;
+                        }
+                    } else if (handle.kind === 'directory' && current.depth < maxDepth) {
+                        const nextPath = current.path ? `${current.path}/${name}` : name;
+                        queue.push({ handle, path: nextPath, depth: current.depth + 1 });
+                    }
+                }
+
+                if (preferredMatch) {
+                    libraryFileLookupCache.set(cacheKey, preferredMatch);
+                    return preferredMatch;
+                }
+            }
+
+            libraryFileLookupCache.set(cacheKey, fallbackMatch || '');
+            return fallbackMatch || '';
+        }
+
+        function cacheLibraryPreviewUrl(pathKeys, objectUrl) {
+            if (!objectUrl) {
+                return;
+            }
+            (Array.isArray(pathKeys) ? pathKeys : [pathKeys]).forEach(key => {
+                const normalizedKey = normalizeRelativePath(key);
+                if (normalizedKey) {
+                    libraryPreviewAssetUrlCache.set(normalizedKey, objectUrl);
+                }
+            });
+        }
+
+        async function resolveLibraryPreviewAssetUrl(path = '') {
+            const rawPath = String(path || '').trim();
+            if (!rawPath) {
+                return '';
+            }
+
+            if (isDirectAssetUrl(rawPath)) {
+                return rawPath;
+            }
+            if (/^[a-zA-Z]:[\\/]/.test(rawPath)) {
+                try {
+                    const filePath = rawPath.replace(/\\/g, '/');
+                    return new URL(`file:///${filePath}`).href;
+                } catch (error) {
+                    // continue with relative-path resolution
+                }
+            }
+
+            const candidates = buildLibraryPathCandidates(rawPath);
+            for (const candidate of candidates) {
+                if (libraryPreviewAssetUrlCache.has(candidate)) {
+                    return libraryPreviewAssetUrlCache.get(candidate) || '';
+                }
+            }
+
+            for (const candidate of candidates) {
+                const file = await getLibraryFileFromRelativePath(candidate);
+                if (file) {
+                    const objectUrl = URL.createObjectURL(file);
+                    cacheLibraryPreviewUrl(candidates, objectUrl);
+                    cacheLibraryPreviewUrl(candidate, objectUrl);
+                    return objectUrl;
+                }
+            }
+
+            const fileName = getFileName(rawPath);
+            if (!fileName) {
+                return '';
+            }
+            const discoveredPath = await findLibraryFilePathByName(fileName, { preferredFolders: ['media-scr'] });
+            if (!discoveredPath) {
+                return '';
+            }
+
+            if (libraryPreviewAssetUrlCache.has(discoveredPath)) {
+                const cached = libraryPreviewAssetUrlCache.get(discoveredPath) || '';
+                cacheLibraryPreviewUrl(candidates, cached);
+                return cached;
+            }
+
+            const discoveredFile = await getLibraryFileFromRelativePath(discoveredPath);
+            if (!discoveredFile) {
+                return '';
+            }
+            const discoveredUrl = URL.createObjectURL(discoveredFile);
+            cacheLibraryPreviewUrl([discoveredPath, ...candidates], discoveredUrl);
+            return discoveredUrl;
+        }
+
+        async function libraryPathExists(relativePath) {
+            return Boolean(await getLibraryFileFromRelativePath(relativePath));
         }
 
         async function findFirstExistingLibraryPath(candidates = []) {
             for (const candidate of candidates) {
                 if (await libraryPathExists(candidate)) {
                     return normalizeRelativePath(candidate);
+                }
+            }
+            const names = candidates
+                .map(candidate => getFileName(candidate))
+                .filter(Boolean);
+            for (const name of names) {
+                const discovered = await findLibraryFilePathByName(name, {
+                    preferredFolders: name.toLowerCase().startsWith('viewer')
+                        ? ['view', 'viewer']
+                        : ['home', 'homepage'],
+                });
+                if (discovered) {
+                    return normalizeRelativePath(discovered);
                 }
             }
             return null;
@@ -2882,6 +3248,7 @@
                 return;
             }
 
+            clearLibraryPreviewCaches();
             const databaseDir = await getDatabaseDir();
             const catalog = await readJsonFile(databaseDir, 'catalog.json');
             state.stories = normalizeCatalog(catalog);
@@ -2892,6 +3259,7 @@
                 syncSettingsToLocalStorage(settingsData);
             }
             renderStoryList();
+            renderImageManager();
             setStatus(`Loaded ${state.stories.length} stories from ${state.rootHandle.name}.`);
             saveRecentFolder(state.rootHandle);
         }
@@ -2902,6 +3270,7 @@
                 return;
             }
 
+            clearLibraryPreviewCaches();
             const databaseDir = await getDatabaseDir();
             const storyDir = await getStoryDir();
             const imageDir = await getImageDir();
@@ -3007,6 +3376,7 @@
             sortStories();
             await writeCatalog(state.stories);
             renderStoryList();
+            renderImageManager();
             setStatus(`Scanned library and rebuilt ${state.stories.length} stories.`);
             saveRecentFolder(state.rootHandle);
         }
@@ -3272,6 +3642,9 @@
                         path: story.coverMedia.path,
                         name: getFileName(story.coverMedia.path),
                         mediaType: type,
+                        previewUrl: '',
+                        previewMissing: false,
+                        previewPending: false,
                     };
                 }
             }
@@ -3287,6 +3660,9 @@
                             path: story.cover,
                             name: coverName,
                             mediaType: type,
+                            previewUrl: '',
+                            previewMissing: false,
+                            previewPending: false,
                         };
                     }
                 }
@@ -3350,6 +3726,7 @@
             coverViewportPositionBeforeEdit = null;
             pendingReplaceMediaId = null;
             releaseUnusedMediaUrls();
+            clearLibraryPreviewAssetUrls();
             updateCoverPresetModeButtons();
             renderCoverPresetGrid();
             applyCoverPosition();
@@ -4138,6 +4515,9 @@
                     path: '',
                     name: file.name,
                     mediaType,
+                    previewUrl: '',
+                    previewMissing: false,
+                    previewPending: false,
                 };
                 coverSelection = { kind: 'external' };
                 normalizeCoverSelection();
@@ -4209,10 +4589,14 @@
         }
 
         if (coverPickerBtn) {
-            coverPickerBtn.addEventListener('click', openCoverPositionEditor);
+            coverPickerBtn.addEventListener('click', () => {
+                void openCoverPositionEditor();
+            });
         }
         if (setCoverPositionBtn) {
-            setCoverPositionBtn.addEventListener('click', openCoverPositionEditor);
+            setCoverPositionBtn.addEventListener('click', () => {
+                void openCoverPositionEditor();
+            });
         }
         if (coverPresetModes) {
             coverPresetModes.addEventListener('click', event => {
@@ -4324,5 +4708,8 @@
         applyCoverPosition();
         updateRecentInfo();
         renderImageManager();
-        window.addEventListener('beforeunload', releaseAllMediaUrls);
+        window.addEventListener('beforeunload', () => {
+            releaseAllMediaUrls();
+            clearLibraryPreviewCaches();
+        });
         tryUseRecentHandle(true);
