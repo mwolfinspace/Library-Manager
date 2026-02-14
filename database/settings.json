@@ -1,9 +1,9 @@
 {
   "version": "1.0.0",
-  "lastUpdated": null,
+  "lastUpdated": "2026-02-14T03:03:29.395Z",
   "settings": {
     "theme": "dark",
-    "fontFamily": "'Share Tech Mono', monospace",
+    "fontFamily": "Quantico",
     "fontSizes": {
       "base": 14,
       "header": 26,
@@ -27,7 +27,24 @@
       "skipAgeVerify": false,
       "skipWelcome": false
     },
-    "keybinds": {}
+    "keybinds": {
+      "navUp": "w",
+      "navDown": "s",
+      "navLeft": "a",
+      "navRight": "d",
+      "openCard": "enter",
+      "pin": "q",
+      "favorite": "e",
+      "layoutGrid": "1",
+      "layoutList": "2",
+      "layoutCompact": "3",
+      "layoutSpotlight": "4",
+      "settingsTab": ";",
+      "helpTab": "h",
+      "toggleTheme": "l",
+      "blackout": "space",
+      "focusSearch": "/"
+    }
   },
   "colors": {
     "dark": {
@@ -36,7 +53,7 @@
       "bg": "#03050b",
       "bg-2": "#0a1220",
       "panel": "#0c1422",
-      "accent": "#62f7ff",
+      "accent": "#61fffc",
       "accent-2": "#8dff7b",
       "card": "#0c1422",
       "shadow": "#02060c",
@@ -64,14 +81,10 @@
     "keyboardMode": "left",
     "panKeys": true,
     "rememberZoom": true,
+    "rememberViewAll": false,
     "fontFamily": "'Quantico', sans-serif",
     "customFont": "",
-    "rememberViewAll": false,
-    "customBindings": {},
-    "homepageSort": {
-      "type": "default",
-      "direction": "asc"
-    }
+    "customBindings": {}
   },
   "data": {
     "favorites": [],
@@ -88,27 +101,27 @@
   "skipAgeVerify": false,
   "skipWelcome": false,
   "keybinds": {
-    "navUp": "W",
-    "navDown": "S",
-    "navLeft": "A",
-    "navRight": "D",
-    "openCard": "Enter",
-    "pin": "Q",
-    "favorite": "E",
+    "navUp": "w",
+    "navDown": "s",
+    "navLeft": "a",
+    "navRight": "d",
+    "openCard": "enter",
+    "pin": "q",
+    "favorite": "e",
     "layoutGrid": "1",
     "layoutList": "2",
     "layoutCompact": "3",
     "layoutSpotlight": "4",
     "settingsTab": ";",
-    "helpTab": "H",
-    "toggleTheme": "L",
-    "blackout": "Space",
+    "helpTab": "h",
+    "toggleTheme": "l",
+    "blackout": "space",
     "focusSearch": "/"
   },
   "lineSpacing": 1.6,
   "scrollStep": 40,
   "zoomStep": 0.1,
-  "keyboardMode": "default",
+  "keyboardMode": "left",
   "panKeys": true,
   "rememberZoom": true,
   "rememberViewAll": false,
@@ -122,7 +135,7 @@
       "bg": "#03050b",
       "bg-2": "#0a1220",
       "panel": "#0c1422",
-      "accent": "#62f7ff",
+      "accent": "#61fffc",
       "accent-2": "#8dff7b",
       "card": "#0c1422",
       "shadow": "#02060c",

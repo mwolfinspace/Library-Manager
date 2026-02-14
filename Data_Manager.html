@@ -1195,204 +1195,6 @@
             font-size: 11px;
         }
 
-        /* Make the settings popup wider */
-        .help-panel.wide {
-            max-width: 90vw;
-            width: 90vw;
-            height: 90vh;
-            max-height: 90vh;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .help-panel.wide .help-body {
-            flex: 1;
-            min-height: 0;
-            overflow: hidden;
-            padding: 0;
-            margin: 0;
-        }
-        
-        .help-panel.wide .help-header {
-            flex-shrink: 0;
-            padding: 12px 16px 8px;
-        }
-        
-        .help-panel.wide .help-actions {
-            flex-shrink: 0;
-            padding: 8px 16px 12px;
-        }
-        
-        .help-panel.wide .embedded-help-body {
-            flex: 1;
-            min-height: 0;
-            overflow: hidden;
-            padding: 0 0 20px 0;
-            margin: 0;
-        }
-        
-        .help-panel.wide #homepage-settings-iframe,
-        .help-panel.wide #viewer-settings-iframe {
-            display: block;
-            width: 100%;
-            height: 100%;
-            min-height: 400px;
-            border: none;
-            border-radius: 0;
-            flex: 1;
-            overflow: hidden;
-        }
-
-        /* External link section */
-        .external-link-section {
-            margin: 16px 0;
-        }
-
-        .external-link-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            padding: 14px 20px;
-            border-radius: 14px;
-            background: linear-gradient(135deg, rgba(62, 240, 193, 0.2), rgba(90, 165, 255, 0.2));
-            border: 1px solid rgba(62, 240, 193, 0.4);
-            color: var(--ink);
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 600;
-            transition: all 0.2s ease;
-        }
-
-        .external-link-btn:hover {
-            background: linear-gradient(135deg, rgba(62, 240, 193, 0.3), rgba(90, 165, 255, 0.3));
-            border-color: rgba(62, 240, 193, 0.7);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(62, 240, 193, 0.2);
-        }
-
-        .external-icon {
-            font-size: 20px;
-        }
-
-        .external-text {
-            flex: 1;
-        }
-
-        .external-arrow {
-            font-size: 16px;
-            opacity: 0.7;
-        }
-
-        /* Settings info box */
-        .settings-info-box {
-            margin-top: 16px;
-            padding: 14px;
-            border-radius: 12px;
-            background: rgba(15, 24, 38, 0.8);
-            border: 1px solid rgba(90, 165, 255, 0.2);
-        }
-
-        .settings-info-box h4 {
-            margin: 0 0 12px;
-            font-size: 13px;
-            color: var(--ink);
-            font-weight: 600;
-        }
-
-        .settings-display {
-            display: grid;
-            gap: 8px;
-        }
-
-        .settings-display .loading {
-            color: var(--ink-muted);
-            font-style: italic;
-            font-size: 12px;
-            margin: 0;
-        }
-
-        .settings-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 6px 10px;
-            border-radius: 6px;
-            background: rgba(10, 16, 28, 0.6);
-            font-size: 12px;
-        }
-
-        .settings-item-label {
-            color: var(--ink-muted);
-        }
-
-        .settings-item-value {
-            color: var(--accent);
-            font-weight: 500;
-        }
-
-        .settings-item-value.enabled {
-            color: #3ef0c1;
-        }
-
-        .settings-item-value.disabled {
-            color: rgba(230, 243, 255, 0.5);
-        }
-        
-        /* Embedded Settings Iframe */
-        .embedded-settings-body {
-            padding: 0 !important;
-            margin: -8px -12px;
-            min-height: 500px;
-            height: calc(90vh - 140px);
-            max-height: calc(90vh - 140px);
-            overflow-y: auto;
-            overflow-x: hidden;
-            background: #0a1018;
-            border-radius: 12px;
-        }
-
-        .settings-iframe {
-            width: 100%;
-            height: 100%;
-            min-height: 500px;
-            border: none;
-            border-radius: 12px;
-            background: transparent;
-        }
-
-        .settings-iframe-loading {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 200px;
-            color: var(--ink-muted);
-            font-size: 14px;
-        }
-
-        /* Custom scrollbar for embedded iframe */
-        .embedded-settings-body::-webkit-scrollbar,
-        .embedded-help-body::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        .embedded-settings-body::-webkit-scrollbar-track,
-        .embedded-help-body::-webkit-scrollbar-track {
-            background: rgba(15, 24, 38, 0.5);
-            border-radius: 4px;
-        }
-
-        .embedded-settings-body::-webkit-scrollbar-thumb,
-        .embedded-help-body::-webkit-scrollbar-thumb {
-            background: rgba(90, 165, 255, 0.4);
-            border-radius: 4px;
-        }
-
-        .embedded-settings-body::-webkit-scrollbar-thumb:hover,
-        .embedded-help-body::-webkit-scrollbar-thumb:hover {
-            background: rgba(62, 240, 193, 0.6);
-        }
-
         /* Toast Notification Styles */
         .toast-container {
             position: fixed;
@@ -1475,8 +1277,7 @@
                     <button class="ghost" id="update-fonts">🔤 Update Fonts</button>
                     <button class="ghost" id="fix-missing" type="button">🔧 Fix Missing</button>
                     <button class="ghost" id="help-btn" type="button">❓ Help</button>
-                    <button class="ghost" id="homepage-settings-btn" type="button">🏠 Homepage</button>
-                    <button class="ghost" id="viewer-settings-btn" type="button">📖 Viewer</button>
+                    <a class="link-btn ghost" href="Setting_Manager.html" target="_blank">⚙️ Setting Manager</a>
                     <label class="checkbox auto-scan">
                         <input type="checkbox" id="auto-scan">
                         Auto Scan
@@ -1728,38 +1529,6 @@
         </div>
     </div>
 
-        <!-- Homepage Settings - Loaded from external file -->
-    <div class="help-backdrop" id="homepage-settings-modal" aria-hidden="true">
-        <div class="help-panel wide" role="dialog" aria-modal="true" aria-labelledby="homepage-settings-title">
-            <div class="help-header">
-                <div>
-                    <p class="help-eyebrow">Xedryk's Lab System</p>
-                    <h2 id="homepage-settings-title">🏠 Homepage Settings</h2>
-                </div>
-                <button class="help-close" id="homepage-settings-close" type="button" aria-label="Close" aria-hidden="false">✕</button>
-            </div>
-            <div class="help-body embedded-help-body">
-                <iframe id="homepage-settings-iframe" src="database/Homepage_Settings.html" class="settings-iframe"></iframe>
-            </div>
-        </div>
-    </div>
-
-    <!-- Viewer Settings - Loaded from external file -->
-    <div class="help-backdrop" id="viewer-settings-modal" aria-hidden="true">
-        <div class="help-panel wide" role="dialog" aria-modal="true" aria-labelledby="viewer-settings-title">
-            <div class="help-header">
-                <div>
-                    <p class="help-eyebrow">Xedryk's Lab System</p>
-                    <h2 id="viewer-settings-title">📖 Viewer Settings</h2>
-                </div>
-                <button class="help-close" id="viewer-settings-close" type="button" aria-label="Close" aria-hidden="false">✕</button>
-            </div>
-            <div class="help-body embedded-help-body">
-                <iframe id="viewer-settings-iframe" src="database/Viewer_Settings.html" class="settings-iframe"></iframe>
-            </div>
-        </div>
-    </div>
-
     <script>
         const chooseFolderBtn = document.getElementById('choose-folder');
         const openRecentBtn = document.getElementById('open-recent');
@@ -1878,6 +1647,296 @@
             { action: 'toggleSettings', label: 'Toggle settings', fallback: '?' },
             { action: 'blackout', label: 'Blackout', fallback: 'space' },
         ];
+        const DEFAULT_HOMEPAGE_COLORS = {
+            dark: {
+                ink: '#e8f1ff',
+                muted: '#e8f1ff',
+                bg: '#03050b',
+                'bg-2': '#0a1220',
+                panel: '#0c1422',
+                accent: '#62f7ff',
+                'accent-2': '#8dff7b',
+                card: '#0c1422',
+                shadow: '#02060c',
+                grid: '#62f7ff',
+            },
+            light: {
+                ink: '#0b1220',
+                muted: '#0b1220',
+                bg: '#eef3f9',
+                'bg-2': '#f8fbff',
+                panel: '#ffffff',
+                accent: '#0aa6c7',
+                'accent-2': '#3b5bff',
+                card: '#ffffff',
+                shadow: '#0c1626',
+                grid: '#0aa6c7',
+            },
+        };
+        const DEFAULT_HOMEPAGE_SETTINGS = {
+            theme: 'dark',
+            fontFamily: "'Share Tech Mono', monospace",
+            customFont: '',
+            fontSize: 14,
+            headerSize: 26,
+            buttonFontSize: 12,
+            cardFontSize: 13,
+            skipAgeVerify: false,
+            skipWelcome: false,
+            keybinds: {},
+            customColors: DEFAULT_HOMEPAGE_COLORS,
+        };
+        const DEFAULT_DATABASE_DATA = {
+            favorites: [],
+            pinned: [],
+            bookmarks: {},
+        };
+
+        function toFiniteNumber(value, fallback) {
+            const parsed = Number(value);
+            return Number.isFinite(parsed) ? parsed : fallback;
+        }
+
+        function toBoolean(value, fallback = false) {
+            if (typeof value === 'boolean') {
+                return value;
+            }
+            if (value === 'true') {
+                return true;
+            }
+            if (value === 'false') {
+                return false;
+            }
+            return fallback;
+        }
+
+        function normalizeBindingMap(bindings) {
+            const normalized = {};
+            if (!bindings || typeof bindings !== 'object') {
+                return normalized;
+            }
+            Object.entries(bindings).forEach(([action, key]) => {
+                const normalizedKey = normalizeKey(key);
+                if (normalizedKey) {
+                    normalized[action] = normalizedKey;
+                }
+            });
+            return normalized;
+        }
+
+        function normalizeColorTheme(themeColors, fallbackTheme) {
+            const merged = { ...fallbackTheme };
+            if (!themeColors || typeof themeColors !== 'object') {
+                return merged;
+            }
+            Object.entries(themeColors).forEach(([name, value]) => {
+                if (typeof value === 'string' && value.trim()) {
+                    merged[name] = value.trim();
+                }
+            });
+            return merged;
+        }
+
+        function normalizeHomepageColors(colors) {
+            const source = colors && typeof colors === 'object' ? colors : {};
+            return {
+                dark: normalizeColorTheme(source.dark, DEFAULT_HOMEPAGE_COLORS.dark),
+                light: normalizeColorTheme(source.light, DEFAULT_HOMEPAGE_COLORS.light),
+            };
+        }
+
+        function extractHomepageSettings(raw = {}) {
+            const nestedSettings = raw.settings && typeof raw.settings === 'object' ? raw.settings : {};
+            const nestedSizes = nestedSettings.fontSizes && typeof nestedSettings.fontSizes === 'object'
+                ? nestedSettings.fontSizes
+                : {};
+            const nestedSkip = nestedSettings.skipPreferences && typeof nestedSettings.skipPreferences === 'object'
+                ? nestedSettings.skipPreferences
+                : {};
+            const nestedKeybinds = nestedSettings.keybinds && typeof nestedSettings.keybinds === 'object'
+                ? nestedSettings.keybinds
+                : {};
+
+            const resolvedTheme = (nestedSettings.theme || raw.theme || DEFAULT_HOMEPAGE_SETTINGS.theme) === 'light'
+                ? 'light'
+                : 'dark';
+            const resolvedFontFamily = nestedSettings.fontFamily || raw.fontFamily || DEFAULT_HOMEPAGE_SETTINGS.fontFamily;
+            const resolvedColors = raw.customColors || raw.colors || DEFAULT_HOMEPAGE_SETTINGS.customColors;
+
+            return {
+                theme: resolvedTheme,
+                fontFamily: resolvedFontFamily,
+                customFont: typeof raw.customFont === 'string' ? raw.customFont : DEFAULT_HOMEPAGE_SETTINGS.customFont,
+                fontSize: Math.round(toFiniteNumber(raw.fontSize, toFiniteNumber(nestedSizes.base, DEFAULT_HOMEPAGE_SETTINGS.fontSize))),
+                headerSize: Math.round(toFiniteNumber(raw.headerSize, toFiniteNumber(nestedSizes.header, DEFAULT_HOMEPAGE_SETTINGS.headerSize))),
+                buttonFontSize: Math.round(toFiniteNumber(raw.buttonFontSize, toFiniteNumber(raw.buttonSize, toFiniteNumber(nestedSizes.button, DEFAULT_HOMEPAGE_SETTINGS.buttonFontSize)))),
+                cardFontSize: Math.round(toFiniteNumber(raw.cardFontSize, toFiniteNumber(raw.cardSize, toFiniteNumber(nestedSizes.card, DEFAULT_HOMEPAGE_SETTINGS.cardFontSize)))),
+                skipAgeVerify: toBoolean(raw.skipAgeVerify, toBoolean(nestedSkip.skipAgeVerify, DEFAULT_HOMEPAGE_SETTINGS.skipAgeVerify)),
+                skipWelcome: toBoolean(raw.skipWelcome, toBoolean(nestedSkip.skipWelcome, DEFAULT_HOMEPAGE_SETTINGS.skipWelcome)),
+                keybinds: normalizeBindingMap(raw.keybinds || nestedKeybinds),
+                customColors: normalizeHomepageColors(resolvedColors),
+            };
+        }
+
+        function extractViewerSettings(raw = {}) {
+            const nestedViewer = raw.viewerSettings && typeof raw.viewerSettings === 'object' ? raw.viewerSettings : {};
+            return {
+                theme: (nestedViewer.theme || raw.theme || DEFAULT_SETTINGS.theme) === 'light' ? 'light' : 'dark',
+                fontSize: Math.round(toFiniteNumber(nestedViewer.fontSize, toFiniteNumber(raw.fontSize, DEFAULT_SETTINGS.fontSize))),
+                lineSpacing: toFiniteNumber(nestedViewer.lineSpacing, toFiniteNumber(raw.lineSpacing, DEFAULT_SETTINGS.lineSpacing)),
+                scrollStep: Math.round(toFiniteNumber(nestedViewer.scrollStep, toFiniteNumber(raw.scrollStep, DEFAULT_SETTINGS.scrollStep))),
+                zoomStep: toFiniteNumber(nestedViewer.zoomStep, toFiniteNumber(raw.zoomStep, DEFAULT_SETTINGS.zoomStep)),
+                keyboardMode: nestedViewer.keyboardMode || raw.keyboardMode || DEFAULT_SETTINGS.keyboardMode,
+                panKeys: toBoolean(nestedViewer.panKeys, toBoolean(raw.panKeys, DEFAULT_SETTINGS.panKeys)),
+                rememberZoom: toBoolean(nestedViewer.rememberZoom, toBoolean(raw.rememberZoom, DEFAULT_SETTINGS.rememberZoom)),
+                rememberViewAll: toBoolean(nestedViewer.rememberViewAll, toBoolean(raw.rememberViewAll, DEFAULT_SETTINGS.rememberViewAll)),
+                fontFamily: nestedViewer.fontFamily || raw.fontFamily || DEFAULT_SETTINGS.fontFamily,
+                customFont: nestedViewer.customFont || raw.customFont || DEFAULT_SETTINGS.customFont,
+                customBindings: normalizeBindingMap(nestedViewer.customBindings || raw.customBindings || {}),
+            };
+        }
+
+        function composeSettingsFile(existing = {}, homepageSettings = DEFAULT_HOMEPAGE_SETTINGS, viewerSettings = DEFAULT_SETTINGS) {
+            const normalizedHomepage = {
+                ...DEFAULT_HOMEPAGE_SETTINGS,
+                ...homepageSettings,
+                keybinds: normalizeBindingMap(homepageSettings.keybinds),
+                customColors: normalizeHomepageColors(homepageSettings.customColors),
+            };
+            const normalizedViewer = {
+                ...DEFAULT_SETTINGS,
+                ...viewerSettings,
+                customBindings: normalizeBindingMap(viewerSettings.customBindings),
+            };
+
+            return {
+                ...existing,
+                version: existing.version || '1.0.0',
+                lastUpdated: new Date().toISOString(),
+                settings: {
+                    ...(existing.settings && typeof existing.settings === 'object' ? existing.settings : {}),
+                    theme: normalizedHomepage.theme,
+                    fontFamily: normalizedHomepage.customFont || normalizedHomepage.fontFamily,
+                    fontSizes: {
+                        base: normalizedHomepage.fontSize,
+                        header: normalizedHomepage.headerSize,
+                        button: normalizedHomepage.buttonFontSize,
+                        card: normalizedHomepage.cardFontSize,
+                    },
+                    skipPreferences: {
+                        skipAgeVerify: normalizedHomepage.skipAgeVerify,
+                        skipWelcome: normalizedHomepage.skipWelcome,
+                    },
+                    keybinds: normalizeBindingMap(normalizedHomepage.keybinds),
+                },
+                colors: normalizeHomepageColors(normalizedHomepage.customColors),
+                viewerSettings: normalizedViewer,
+                data: existing.data && typeof existing.data === 'object' ? existing.data : DEFAULT_DATABASE_DATA,
+                theme: normalizedHomepage.theme,
+                fontFamily: normalizedHomepage.fontFamily,
+                customFont: normalizedHomepage.customFont,
+                fontSize: normalizedHomepage.fontSize,
+                headerSize: normalizedHomepage.headerSize,
+                buttonSize: normalizedHomepage.buttonFontSize,
+                cardSize: normalizedHomepage.cardFontSize,
+                buttonFontSize: normalizedHomepage.buttonFontSize,
+                cardFontSize: normalizedHomepage.cardFontSize,
+                skipAgeVerify: normalizedHomepage.skipAgeVerify,
+                skipWelcome: normalizedHomepage.skipWelcome,
+                keybinds: normalizeBindingMap(normalizedHomepage.keybinds),
+                customColors: normalizeHomepageColors(normalizedHomepage.customColors),
+                lineSpacing: normalizedViewer.lineSpacing,
+                scrollStep: normalizedViewer.scrollStep,
+                zoomStep: normalizedViewer.zoomStep,
+                keyboardMode: normalizedViewer.keyboardMode,
+                panKeys: normalizedViewer.panKeys,
+                rememberZoom: normalizedViewer.rememberZoom,
+                rememberViewAll: normalizedViewer.rememberViewAll,
+                customBindings: normalizeBindingMap(normalizedViewer.customBindings),
+            };
+        }
+
+        function syncSettingsToLocalStorage(settingsData) {
+            const homepageSettings = extractHomepageSettings(settingsData);
+            const viewerSettings = extractViewerSettings(settingsData);
+
+            const homepageFontFamily = homepageSettings.customFont && homepageSettings.customFont.trim()
+                ? homepageSettings.customFont.trim()
+                : homepageSettings.fontFamily;
+
+            localStorage.setItem('homepageTheme', homepageSettings.theme);
+            localStorage.setItem('homepageFont', JSON.stringify({
+                family: homepageFontFamily,
+                fallback: 'monospace',
+            }));
+            localStorage.setItem('homepageFontSizes', JSON.stringify({
+                base: homepageSettings.fontSize,
+                header: homepageSettings.headerSize,
+                button: homepageSettings.buttonFontSize,
+                card: homepageSettings.cardFontSize,
+            }));
+            localStorage.setItem('skipPreferences', JSON.stringify({
+                skipAgeVerify: homepageSettings.skipAgeVerify,
+                skipWelcome: homepageSettings.skipWelcome,
+            }));
+            localStorage.setItem('customColors', JSON.stringify(homepageSettings.customColors));
+            localStorage.setItem('homepageKeybinds', JSON.stringify(homepageSettings.keybinds));
+            localStorage.setItem('homepageSettings', JSON.stringify(homepageSettings));
+            localStorage.setItem('viewerSettings', JSON.stringify(viewerSettings));
+            localStorage.setItem('hpFromParent', JSON.stringify(homepageSettings));
+            localStorage.setItem('vFromParent', JSON.stringify(viewerSettings));
+
+            let cachedDb = {};
+            try {
+                cachedDb = JSON.parse(localStorage.getItem('xedryk_database') || '{}') || {};
+            } catch (error) {
+                cachedDb = {};
+            }
+
+            const dbSnapshot = {
+                version: settingsData.version || cachedDb.version || '1.0.0',
+                lastUpdated: settingsData.lastUpdated || new Date().toISOString(),
+                settings: settingsData.settings || {},
+                colors: settingsData.colors || homepageSettings.customColors,
+                viewerSettings: settingsData.viewerSettings || viewerSettings,
+                data: cachedDb.data || settingsData.data || DEFAULT_DATABASE_DATA,
+            };
+            localStorage.setItem('xedryk_database', JSON.stringify(dbSnapshot));
+        }
+
+        async function saveMergedSettings({ homepagePatch = null, viewerPatch = null } = {}) {
+            if (!state.rootHandle) {
+                setStatus('Choose a library folder first.');
+                showToast('Choose a library folder first.', 'error');
+                return null;
+            }
+
+            const databaseDir = await getDatabaseDir();
+            const existing = (await readJsonFile(databaseDir, 'settings.json')) || {};
+
+            const homepageSettings = {
+                ...extractHomepageSettings(existing),
+                ...(homepagePatch || {}),
+            };
+            homepageSettings.keybinds = normalizeBindingMap(homepageSettings.keybinds);
+            homepageSettings.customColors = normalizeHomepageColors(homepageSettings.customColors);
+
+            const viewerSettings = {
+                ...extractViewerSettings(existing),
+                ...(viewerPatch || {}),
+            };
+            viewerSettings.customBindings = normalizeBindingMap(viewerSettings.customBindings);
+
+            const merged = composeSettingsFile(existing, homepageSettings, viewerSettings);
+            await writeFile(databaseDir, 'settings.json', JSON.stringify(merged, null, 2));
+            syncSettingsToLocalStorage(merged);
+
+            if (state.stories.length === 0) {
+                await loadLibrary();
+            }
+            await writeCatalog(state.stories);
+            return merged;
+        }
 
         let selectedImages = [];
         let dragIndex = null;
@@ -1911,15 +1970,15 @@
             toast.className = `toast ${type}`;
             
             const iconMap = {
-                success: '✅',
-                error: '❌',
+                success: '?',
+                error: '?',
                 info: 'ℹ️'
             };
             
             toast.innerHTML = `
                 <span class="toast-icon">${iconMap[type] || ''}</span>
                 <span class="toast-message">${message}</span>
-                <span class="toast-close" onclick="this.parentElement.remove()">✕</span>
+                <span class="toast-close" onclick="this.parentElement.remove()">?</span>
             `;
             
             toastContainer.appendChild(toast);
@@ -2175,24 +2234,36 @@
         }
 
         function normalizeKey(key) {
+            if (key === null || key === undefined) {
+                return '';
+            }
             if (key === ' ') {
                 return 'space';
             }
-            return String(key || '').toLowerCase();
+            const normalized = String(key).trim().toLowerCase();
+            const aliases = {
+                spacebar: 'space',
+                esc: 'escape',
+                return: 'enter',
+                del: 'delete',
+            };
+            return aliases[normalized] || normalized;
         }
 
         function prettyKeyLabel(key) {
+            const normalized = normalizeKey(key);
             const map = {
-                arrowup: '↑',
-                arrowdown: '↓',
-                arrowleft: '←',
-                arrowright: '→',
-                space: 'Space',
+                arrowup: '?',
+                arrowdown: '?',
+                arrowleft: '?',
+                arrowright: '?',
+                space: 'Spacebar',
+                enter: 'Enter',
                 escape: 'Esc',
                 backspace: 'Backspace',
                 delete: 'Delete',
             };
-            return map[key] || key;
+            return map[normalized] || normalized.toUpperCase();
         }
 
         function formatKeyDisplay(action) {
@@ -2603,7 +2674,9 @@
 
             const settings = await readJsonFile(databaseDir, 'settings.json');
             if (!settings) {
-                await writeFile(databaseDir, 'settings.json', JSON.stringify(DEFAULT_SETTINGS, null, 2));
+                const initialSettings = composeSettingsFile({}, DEFAULT_HOMEPAGE_SETTINGS, DEFAULT_SETTINGS);
+                await writeFile(databaseDir, 'settings.json', JSON.stringify(initialSettings, null, 2));
+                syncSettingsToLocalStorage(initialSettings);
             }
         }
 
@@ -2619,7 +2692,8 @@
                     defaultFontFamily.innerHTML = '';
                     fonts.forEach(font => {
                         const option = document.createElement('option');
-                        option.value = font.family;
+                        option.value = font.name;
+                        option.dataset.family = font.family || '';
                         option.textContent = font.name;
                         defaultFontFamily.appendChild(option);
                     });
@@ -2770,6 +2844,10 @@
             selectedStoryIds.clear();
 
             await loadDefaultSettings();
+            const settingsData = await readJsonFile(databaseDir, 'settings.json');
+            if (settingsData) {
+                syncSettingsToLocalStorage(settingsData);
+            }
             renderStoryList();
             setStatus(`Loaded ${state.stories.length} stories from ${state.rootHandle.name}.`);
             saveRecentFolder(state.rootHandle);
@@ -2864,11 +2942,21 @@
         async function loadDefaultSettings() {
             const databaseDir = await getDatabaseDir();
             const settings = await readJsonFile(databaseDir, 'settings.json');
-            const data = settings || DEFAULT_SETTINGS;
+            const data = extractViewerSettings(settings || {});
 
             defaultTheme.value = data.theme || 'dark';
             if (defaultFontFamily) {
-                defaultFontFamily.value = data.fontFamily || 'tech';
+                const requestedFont = data.fontFamily || 'tech';
+                const option = Array.from(defaultFontFamily.options).find(item =>
+                    item.value === requestedFont ||
+                    item.dataset.family === requestedFont ||
+                    item.textContent === requestedFont
+                );
+                if (option) {
+                    defaultFontFamily.value = option.value;
+                } else {
+                    defaultFontFamily.value = requestedFont;
+                }
             }
             if (defaultCustomFont) {
                 defaultCustomFont.value = data.customFont || '';
@@ -2883,7 +2971,7 @@
             if (defaultRememberAll) {
                 defaultRememberAll.checked = data.rememberViewAll === true;
             }
-            customBindingsDraft = { ...(data.customBindings || {}) };
+            customBindingsDraft = normalizeBindingMap(data.customBindings || {});
             if (keybindOverlay && !keybindOverlay.hidden) {
                 renderKeybindGrid();
             }
@@ -2902,24 +2990,17 @@
                 panKeys: defaultPan.checked,
                 rememberZoom: defaultRemember.checked,
                 rememberViewAll: defaultRememberAll ? defaultRememberAll.checked : false,
-                customBindings: { ...(customBindingsDraft || {}) },
+                customBindings: normalizeBindingMap(customBindingsDraft || {}),
             };
         }
 
         async function saveDefaultSettings() {
-            if (!state.rootHandle) {
-                setStatus('Choose a library folder first.');
+            const merged = await saveMergedSettings({
+                viewerPatch: readSettingsForm(),
+            });
+            if (!merged) {
                 return;
             }
-
-            const databaseDir = await getDatabaseDir();
-            const existing = (await readJsonFile(databaseDir, 'settings.json')) || {};
-            const data = { ...existing, ...readSettingsForm() };
-            await writeFile(databaseDir, 'settings.json', JSON.stringify(data, null, 2));
-            if (state.stories.length === 0) {
-                await loadLibrary();
-            }
-            await writeCatalog(state.stories);
             setStatus('Viewer defaults saved.');
         }
 
@@ -2937,7 +3018,8 @@
                 const storyText = entry.storyText || await readTextFile(storyDir, `${entry.id}.md`);
                 catalogWithText.push({ ...entry, storyText });
             }
-            const viewerSettings = (await readJsonFile(databaseDir, 'settings.json')) || DEFAULT_SETTINGS;
+            const rawSettings = (await readJsonFile(databaseDir, 'settings.json')) || {};
+            const viewerSettings = extractViewerSettings(rawSettings);
             const catalogJs = `window.REPORT_CATALOG = ${JSON.stringify(catalogWithText, null, 2)};\n` +
                 `window.VIEWER_SETTINGS = ${JSON.stringify(viewerSettings, null, 2)};\n`;
 
@@ -3045,7 +3127,7 @@
                 const dragHandle = document.createElement('button');
                 dragHandle.type = 'button';
                 dragHandle.className = 'drag-handle';
-                dragHandle.textContent = '⋮⋮';
+                dragHandle.textContent = '↕️';
                 dragHandle.title = 'Drag to reorder';
                 dragHandle.draggable = true;
                 dragHandle.addEventListener('dragstart', event => {
@@ -3359,7 +3441,12 @@
             }
             const databaseDir = await getDatabaseDir();
             const existing = (await readJsonFile(databaseDir, 'settings.json')) || {};
-            const data = { ...existing, ...readSettingsForm() };
+            const homepageSettings = extractHomepageSettings(existing);
+            const viewerSettings = {
+                ...extractViewerSettings(existing),
+                ...readSettingsForm(),
+            };
+            const data = composeSettingsFile(existing, homepageSettings, viewerSettings);
             const suggested = `viewer-settings-${new Date().toISOString().slice(0, 10)}.json`;
             try {
                 const handle = await window.showSaveFilePicker({
@@ -3396,10 +3483,20 @@
                 if (!handle) return;
                 const file = await handle.getFile();
                 const text = await file.text();
-                const data = JSON.parse(text);
-                const merged = { ...DEFAULT_SETTINGS, ...data };
+                const imported = JSON.parse(text);
                 const databaseDir = await getDatabaseDir();
+                const existing = (await readJsonFile(databaseDir, 'settings.json')) || {};
+                const mergedSource = {
+                    ...existing,
+                    ...(imported && typeof imported === 'object' ? imported : {}),
+                };
+                const merged = composeSettingsFile(
+                    mergedSource,
+                    extractHomepageSettings(mergedSource),
+                    extractViewerSettings(mergedSource),
+                );
                 await writeFile(databaseDir, 'settings.json', JSON.stringify(merged, null, 2));
+                syncSettingsToLocalStorage(merged);
                 await loadDefaultSettings();
                 if (state.stories.length === 0) {
                     await loadLibrary();
@@ -3487,7 +3584,11 @@
             }
             const databaseDir = await getDatabaseDir();
             const existing = (await readJsonFile(databaseDir, 'settings.json')) || {};
-            const defaults = { ...existing, ...readSettingsForm() };
+            const defaults = {
+                ...extractViewerSettings(existing),
+                ...readSettingsForm(),
+                customBindings: normalizeBindingMap(customBindingsDraft || {}),
+            };
             state.stories = state.stories.map(entry => {
                 if (ids.includes(entry.id)) {
                     return { ...entry, viewDefaults: defaults };
@@ -3773,695 +3874,6 @@
             }
         }
 
-        // Homepage Settings popup functions
-        const homepageSettingsBtn = document.getElementById('homepage-settings-btn');
-        const homepageSettingsModal = document.getElementById('homepage-settings-modal');
-        const homepageSettingsClose = document.getElementById('homepage-settings-close');
-        const homepageSettingsCloseBtn = document.getElementById('homepage-settings-close-btn');
-        const homepageSettingsRefresh = document.getElementById('homepage-settings-refresh');
-        const hpCurrentSettingsEl = document.getElementById('hp-current-settings');
-
-        async function loadHomepageSettings() {
-            if (!state.rootHandle || !hpCurrentSettingsEl) {
-                if (hpCurrentSettingsEl) {
-                    hpCurrentSettingsEl.innerHTML = '<p class="loading">Choose a library folder first...</p>';
-                }
-                return;
-            }
-            
-            try {
-                const databaseDir = await getDatabaseDir();
-                const settings = await readJsonFile(databaseDir, 'settings.json');
-                const fonts = await readJsonFile(databaseDir, 'fonts.json');
-                
-                if (!settings) {
-                    hpCurrentSettingsEl.innerHTML = '<p class="loading">No settings found. Default settings will be used.</p>';
-                    return;
-                }
-
-                const fontName = fonts?.find(f => f.family === settings.fontFamily)?.name || settings.fontFamily || 'Tech Mono';
-                const themeLabel = settings.theme === 'light' ? '☀️ Light' : '🌙 Dark';
-                
-                let html = '';
-                html += `<div class="settings-item"><span class="settings-item-label">Theme</span><span class="settings-item-value">${themeLabel}</span></div>`;
-                html += `<div class="settings-item"><span class="settings-item-label">Font</span><span class="settings-item-value">${fontName}</span></div>`;
-                if (settings.customFont) {
-                    html += `<div class="settings-item"><span class="settings-item-label">Custom Font</span><span class="settings-item-value">${settings.customFont}</span></div>`;
-                }
-                html += `<div class="settings-item"><span class="settings-item-label">Font Size</span><span class="settings-item-value">${settings.fontSize || 16}px</span></div>`;
-                html += `<div class="settings-item"><span class="settings-item-label">Header Size</span><span class="settings-item-value">${settings.headerSize || 26}px</span></div>`;
-                html += `<div class="settings-item"><span class="settings-item-label">Skip Age Verify</span><span class="settings-item-value ${settings.skipAgeVerify ? 'enabled' : 'disabled'}">${settings.skipAgeVerify ? 'Yes' : 'No'}</span></div>`;
-                
-                hpCurrentSettingsEl.innerHTML = html;
-            } catch (error) {
-                hpCurrentSettingsEl.innerHTML = '<p class="loading">Error loading settings.</p>';
-                console.error('Error loading homepage settings:', error);
-            }
-        }
-
-        function openHomepageSettingsModal() {
-            if (!homepageSettingsModal) return;
-            
-            // Force reload iframe to get fresh fonts
-            const iframe = document.getElementById('homepage-settings-iframe');
-            if (iframe) {
-                iframe.src = 'database/Homepage_Settings.html?t=' + Date.now();
-            }
-            
-            homepageSettingsModal.classList.add('is-open');
-            homepageSettingsModal.setAttribute('aria-hidden', 'false');
-            loadHomepageSettings();
-        }
-
-        function closeHomepageSettingsModal() {
-            if (!homepageSettingsModal) return;
-            homepageSettingsModal.classList.remove('is-open');
-            homepageSettingsModal.setAttribute('aria-hidden', 'true');
-            
-            // Clear the iframe src to prevent stale data on next open
-            const iframe = document.getElementById('homepage-settings-iframe');
-            if (iframe) {
-                iframe.src = 'about:blank';
-            }
-        }
-
-        if (homepageSettingsBtn) {
-            homepageSettingsBtn.addEventListener('click', openHomepageSettingsModal);
-        }
-        if (homepageSettingsClose) {
-            homepageSettingsClose.addEventListener('click', closeHomepageSettingsModal);
-        }
-        if (homepageSettingsCloseBtn) {
-            homepageSettingsCloseBtn.addEventListener('click', closeHomepageSettingsModal);
-        }
-        if (homepageSettingsRefresh) {
-            homepageSettingsRefresh.addEventListener('click', loadHomepageSettings);
-        }
-        if (homepageSettingsModal) {
-            homepageSettingsModal.addEventListener('click', event => {
-                if (event.target === homepageSettingsModal) {
-                    closeHomepageSettingsModal();
-                }
-            });
-        }
-
-        // Viewer Settings popup functions
-        const viewerSettingsBtn = document.getElementById('viewer-settings-btn');
-        const viewerSettingsModal = document.getElementById('viewer-settings-modal');
-        const viewerSettingsClose = document.getElementById('viewer-settings-close');
-        const viewerSettingsCloseBtn = document.getElementById('viewer-settings-close-btn');
-        const viewerSettingsRefresh = document.getElementById('viewer-settings-refresh');
-        const vCurrentSettingsEl = document.getElementById('v-current-settings');
-
-        async function loadViewerSettings() {
-            if (!state.rootHandle || !vCurrentSettingsEl) {
-                if (vCurrentSettingsEl) {
-                    vCurrentSettingsEl.innerHTML = '<p class="loading">Choose a library folder first...</p>';
-                }
-                return;
-            }
-            
-            try {
-                const databaseDir = await getDatabaseDir();
-                const settings = await readJsonFile(databaseDir, 'settings.json');
-                const fonts = await readJsonFile(databaseDir, 'fonts.json');
-                
-                if (!settings) {
-                    vCurrentSettingsEl.innerHTML = '<p class="loading">No settings found. Default settings will be used.</p>';
-                    return;
-                }
-
-                const fontName = fonts?.find(f => f.family === settings.fontFamily)?.name || settings.fontFamily || 'Tech Mono';
-                const themeLabel = settings.theme === 'light' ? '☀️ Light' : '🌙 Dark';
-                const keyboardLabel = settings.keyboardMode === 'left' ? 'One-Hand Left' : settings.keyboardMode === 'right' ? 'One-Hand Right' : 'Default';
-                
-                let html = '';
-                html += `<div class="settings-item"><span class="settings-item-label">Theme</span><span class="settings-item-value">${themeLabel}</span></div>`;
-                html += `<div class="settings-item"><span class="settings-item-label">Font</span><span class="settings-item-value">${fontName}</span></div>`;
-                if (settings.customFont) {
-                    html += `<div class="settings-item"><span class="settings-item-label">Custom Font</span><span class="settings-item-value">${settings.customFont}</span></div>`;
-                }
-                html += `<div class="settings-item"><span class="settings-item-label">Font Size</span><span class="settings-item-value">${settings.fontSize || 16}px</span></div>`;
-                html += `<div class="settings-item"><span class="settings-item-label">Line Spacing</span><span class="settings-item-value">${settings.lineSpacing || 1.6}</span></div>`;
-                html += `<div class="settings-item"><span class="settings-item-label">Scroll Step</span><span class="settings-item-value">${settings.scrollStep || 40}px</span></div>`;
-                html += `<div class="settings-item"><span class="settings-item-label">Keyboard Mode</span><span class="settings-item-value">${keyboardLabel}</span></div>`;
-                html += `<div class="settings-item"><span class="settings-item-label">Pan Keys</span><span class="settings-item-value ${settings.panKeys ? 'enabled' : 'disabled'}">${settings.panKeys ? 'Enabled' : 'Disabled'}</span></div>`;
-                html += `<div class="settings-item"><span class="settings-item-label">Remember Zoom</span><span class="settings-item-value ${settings.rememberZoom ? 'enabled' : 'disabled'}">${settings.rememberZoom ? 'Per Story' : 'No'}</span></div>`;
-                html += `<div class="settings-item"><span class="settings-item-label">Remember View</span><span class="settings-item-value ${settings.rememberViewAll ? 'enabled' : 'disabled'}">${settings.rememberViewAll ? 'All Stories' : 'Per Story'}</span></div>`;
-                
-                vCurrentSettingsEl.innerHTML = html;
-            } catch (error) {
-                vCurrentSettingsEl.innerHTML = '<p class="loading">Error loading settings.</p>';
-                console.error('Error loading viewer settings:', error);
-            }
-        }
-
-        function openViewerSettingsModal() {
-            if (!viewerSettingsModal) return;
-            
-            // Force reload iframe to get fresh fonts
-            const iframe = document.getElementById('viewer-settings-iframe');
-            if (iframe) {
-                iframe.src = 'database/Viewer_Settings.html?t=' + Date.now();
-            }
-            
-            viewerSettingsModal.classList.add('is-open');
-            viewerSettingsModal.setAttribute('aria-hidden', 'false');
-            loadViewerSettings();
-        }
-
-        function closeViewerSettingsModal() {
-            if (!viewerSettingsModal) return;
-            viewerSettingsModal.classList.remove('is-open');
-            viewerSettingsModal.setAttribute('aria-hidden', 'true');
-            
-            // Clear the iframe src to prevent stale data on next open
-            const iframe = document.getElementById('viewer-settings-iframe');
-            if (iframe) {
-                iframe.src = 'about:blank';
-            }
-        }
-
-        if (viewerSettingsBtn) {
-            viewerSettingsBtn.addEventListener('click', openViewerSettingsModal);
-        }
-        if (viewerSettingsClose) {
-            viewerSettingsClose.addEventListener('click', closeViewerSettingsModal);
-        }
-        if (viewerSettingsCloseBtn) {
-            viewerSettingsCloseBtn.addEventListener('click', closeViewerSettingsModal);
-        }
-        if (viewerSettingsRefresh) {
-            viewerSettingsRefresh.addEventListener('click', loadViewerSettings);
-        }
-        if (viewerSettingsModal) {
-            viewerSettingsModal.addEventListener('click', event => {
-                if (event.target === viewerSettingsModal) {
-                    closeViewerSettingsModal();
-                }
-            });
-        }
-
-        // Tab switching for settings popups
-        document.querySelectorAll('.settings-tabs').forEach(tabContainer => {
-            tabContainer.querySelectorAll('.tab-btn').forEach(tabBtn => {
-                tabBtn.addEventListener('click', () => {
-                    const parent = tabBtn.closest('.help-panel') || tabBtn.closest('.help-body')?.parentElement;
-                    if (!parent) return;
-                    
-                    // Remove active class from all tabs in this container
-                    tabContainer.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-                    tabBtn.classList.add('active');
-                    
-                    // Hide all tab panels in this container
-                    const tabPanels = parent.querySelectorAll('.tab-panel');
-                    tabPanels.forEach(panel => {
-                        panel.classList.remove('active');
-                        panel.setAttribute('hidden', '');
-                    });
-                    
-                    // Show the selected tab panel
-                    const tabId = tabBtn.dataset.tab;
-                    const targetPanel = parent.querySelector(`[data-tab-panel="${tabId}"]`);
-                    if (targetPanel) {
-                        targetPanel.classList.add('active');
-                        targetPanel.removeAttribute('hidden');
-                    }
-                });
-            });
-        });
-
-        // ====== HOMEPAGE SETTINGS POPUP FUNCTIONS ======
-        
-        // Load fonts into Homepage Settings popup select
-        async function loadHpFonts() {
-            try {
-                const dbDir = await getDatabaseDir();
-                const fonts = await readJsonFile(dbDir, 'fonts.json');
-                const hpFontSelect = document.getElementById('hp-font-select');
-                const vFontFamily = document.getElementById('v-font-family');
-                
-                if (fonts) {
-                    const fontOptions = fonts.map(f => `<option value="${f.family}">${f.name}</option>`).join('');
-                    if (hpFontSelect) hpFontSelect.innerHTML = fontOptions;
-                    if (vFontFamily) vFontFamily.innerHTML = fontOptions;
-                }
-            } catch (e) {
-                console.error('Error loading fonts for popup:', e);
-            }
-        }
-        
-        // Populate Homepage Settings form with current values
-        async function loadHpSettingsForm() {
-            if (!state.rootHandle) return;
-            try {
-                const dbDir = await getDatabaseDir();
-                const settings = await readJsonFile(dbDir, 'settings.json');
-                if (!settings) return;
-                
-                // Font settings
-                const hpFontSelect = document.getElementById('hp-font-select');
-                const hpCustomFont = document.getElementById('hp-custom-font');
-                const hpBaseFontSize = document.getElementById('hp-base-font-size');
-                const hpHeaderFontSize = document.getElementById('hp-header-font-size');
-                
-                if (hpFontSelect) hpFontSelect.value = settings.fontFamily || 'tech';
-                if (hpCustomFont) hpCustomFont.value = settings.customFont || '';
-                if (hpBaseFontSize) {
-                    hpBaseFontSize.value = settings.fontSize || 14;
-                    hpBaseFontSize.nextElementSibling.textContent = (settings.fontSize || 14) + 'px';
-                }
-                if (hpHeaderFontSize) {
-                    hpHeaderFontSize.value = settings.headerSize || 26;
-                    hpHeaderFontSize.nextElementSibling.textContent = (settings.headerSize || 26) + 'px';
-                }
-                
-                // Theme
-                const hpThemeTabs = document.querySelectorAll('#homepage-settings-modal .theme-tab');
-                hpThemeTabs.forEach(btn => {
-                    btn.classList.toggle('active', btn.dataset.theme === (settings.theme || 'dark'));
-                });
-                
-                // Data settings
-                const hpSkipAgeVerify = document.getElementById('hp-skip-age-verify');
-                if (hpSkipAgeVerify) hpSkipAgeVerify.checked = settings.skipAgeVerify === true;
-                
-            } catch (e) {
-                console.error('Error loading HP settings form:', e);
-            }
-        }
-        
-        // Save Homepage Settings
-        async function saveHpSettings() {
-            if (!state.rootHandle) {
-                setStatus('Choose a library folder first.');
-                return;
-            }
-            try {
-                const dbDir = await getDatabaseDir();
-                const existing = await readJsonFile(dbDir, 'settings.json') || {};
-                
-                const hpFontSelect = document.getElementById('hp-font-select');
-                const hpCustomFont = document.getElementById('hp-custom-font');
-                const hpBaseFontSize = document.getElementById('hp-base-font-size');
-                const hpHeaderFontSize = document.getElementById('hp-header-font-size');
-                const hpSkipAgeVerify = document.getElementById('hp-skip-age-verify');
-                
-                // Get active theme
-                let theme = 'dark';
-                const activeTheme = document.querySelector('#homepage-settings-modal .theme-tab.active');
-                if (activeTheme) theme = activeTheme.dataset.theme;
-                
-                const newSettings = {
-                    ...existing,
-                    fontFamily: hpFontSelect ? hpFontSelect.value : 'tech',
-                    customFont: hpCustomFont ? hpCustomFont.value.trim() : '',
-                    fontSize: hpBaseFontSize ? parseInt(hpBaseFontSize.value, 10) : 14,
-                    headerSize: hpHeaderFontSize ? parseInt(hpHeaderFontSize.value, 10) : 26,
-                    skipAgeVerify: hpSkipAgeVerify ? hpSkipAgeVerify.checked : false,
-                    theme: theme
-                };
-                
-                await writeFile(dbDir, 'settings.json', JSON.stringify(newSettings, null, 2));
-                setStatus('Homepage settings saved to database.');
-                await writeCatalog(state.stories);
-                closeHomepageSettingsModal();
-            } catch (e) {
-                setStatus('Error saving homepage settings: ' + e.message);
-                console.error(e);
-            }
-        }
-        
-        // Quick font buttons for Homepage
-        document.querySelectorAll('#homepage-settings-modal .quick-font-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const hpFontSelect = document.getElementById('hp-font-select');
-                if (hpFontSelect) {
-                    const fontFamily = btn.dataset.font;
-                    // Try to find matching option, otherwise set custom
-                    const matchingOption = Array.from(hpFontSelect.options).find(opt => 
-                        opt.value === fontFamily || opt.textContent.toLowerCase().includes(fontFamily.split(' ')[0].toLowerCase())
-                    );
-                    if (matchingOption) {
-                        hpFontSelect.value = matchingOption.value;
-                    }
-                }
-            });
-        });
-        
-        // Range slider displays for Homepage
-        ['hp-base-font-size', 'hp-header-font-size'].forEach(id => {
-            const input = document.getElementById(id);
-            if (input) {
-                input.addEventListener('input', () => {
-                    const span = input.nextElementSibling;
-                    if (span && span.classList.contains('range-value')) {
-                        span.textContent = input.value + 'px';
-                    }
-                });
-            }
-        });
-        
-        // Theme tabs for Homepage
-        document.querySelectorAll('#homepage-settings-modal .theme-tab').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('#homepage-settings-modal .theme-tab').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-            });
-        });
-        
-        // Reset fonts button
-        const hpResetFonts = document.getElementById('hp-reset-fonts');
-        if (hpResetFonts) {
-            hpResetFonts.addEventListener('click', () => {
-                const hpFontSelect = document.getElementById('hp-font-select');
-                const hpCustomFont = document.getElementById('hp-custom-font');
-                if (hpFontSelect) hpFontSelect.value = 'tech';
-                if (hpCustomFont) hpCustomFont.value = '';
-                setStatus('Font settings reset to default.');
-            });
-        }
-        
-        // Homepage settings save button
-        const hpSettingsSave = document.getElementById('homepage-settings-save');
-        if (hpSettingsSave) {
-            hpSettingsSave.addEventListener('click', saveHpSettings);
-        }
-        
-        // ====== VIEWER SETTINGS POPUP FUNCTIONS ======
-        
-        // Populate Viewer Settings form with current values
-        async function loadVSettingsForm() {
-            if (!state.rootHandle) return;
-            try {
-                const dbDir = await getDatabaseDir();
-                const settings = await readJsonFile(dbDir, 'settings.json');
-                if (!settings) return;
-                
-                // Appearance
-                const vThemeSelect = document.getElementById('v-theme-select');
-                const vFontFamily = document.getElementById('v-font-family');
-                const vCustomFont = document.getElementById('v-custom-font');
-                
-                if (vThemeSelect) vThemeSelect.value = settings.theme || 'dark';
-                if (vFontFamily) vFontFamily.value = settings.fontFamily || 'tech';
-                if (vCustomFont) vCustomFont.value = settings.customFont || '';
-                
-                // Reading
-                const vFontSize = document.getElementById('v-font-size');
-                const vLineSpacing = document.getElementById('v-line-spacing');
-                const vScrollStep = document.getElementById('v-scroll-step');
-                
-                if (vFontSize) {
-                    vFontSize.value = settings.fontSize || 18;
-                    const vFontSizeValue = document.getElementById('v-font-size-value');
-                    if (vFontSizeValue) vFontSizeValue.textContent = (settings.fontSize || 18) + 'px';
-                }
-                if (vLineSpacing) {
-                    vLineSpacing.value = settings.lineSpacing || 1.6;
-                    const vLineSpacingValue = document.getElementById('v-line-spacing-value');
-                    if (vLineSpacingValue) vLineSpacingValue.textContent = settings.lineSpacing || 1.6;
-                }
-                if (vScrollStep) vScrollStep.value = settings.scrollStep || 40;
-                
-                // Input
-                const vKeyboardMode = document.getElementById('v-keyboard-mode');
-                const vPanKeys = document.getElementById('v-pan-keys');
-                const vRememberZoom = document.getElementById('v-remember-zoom');
-                const vRememberViewAll = document.getElementById('v-remember-view-all');
-                
-                if (vKeyboardMode) vKeyboardMode.value = settings.keyboardMode || 'default';
-                if (vPanKeys) vPanKeys.checked = settings.panKeys !== false;
-                if (vRememberZoom) vRememberZoom.checked = settings.rememberZoom !== false;
-                if (vRememberViewAll) vRememberViewAll.checked = settings.rememberViewAll === true;
-                
-            } catch (e) {
-                console.error('Error loading V settings form:', e);
-            }
-        }
-        
-        // Save Viewer Settings
-        async function saveVSettings() {
-            if (!state.rootHandle) {
-                setStatus('Choose a library folder first.');
-                return;
-            }
-            try {
-                const dbDir = await getDatabaseDir();
-                const existing = await readJsonFile(dbDir, 'settings.json') || {};
-                
-                const vThemeSelect = document.getElementById('v-theme-select');
-                const vFontFamily = document.getElementById('v-font-family');
-                const vCustomFont = document.getElementById('v-custom-font');
-                const vFontSize = document.getElementById('v-font-size');
-                const vLineSpacing = document.getElementById('v-line-spacing');
-                const vScrollStep = document.getElementById('v-scroll-step');
-                const vKeyboardMode = document.getElementById('v-keyboard-mode');
-                const vPanKeys = document.getElementById('v-pan-keys');
-                const vRememberZoom = document.getElementById('v-remember-zoom');
-                const vRememberViewAll = document.getElementById('v-remember-view-all');
-                
-                const newSettings = {
-                    ...existing,
-                    theme: vThemeSelect ? vThemeSelect.value : 'dark',
-                    fontFamily: vFontFamily ? vFontFamily.value : 'tech',
-                    customFont: vCustomFont ? vCustomFont.value.trim() : '',
-                    fontSize: vFontSize ? parseInt(vFontSize.value, 10) : 18,
-                    lineSpacing: vLineSpacing ? parseFloat(vLineSpacing.value) : 1.6,
-                    scrollStep: vScrollStep ? parseInt(vScrollStep.value, 10) : 40,
-                    keyboardMode: vKeyboardMode ? vKeyboardMode.value : 'default',
-                    panKeys: vPanKeys ? vPanKeys.checked : true,
-                    rememberZoom: vRememberZoom ? vRememberZoom.checked : true,
-                    rememberViewAll: vRememberViewAll ? vRememberViewAll.checked : false
-                };
-                
-                await writeFile(dbDir, 'settings.json', JSON.stringify(newSettings, null, 2));
-                setStatus('Viewer settings saved to database.');
-                await writeCatalog(state.stories);
-                closeViewerSettingsModal();
-            } catch (e) {
-                setStatus('Error saving viewer settings: ' + e.message);
-                console.error(e);
-            }
-        }
-        
-        // Range slider displays for Viewer
-        ['v-font-size', 'v-line-spacing'].forEach(id => {
-            const input = document.getElementById(id);
-            if (input) {
-                input.addEventListener('input', () => {
-                    const valueId = id + '-value';
-                    const span = document.getElementById(valueId);
-                    if (span) {
-                        span.textContent = input.value + (id === 'v-line-spacing' ? '' : 'px');
-                    }
-                });
-            }
-        });
-        
-        // Viewer settings save button
-        const vSettingsSave = document.getElementById('viewer-settings-save');
-        if (vSettingsSave) {
-            vSettingsSave.addEventListener('click', saveVSettings);
-        }
-        
-        // Override open functions to load fonts and populate forms
-        const originalOpenHpModal = openHomepageSettingsModal;
-        openHomepageSettingsModal = async function() {
-            originalOpenHpModal();
-            // Load fonts and populate form values
-            await loadHpFonts();
-            await loadHpSettingsForm();
-        };
-        
-        const originalOpenVModal = openViewerSettingsModal;
-        openViewerSettingsModal = async function() {
-            originalOpenVModal();
-            // Load fonts and populate form values
-            await loadHpFonts(); // Loads fonts for both
-            await loadVSettingsForm();
-        };
-
-        // ====== POSTMESSAGE HANDLER FOR IFRAME COMMUNICATION ======
-        window.addEventListener('message', async function(event) {
-            // Handle messages from embedded iframe
-            if (event.data && event.data.type) {
-                switch (event.data.type) {
-                    case 'getHpFonts':
-                        // Send fonts to iframe (only if library is open)
-                        try {
-                            if (!state.rootHandle) {
-                                // No library open, send default fonts
-                                const iframe = document.getElementById('homepage-settings-iframe');
-                                if (iframe && iframe.contentWindow) {
-                                    iframe.contentWindow.postMessage({ 
-                                        type: 'hpFonts', 
-                                        fonts: [] 
-                                    }, '*');
-                                }
-                                return;
-                            }
-                            const dbDir = await getDatabaseDir();
-                            const fonts = await readJsonFile(dbDir, 'fonts.json');
-                            const iframe = document.getElementById('homepage-settings-iframe');
-                            if (iframe && iframe.contentWindow) {
-                                iframe.contentWindow.postMessage({ 
-                                    type: 'hpFonts', 
-                                    fonts: fonts || [] 
-                                }, '*');
-                            }
-                        } catch (e) {
-                            console.error('Error sending fonts to iframe:', e);
-                        }
-                        break;
-                        
-                    case 'saveHomepageSettings':
-                        // Save settings from iframe
-                        try {
-                            const dbDir = await getDatabaseDir();
-                            const existing = await readJsonFile(dbDir, 'settings.json') || {};
-                            const newSettings = { ...existing, ...event.data.settings };
-                            await writeFile(dbDir, 'settings.json', JSON.stringify(newSettings, null, 2));
-                            
-                            // Save to localStorage in the format homepage.js expects
-                            // Theme
-                            if (newSettings.theme) {
-                                localStorage.setItem('homepageTheme', newSettings.theme);
-                            }
-                            
-                            // Font settings
-                            if (newSettings.fontFamily || newSettings.customFont) {
-                                const fontFamily = newSettings.customFont || newSettings.fontFamily || "'Share Tech Mono', monospace";
-                                localStorage.setItem('homepageFont', JSON.stringify({
-                                    family: fontFamily,
-                                    fallback: 'monospace'
-                                }));
-                            }
-                            
-                            // Font sizes
-                            if (newSettings.fontSize || newSettings.headerSize || newSettings.buttonFontSize || newSettings.cardFontSize) {
-                                localStorage.setItem('homepageFontSizes', JSON.stringify({
-                                    base: newSettings.fontSize || 14,
-                                    header: newSettings.headerSize || 26,
-                                    button: newSettings.buttonFontSize || 12,
-                                    card: newSettings.cardFontSize || 13
-                                }));
-                            }
-                            
-                            // Skip preferences
-                            const skipPrefs = {
-                                skipAgeVerify: newSettings.skipAgeVerify || false,
-                                skipWelcome: newSettings.skipWelcome || false
-                            };
-                            localStorage.setItem('skipPreferences', JSON.stringify(skipPrefs));
-                            
-                            // Also save full settings for reference
-                            localStorage.setItem('homepageSettings', JSON.stringify(newSettings));
-                            
-                            // Save custom colors if present
-                            if (newSettings.customColors) {
-                                localStorage.setItem('customColors', JSON.stringify(newSettings.customColors));
-                            }
-                            
-                            // Save keybinds if present
-                            if (newSettings.keybinds) {
-                                localStorage.setItem('homepageKeybinds', JSON.stringify(newSettings.keybinds));
-                            }
-                            
-                            await writeCatalog(state.stories);
-                            setStatus('Homepage settings saved successfully!');
-                            showToast('🏠 Homepage settings saved!', 'success');
-                        } catch (e) {
-                            console.error('Error saving settings from iframe:', e);
-                            setStatus('Error saving settings: ' + e.message);
-                            showToast('❌ Error saving settings: ' + e.message, 'error');
-                        }
-                        break;
-                        
-                    case 'closeHomepageSettings':
-                        // Close the popup
-                        closeHomepageSettingsModal();
-                        break;
-                        
-                    case 'getVFonts':
-                        // Send fonts to viewer settings iframe (only if library is open)
-                        try {
-                            if (!state.rootHandle) {
-                                // No library open, send default fonts
-                                const iframe = document.getElementById('viewer-settings-iframe');
-                                if (iframe && iframe.contentWindow) {
-                                    iframe.contentWindow.postMessage({ 
-                                        type: 'vFonts', 
-                                        fonts: [] 
-                                    }, '*');
-                                }
-                                return;
-                            }
-                            const dbDir = await getDatabaseDir();
-                            const fonts = await readJsonFile(dbDir, 'fonts.json');
-                            const iframe = document.getElementById('viewer-settings-iframe');
-                            if (iframe && iframe.contentWindow) {
-                                iframe.contentWindow.postMessage({ 
-                                    type: 'vFonts', 
-                                    fonts: fonts || [] 
-                                }, '*');
-                            }
-                        } catch (e) {
-                            console.error('Error sending fonts to viewer settings iframe:', e);
-                        }
-                        break;
-                        
-                    case 'saveViewerSettings':
-                        // Save viewer settings from iframe
-                        try {
-                            const dbDir = await getDatabaseDir();
-                            const existing = await readJsonFile(dbDir, 'settings.json') || {};
-                            const newSettings = { ...existing, ...event.data.settings };
-                            await writeFile(dbDir, 'settings.json', JSON.stringify(newSettings, null, 2));
-                            // Also save to localStorage so viewer can read immediately
-                            localStorage.setItem('viewerSettings', JSON.stringify(newSettings));
-                            await writeCatalog(state.stories);
-                            setStatus('Viewer settings saved successfully!');
-                        } catch (e) {
-                            console.error('Error saving viewer settings from iframe:', e);
-                            setStatus('Error saving viewer settings: ' + e.message);
-                        }
-                        break;
-                        
-                    case 'closeViewerSettings':
-                        // Close the viewer settings popup
-                        closeViewerSettingsModal();
-                        break;
-                }
-            }
-        });
-
-        // Pre-load settings for iframe before opening
-        async function prepareHpSettingsForIframe() {
-            if (!state.rootHandle) return null;
-            try {
-                const dbDir = await getDatabaseDir();
-                const settings = await readJsonFile(dbDir, 'settings.json');
-                return settings;
-            } catch (e) {
-                return null;
-            }
-        }
-
-        // Modified open function to pass settings via localStorage
-        const originalOpenHpModal2 = openHomepageSettingsModal;
-        openHomepageSettingsModal = async function() {
-            // Prepare settings for iframe
-            const settings = await prepareHpSettingsForIframe();
-            if (settings) {
-                localStorage.setItem('hpFromParent', JSON.stringify(settings));
-            }
-            // Call original
-            originalOpenHpModal2();
-            await loadHpFonts();
-            await loadHpSettingsForm();
-        };
-
         updateRecentInfo();
         renderImagePreview();
         updateCoverSummary();
@@ -4469,3 +3881,4 @@
     </script>
 </body>
 </html>
+

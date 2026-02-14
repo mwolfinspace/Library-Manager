@@ -801,6 +801,78 @@
             return settings;
         };
 
+        function initTabSwitching() {
+            const tabButtons = document.querySelectorAll('.settings-tabs .tab-btn');
+            const tabPanels = document.querySelectorAll('.tab-panel');
+
+            tabButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tabId = btn.dataset.tab;
+
+                    tabButtons.forEach(item => item.classList.remove('active'));
+                    btn.classList.add('active');
+
+                    tabPanels.forEach(panel => {
+                        if (panel.dataset.tabPanel === tabId) {
+                            panel.removeAttribute('hidden');
+                            panel.classList.add('active');
+                        } else {
+                            panel.setAttribute('hidden', '');
+                            panel.classList.remove('active');
+                        }
+                    });
+                });
+            });
+        }
+
+        function applySettingsToForm(settings) {
+            if (!settings || typeof settings !== 'object') return;
+
+            const themeSelect = document.getElementById('v-theme-select');
+            const fontSelect = document.getElementById('v-font-family');
+            const customFont = document.getElementById('v-custom-font');
+            const fontSize = document.getElementById('v-font-size');
+            const lineSpacing = document.getElementById('v-line-spacing');
+            const scrollStep = document.getElementById('v-scroll-step');
+            const zoomStep = document.getElementById('v-zoom-step');
+            const keyboardMode = document.getElementById('v-keyboard-mode');
+            const panKeys = document.getElementById('v-pan-keys');
+            const rememberZoom = document.getElementById('v-remember-zoom');
+            const rememberViewAll = document.getElementById('v-remember-view-all');
+
+            if (themeSelect && settings.theme) themeSelect.value = settings.theme;
+            if (fontSelect && settings.fontFamily) {
+                const option = Array.from(fontSelect.options).find(item =>
+                    item.value === settings.fontFamily ||
+                    item.dataset.family === settings.fontFamily ||
+                    item.textContent === settings.fontFamily
+                );
+                fontSelect.value = option ? option.value : settings.fontFamily;
+            }
+            if (customFont) customFont.value = settings.customFont || '';
+
+            if (fontSize && Number.isFinite(Number(settings.fontSize))) {
+                fontSize.value = Number(settings.fontSize);
+                const label = document.getElementById('v-font-size-value');
+                if (label) label.textContent = `${fontSize.value}px`;
+            }
+            if (lineSpacing && Number.isFinite(Number(settings.lineSpacing))) {
+                lineSpacing.value = Number(settings.lineSpacing);
+                const label = document.getElementById('v-line-spacing-value');
+                if (label) label.textContent = `${lineSpacing.value}`;
+            }
+            if (scrollStep && Number.isFinite(Number(settings.scrollStep))) {
+                scrollStep.value = Number(settings.scrollStep);
+            }
+            if (zoomStep && Number.isFinite(Number(settings.zoomStep))) {
+                zoomStep.value = Number(settings.zoomStep);
+            }
+            if (keyboardMode && settings.keyboardMode) keyboardMode.value = settings.keyboardMode;
+            if (panKeys) panKeys.checked = settings.panKeys !== false;
+            if (rememberZoom) rememberZoom.checked = settings.rememberZoom !== false;
+            if (rememberViewAll) rememberViewAll.checked = settings.rememberViewAll === true;
+        }
+
         class FontManager {
             constructor(settingsManager) {
                 this.settingsManager = settingsManager;
@@ -823,7 +895,7 @@
                     window.addEventListener('message', (event) => {
                         if (event.data && event.data.type === 'vFonts' && event.data.fonts) {
                             this.fontSelect.innerHTML = event.data.fonts.map(f =>
-                                `<option value="${f.name}" data-fallback="${f.fallback || 'sans-serif'}">${f.name}</option>`
+                                `<option value="${f.name}" data-family="${f.family || ''}" data-fallback="${f.fallback || 'sans-serif'}">${f.name}</option>`
                             ).join('');
                         }
                     }, { once: true });
@@ -835,7 +907,7 @@
                 } else {
                     if (typeof window.FONTS !== 'undefined') {
                         this.fontSelect.innerHTML = window.FONTS.map(f =>
-                            `<option value="${f.name}" data-fallback="${f.fallback || 'sans-serif'}">${f.name}</option>`
+                            `<option value="${f.name}" data-family="${f.family || ''}" data-fallback="${f.fallback || 'sans-serif'}">${f.name}</option>`
                         ).join('');
                     } else {
                         this.fontSelect.innerHTML = defaultFonts;
@@ -847,8 +919,29 @@
         document.addEventListener('DOMContentLoaded', () => {
             const settingsManager = new SettingsManager({}, 'viewerSettings');
             const fontManager = new FontManager(settingsManager);
+            const currentSettings = settingsManager.getSettings();
 
-            fontManager.loadFonts();
+            initTabSwitching();
+
+            const fontSize = document.getElementById('v-font-size');
+            const lineSpacing = document.getElementById('v-line-spacing');
+            if (fontSize) {
+                fontSize.addEventListener('input', () => {
+                    const label = document.getElementById('v-font-size-value');
+                    if (label) label.textContent = `${fontSize.value}px`;
+                });
+            }
+            if (lineSpacing) {
+                lineSpacing.addEventListener('input', () => {
+                    const label = document.getElementById('v-line-spacing-value');
+                    if (label) label.textContent = `${lineSpacing.value}`;
+                });
+            }
+
+            fontManager.loadFonts().then(() => {
+                applySettingsToForm(currentSettings);
+            });
+            applySettingsToForm(currentSettings);
 
             // Attach button handlers
             const saveBtn = document.getElementById('save-btn');

@@ -58,8 +58,23 @@
             // Check age verification immediately on page load
             // This must run before any other scripts to prevent popup flash
             (function () {
+                var dmSettingsEmbed =
+                    new URLSearchParams(window.location.search).get(
+                        "dm_settings",
+                    ) === "1";
+                window.__DM_SETTINGS_EMBED__ = dmSettingsEmbed;
+                if (dmSettingsEmbed) {
+                    document.body.classList.add("dm-settings-embed");
+                }
+
                 var overlay = document.getElementById("age-verify-overlay");
                 if (!overlay) return;
+
+                if (dmSettingsEmbed) {
+                    overlay.style.display = "none";
+                    overlay.setAttribute("data-age-verify", "false");
+                    return;
+                }
 
                 // Check both sessionStorage (current session) and the skip preference
                 var ageVerified =
@@ -463,21 +478,25 @@
                 <div
                     class="tab-panel"
                     data-tab-panel="color"
+                    id="color-tab-panel"
                     role="tabpanel"
                     hidden
                 >
                     <div class="settings-section color-section">
-                        <h4>Theme Mode</h4>
-                        <div class="theme-tabs">
-                            <button class="theme-tab active" data-theme="dark">
-                                🌙 Dark
-                            </button>
-                            <button class="theme-tab" data-theme="light">
-                                ☀️ Light
-                            </button>
-                        </div>
                         <h4>Color Variables</h4>
-                        <div class="color-grid" id="color-grid"></div>
+                        <div class="color-compare-layout">
+                            <div class="color-group" data-theme-group="dark">
+                                <h5 class="color-group-title">🌙 Dark Theme</h5>
+                                <div class="color-grid" id="color-grid-dark"></div>
+                            </div>
+                            <div class="color-group" data-theme-group="light">
+                                <h5 class="color-group-title">☀️ Light Theme</h5>
+                                <div class="color-grid" id="color-grid-light"></div>
+                            </div>
+                        </div>
+                        <p class="color-compare-hint">
+                            Click or focus any color in a column to preview that theme instantly.
+                        </p>
                     </div>
 
                     <div class="settings-section">

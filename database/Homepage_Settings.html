@@ -871,7 +871,7 @@
                     window.addEventListener('message', (event) => {
                         if (event.data && event.data.type === 'hpFonts' && event.data.fonts) {
                             this.fontSelect.innerHTML = event.data.fonts.map(f =>
-                                `<option value="${f.name}" data-fallback="${f.fallback || 'sans-serif'}">${f.name}</option>`
+                                `<option value="${f.name}" data-family="${f.family || ''}" data-fallback="${f.fallback || 'sans-serif'}">${f.name}</option>`
                             ).join('');
                         }
                     }, { once: true });
@@ -883,7 +883,7 @@
                 } else {
                     if (typeof window.FONTS !== 'undefined') {
                         this.fontSelect.innerHTML = window.FONTS.map(f =>
-                            `<option value="${f.name}" data-fallback="${f.fallback || 'sans-serif'}">${f.name}</option>`
+                            `<option value="${f.name}" data-family="${f.family || ''}" data-fallback="${f.fallback || 'sans-serif'}">${f.name}</option>`
                         ).join('');
                     } else {
                         this.fontSelect.innerHTML = defaultFonts;
@@ -943,16 +943,134 @@
             return colors;
         }
 
+        function normalizeKeyInput(value) {
+            if (value === null || value === undefined) return '';
+            if (value === ' ') return 'space';
+            const normalized = String(value).trim().toLowerCase();
+            const aliases = {
+                spacebar: 'space',
+                esc: 'escape',
+                return: 'enter',
+                del: 'delete'
+            };
+            return aliases[normalized] || normalized;
+        }
+
+        function formatKeyInput(value) {
+            const normalized = normalizeKeyInput(value);
+            const map = {
+                space: 'Spacebar',
+                enter: 'Enter',
+                escape: 'Esc',
+                backspace: 'Backspace',
+                delete: 'Delete',
+                arrowup: '↑',
+                arrowdown: '↓',
+                arrowleft: '←',
+                arrowright: '→'
+            };
+            return map[normalized] || normalized.toUpperCase();
+        }
+
+        function initKeybindInputs() {
+            document.querySelectorAll('.keybind-key').forEach(input => {
+                input.addEventListener('keydown', event => {
+                    event.preventDefault();
+                    if (event.key === 'Escape') {
+                        input.blur();
+                        return;
+                    }
+                    if (event.key === 'Backspace' || event.key === 'Delete') {
+                        input.value = '';
+                        return;
+                    }
+                    input.value = formatKeyInput(event.key);
+                });
+                input.addEventListener('blur', () => {
+                    input.value = formatKeyInput(input.value || '');
+                });
+            });
+        }
+
         // Get current keybind settings
         function getKeybindSettings() {
             const keybinds = {};
-            
             document.querySelectorAll('.keybind-key').forEach(input => {
                 const key = input.dataset.keybind;
-                keybinds[key] = input.value;
+                const normalized = normalizeKeyInput(input.value);
+                if (key && normalized) {
+                    keybinds[key] = normalized;
+                }
             });
-            
             return keybinds;
+        }
+
+        function applySettingsToForm(settings) {
+            if (!settings || typeof settings !== 'object') return;
+
+            const fontSelect = document.getElementById('hp-font-select');
+            const customFont = document.getElementById('hp-custom-font');
+            const baseFontSize = document.getElementById('hp-base-font-size');
+            const headerFontSize = document.getElementById('hp-header-font-size');
+            const buttonFontSize = document.getElementById('hp-button-font-size');
+            const cardFontSize = document.getElementById('hp-card-font-size');
+            const skipAgeVerify = document.getElementById('hp-skip-age-verify');
+            const skipWelcome = document.getElementById('hp-skip-welcome');
+
+            if (fontSelect && settings.fontFamily) {
+                const option = Array.from(fontSelect.options).find(item =>
+                    item.value === settings.fontFamily ||
+                    item.dataset.family === settings.fontFamily ||
+                    item.textContent === settings.fontFamily
+                );
+                fontSelect.value = option ? option.value : settings.fontFamily;
+            }
+            if (customFont) customFont.value = settings.customFont || '';
+            if (baseFontSize && Number.isFinite(Number(settings.fontSize))) {
+                baseFontSize.value = Number(settings.fontSize);
+                const span = baseFontSize.nextElementSibling;
+                if (span && span.classList.contains('range-value')) span.textContent = `${baseFontSize.value}px`;
+            }
+            if (headerFontSize && Number.isFinite(Number(settings.headerSize))) {
+                headerFontSize.value = Number(settings.headerSize);
+                const span = headerFontSize.nextElementSibling;
+                if (span && span.classList.contains('range-value')) span.textContent = `${headerFontSize.value}px`;
+            }
+            if (buttonFontSize && Number.isFinite(Number(settings.buttonFontSize))) {
+                buttonFontSize.value = Number(settings.buttonFontSize);
+                const span = buttonFontSize.nextElementSibling;
+                if (span && span.classList.contains('range-value')) span.textContent = `${buttonFontSize.value}px`;
+            }
+            if (cardFontSize && Number.isFinite(Number(settings.cardFontSize))) {
+                cardFontSize.value = Number(settings.cardFontSize);
+                const span = cardFontSize.nextElementSibling;
+                if (span && span.classList.contains('range-value')) span.textContent = `${cardFontSize.value}px`;
+            }
+
+            const targetTheme = settings.theme === 'light' ? 'light' : 'dark';
+            document.querySelectorAll('.theme-tab').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.theme === targetTheme);
+            });
+
+            if (skipAgeVerify) skipAgeVerify.checked = settings.skipAgeVerify === true;
+            if (skipWelcome) skipWelcome.checked = settings.skipWelcome === true;
+
+            if (settings.customColors && typeof settings.customColors === 'object') {
+                document.querySelectorAll('.color-picker').forEach(picker => {
+                    const [theme, colorName] = (picker.dataset.color || '').split('.');
+                    const colorValue = settings.customColors?.[theme]?.[colorName];
+                    if (typeof colorValue === 'string' && colorValue.trim()) {
+                        picker.value = colorValue;
+                    }
+                });
+            }
+
+            const keybinds = settings.keybinds && typeof settings.keybinds === 'object' ? settings.keybinds : {};
+            document.querySelectorAll('.keybind-key').forEach(input => {
+                const action = input.dataset.keybind;
+                const value = keybinds[action] || input.value;
+                input.value = formatKeyInput(value);
+            });
         }
 
         // Update getCurrentSettings to include colors and keybinds
@@ -1013,14 +1131,19 @@
         document.addEventListener('DOMContentLoaded', () => {
             const settingsManager = new SettingsManager({}, 'homepageSettings');
             const fontManager = new FontManager(settingsManager);
+            const currentSettings = settingsManager.getSettings();
 
             // Initialize tab switching
             initTabSwitching();
             
             // Initialize range sliders
             initRangeSliders();
+            initKeybindInputs();
 
-            fontManager.loadFonts();
+            fontManager.loadFonts().then(() => {
+                applySettingsToForm(currentSettings);
+            });
+            applySettingsToForm(currentSettings);
 
             // Attach button handlers
             const saveBtn = document.getElementById('save-btn');
@@ -1108,12 +1231,12 @@
                         'settingsTab': 'U',
                         'helpTab': 'H',
                         'toggleTheme': 'L',
-                        'blackout': 'Space',
+                        'blackout': 'space',
                         'focusSearch': '/'
                     };
                     document.querySelectorAll('.keybind-key').forEach(input => {
                         const key = input.dataset.keybind;
-                        if (defaults[key]) input.value = defaults[key];
+                        if (defaults[key]) input.value = formatKeyInput(defaults[key]);
                     });
                 });
             }

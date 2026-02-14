@@ -181,7 +181,8 @@ const sortButtons = Array.from(document.querySelectorAll(".sort-btn"));
 const settingsBtn = document.getElementById("settings-btn");
 const settingsPanel = document.getElementById("settings-panel");
 const settingsClose = document.getElementById("settings-close");
-const colorGrid = document.getElementById("color-grid");
+const colorGridDark = document.getElementById("color-grid-dark");
+const colorGridLight = document.getElementById("color-grid-light");
 const resetColorsBtn = document.getElementById("reset-colors");
 
 let stories = [];
@@ -195,6 +196,170 @@ let cursorRaf = null;
 let cursorX = 0.5;
 let cursorY = 0.45;
 let settingsCurrentTheme = "dark";
+let settingsTabsInitialized = false;
+let fontSizeControlsInitialized = false;
+let customFontInputInitialized = false;
+let inputSettingsInitialized = false;
+const DM_SETTINGS_EMBED = (() => {
+  try {
+    if (window.__DM_SETTINGS_EMBED__ === true) {
+      return true;
+    }
+    const params = new URLSearchParams(window.location.search);
+    return params.get("dm_settings") === "1";
+  } catch (error) {
+    return false;
+  }
+})();
+
+function isDataManagerSettingsEmbedMode() {
+  return DM_SETTINGS_EMBED;
+}
+
+function normalizeSnapshotKey(key) {
+  if (key === null || key === undefined) {
+    return "";
+  }
+  if (key === " ") {
+    return "space";
+  }
+  const normalized = String(key).trim().toLowerCase();
+  const aliases = {
+    spacebar: "space",
+    esc: "escape",
+    return: "enter",
+    del: "delete",
+  };
+  return aliases[normalized] || normalized;
+}
+
+function getHomepageSettingsSnapshotForDataManager() {
+  const sizes = loadFontSizes() || {};
+  const skipPrefs = loadSkipPreferences() || {};
+  const fontSelect = document.getElementById("font-select");
+  const customFontInput = document.getElementById("custom-font");
+  const colorSettings = loadSettings();
+
+  let keybinds = {};
+  if (
+    typeof KeybindManager !== "undefined" &&
+    KeybindManager &&
+    KeybindManager.customKeybinds
+  ) {
+    keybinds = { ...KeybindManager.customKeybinds };
+  } else {
+    try {
+      const raw = localStorage.getItem("homepageKeybinds");
+      keybinds = raw ? JSON.parse(raw) : {};
+    } catch (error) {
+      keybinds = {};
+    }
+  }
+
+  const normalizedKeybinds = {};
+  Object.entries(keybinds || {}).forEach(([action, key]) => {
+    const normalized = normalizeSnapshotKey(key);
+    if (normalized) {
+      normalizedKeybinds[action] = normalized;
+    }
+  });
+
+  return {
+    theme: document.body.dataset.theme === "light" ? "light" : "dark",
+    fontFamily:
+      fontSelect && fontSelect.value ? fontSelect.value : getCurrentFontFamily(),
+    customFont: customFontInput ? customFontInput.value.trim() : "",
+    fontSize: Number(sizes.base) || 14,
+    headerSize: Number(sizes.header) || 26,
+    buttonFontSize: Number(sizes.button) || 12,
+    cardFontSize: Number(sizes.card) || 13,
+    skipAgeVerify: skipPrefs.skipAgeVerify === true,
+    skipWelcome: skipPrefs.skipWelcome === true,
+    keybinds: normalizedKeybinds,
+    customColors:
+      colorSettings && typeof colorSettings === "object"
+        ? colorSettings
+        : { dark: {}, light: {} },
+  };
+}
+
+function emitHomepageSettingsSnapshot(token = null) {
+  if (!isDataManagerSettingsEmbedMode() || window.parent === window) {
+    return;
+  }
+  const payload = {
+    type: "homepageSettingsSnapshot",
+    settings: getHomepageSettingsSnapshotForDataManager(),
+  };
+  if (typeof token === "string" && token) {
+    payload.token = token;
+  }
+  window.parent.postMessage(payload, "*");
+}
+
+function applyDataManagerSettingsPanelLayout() {
+  if (!settingsPanel) return;
+  settingsPanel.hidden = false;
+  settingsPanel.style.left = "0px";
+  settingsPanel.style.top = "0px";
+  settingsPanel.style.width = "100%";
+  settingsPanel.style.height = "100%";
+  settingsPanel.style.maxWidth = "none";
+  settingsPanel.style.maxHeight = "none";
+  settingsPanel.style.minWidth = "0";
+  settingsPanel.style.minHeight = "0";
+  settingsPanel.style.borderRadius = "0";
+  settingsPanel.style.resize = "none";
+}
+
+function initDataManagerSettingsEmbedMode() {
+  if (!isDataManagerSettingsEmbedMode()) {
+    return;
+  }
+
+  document.body.classList.add("dm-settings-embed");
+  document.body.classList.remove("no-scroll");
+
+  const overlaysToHide = [
+    "age-verify-overlay",
+    "loader-overlay",
+    "help-modal",
+    "confirm-overlay",
+    "blackout",
+    "welcome-overlay",
+    "custom-popup-overlay",
+  ];
+  overlaysToHide.forEach((id) => {
+    const element = document.getElementById(id);
+    if (!element) return;
+    element.hidden = true;
+    element.style.display = "none";
+  });
+
+  const page = document.querySelector(".page");
+  if (page) {
+    page.hidden = true;
+  }
+
+  if (settingsPanel) {
+    settingsPanel.hidden = false;
+  }
+  applyDataManagerSettingsPanelLayout();
+}
+
+window.addEventListener("message", (event) => {
+  if (!isDataManagerSettingsEmbedMode() || window.parent === window) {
+    return;
+  }
+  const payload = event && event.data ? event.data : null;
+  if (!payload || typeof payload !== "object" || !payload.type) {
+    return;
+  }
+
+  if (payload.type === "requestHomepageSettingsSnapshot") {
+    emitHomepageSettingsSnapshot(payload.token);
+  }
+});
 
 function createRipple(event) {
     const button = event.currentTarget;
@@ -304,7 +469,14 @@ async function loadFonts() {
       });
       // Get the font family string (not object) and set it as selected
       const currentFont = getCurrentFontFamily();
-      fontSelect.value = currentFont;
+      const selectedOption = Array.from(fontSelect.options).find(
+        (option) =>
+          option.value === currentFont ||
+          option.textContent === currentFont,
+      );
+      if (selectedOption) {
+        fontSelect.value = selectedOption.value;
+      }
     }
   } catch (error) {
     console.error("Error loading fonts:", error);
@@ -857,8 +1029,8 @@ function updateBlackoutResumeText() {
   const resumeKeyEl = document.getElementById('blackout-resume-key');
   if (resumeKeyEl) {
     const blackoutKey = KeybindManager.getKeyFor('blackout');
-    const keyDisplay = blackoutKey === ' ' ? 'spacebar' : blackoutKey.toUpperCase();
-    resumeKeyEl.textContent = keyDisplay;
+    const formatted = KeybindManager.formatKeyDisplay(blackoutKey);
+    resumeKeyEl.textContent = formatted === 'SPACEBAR' ? 'spacebar' : formatted;
   }
 }
 
@@ -1214,6 +1386,13 @@ function initThemeEarly() {
 async function startApp() {
   // Initialize theme FIRST so age verification has correct theme
   initThemeEarly();
+
+  if (isDataManagerSettingsEmbedMode()) {
+    await openSettings();
+    initDataManagerSettingsEmbedMode();
+    emitHomepageSettingsSnapshot();
+    return;
+  }
   
   // Check age verification first
   if (!shouldSkipAgeVerify()) {
@@ -1645,9 +1824,8 @@ window.addEventListener("keydown", (event) => {
 
   // Check if the pressed key matches the blackout keybind
   const blackoutKey = KeybindManager.getKeyFor('blackout');
-  // Normalize space key: "space" (keybind) vs " " (actual keypress)
-  const normalizedKey = event.key === ' ' ? 'space' : event.key.toLowerCase();
-  const normalizedBind = blackoutKey === ' ' ? 'space' : blackoutKey.toLowerCase();
+  const normalizedKey = KeybindManager.normalizeKey(event.key);
+  const normalizedBind = KeybindManager.normalizeKey(blackoutKey);
   if (normalizedKey === normalizedBind) {
     event.preventDefault();
     toggleBlackout();
@@ -1670,17 +1848,95 @@ window.addEventListener(
   { passive: true },
 );
 // Settings Panel Functions
-function renderColorGrid(theme) {
-  if (!colorGrid) return;
-  colorGrid.innerHTML = "";
+function setSettingsPreviewTheme(theme) {
+  if (theme !== "dark" && theme !== "light") return;
+  settingsCurrentTheme = theme;
+  if (document.body.dataset.theme !== theme) {
+    applyTheme(theme);
+  }
+}
+
+function positionColorPickerInput(input, anchor, event) {
+  if (!input || !anchor) return;
+
+  const anchorRect = anchor.getBoundingClientRect();
+  const pickerSize = 18;
+  const margin = 8;
+  const minEdge = 4;
+
+  let x = anchorRect.right + margin;
+  let y = anchorRect.top + anchorRect.height / 2 - pickerSize / 2;
+
+  const hasPointerPosition =
+    event &&
+    Number.isFinite(event.clientX) &&
+    Number.isFinite(event.clientY) &&
+    !(event.clientX === 0 && event.clientY === 0);
+
+  if (hasPointerPosition) {
+    x = event.clientX + margin;
+    y = event.clientY - pickerSize / 2;
+  }
+
+  const maxX = Math.max(minEdge, window.innerWidth - pickerSize - minEdge);
+  const maxY = Math.max(minEdge, window.innerHeight - pickerSize - minEdge);
+
+  const clampedX = Math.min(Math.max(minEdge, x), maxX);
+  const clampedY = Math.min(Math.max(minEdge, y), maxY);
+
+  input.style.left = `${Math.round(clampedX)}px`;
+  input.style.top = `${Math.round(clampedY)}px`;
+}
+
+function openColorPickerInput(input, anchor, event) {
+  if (!input || !anchor) return;
+
+  positionColorPickerInput(input, anchor, event);
+
+  // Temporarily make the control active so native pickers anchor correctly.
+  input.style.opacity = "0.001";
+  input.style.pointerEvents = "auto";
+  input.style.zIndex = "9999";
+  input.focus({ preventScroll: true });
+
+  // Force layout before opening picker to ensure position is applied.
+  void input.offsetWidth;
+
+  try {
+    if (typeof input.showPicker === "function") {
+      input.showPicker();
+    } else {
+      input.click();
+    }
+  } catch (error) {
+    input.click();
+  }
+}
+
+function renderThemeColorGrid(theme, targetGrid) {
+  if (!targetGrid) return;
+  targetGrid.innerHTML = "";
+
+  const parentGroup = targetGrid.closest("[data-theme-group]");
+  if (parentGroup && parentGroup.dataset.previewBound !== "true") {
+    const previewGroupTheme = () => setSettingsPreviewTheme(theme);
+    parentGroup.addEventListener("pointerdown", previewGroupTheme);
+    parentGroup.addEventListener("focusin", previewGroupTheme);
+    parentGroup.dataset.previewBound = "true";
+  }
 
   const colors = DEFAULT_COLORS[theme];
-  Object.entries(colors).forEach(([colorName, defaultValue]) => {
+  Object.entries(colors).forEach(([colorName]) => {
     const currentValue = getColor(colorName, theme);
     const desc = COLOR_DESCRIPTIONS[colorName];
 
     const item = document.createElement("div");
     item.className = "color-item";
+    item.dataset.theme = theme;
+
+    const previewTheme = () => setSettingsPreviewTheme(theme);
+    item.addEventListener("pointerdown", previewTheme);
+    item.addEventListener("focusin", previewTheme);
 
     const label = document.createElement("div");
     label.className = "color-label";
@@ -1707,15 +1963,19 @@ function renderColorGrid(theme) {
       textInput.value = currentValue;
 
       const updateGradientDisplay = (newValue) => {
+        previewTheme();
         gradientPreview.style.background = newValue;
         setColor(colorName, newValue, theme);
       };
 
+      textInput.addEventListener("focus", previewTheme);
+      textInput.addEventListener("click", previewTheme);
       textInput.addEventListener("blur", (e) => {
         updateGradientDisplay(e.target.value);
       });
 
       textInput.addEventListener("input", (e) => {
+        previewTheme();
         try {
           gradientPreview.style.background = e.target.value;
         } catch (error) {
@@ -1737,28 +1997,42 @@ function renderColorGrid(theme) {
       hiddenInput.type = "color";
       hiddenInput.value = rgbToHex(currentValue);
 
+      const resetPickerInputState = () => {
+        hiddenInput.style.opacity = "0";
+        hiddenInput.style.pointerEvents = "none";
+        hiddenInput.style.zIndex = "";
+      };
+
       const valueDisplay = document.createElement("div");
       valueDisplay.className = "color-value";
       valueDisplay.textContent = currentValue;
 
       const updateColorDisplay = (newValue) => {
+        previewTheme();
         pickerBtn.style.backgroundColor = newValue;
         valueDisplay.textContent = newValue;
         setColor(colorName, newValue, theme);
       };
 
-      pickerBtn.addEventListener("click", () => hiddenInput.click());
+      pickerBtn.addEventListener("click", (event) => {
+        previewTheme();
+        openColorPickerInput(hiddenInput, pickerBtn, event);
+      });
 
       hiddenInput.addEventListener("change", (e) => {
         const hexValue = e.target.value;
         updateColorDisplay(hexValue);
+        resetPickerInputState();
       });
 
       hiddenInput.addEventListener("input", (e) => {
+        previewTheme();
         const hexValue = e.target.value;
         pickerBtn.style.backgroundColor = hexValue;
         valueDisplay.textContent = hexValue;
       });
+
+      hiddenInput.addEventListener("blur", resetPickerInputState);
 
       inputWrapper.appendChild(pickerBtn);
       inputWrapper.appendChild(valueDisplay);
@@ -1768,8 +2042,13 @@ function renderColorGrid(theme) {
     item.appendChild(label);
     item.appendChild(labelDesc);
     item.appendChild(inputWrapper);
-    colorGrid.appendChild(item);
+    targetGrid.appendChild(item);
   });
+}
+
+function renderColorGrid() {
+  renderThemeColorGrid("dark", colorGridDark);
+  renderThemeColorGrid("light", colorGridLight);
 }
 
 function rgbToHex(color) {
@@ -1867,17 +2146,50 @@ function convertGradientToHex(gradient) {
   });
 }
 
+function readHomepageFontSetting() {
+  try {
+    const raw = localStorage.getItem("homepageFont");
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch (error) {
+    return null;
+  }
+}
+
+function refreshSettingsPanelFromStorage() {
+  const storedTheme = localStorage.getItem("homepageTheme");
+  if (storedTheme === "light" || storedTheme === "dark") {
+    applyTheme(storedTheme);
+  }
+
+  applyFont(loadFont());
+  applyFontSizes();
+
+  settingsCurrentTheme = document.body.dataset.theme || "dark";
+  renderColorGrid();
+
+  initSettingsTabs();
+  initFontSizeControls();
+  initCustomFontInput();
+  initInputSettings();
+
+  if (typeof KeybindManager !== "undefined") {
+    KeybindManager.loadKeybinds();
+    KeybindManager.renderKeybindList();
+  }
+  updateBlackoutResumeText();
+}
+
 async function openSettings() {
   if (!settingsPanel) return;
-  
+
   // Reload fonts - window.FONTS is set by fonts.js loaded via script tag
   await loadFonts();
-  
+
   loadPanelSettings();
   settingsPanel.hidden = false;
-  settingsCurrentTheme = document.body.dataset.theme || "dark";
-  renderColorGrid(settingsCurrentTheme);
-  updateThemeTabs();
+  refreshSettingsPanelFromStorage();
 }
 
 function closeSettings() {
@@ -1885,20 +2197,9 @@ function closeSettings() {
   settingsPanel.hidden = true;
 }
 
-function updateThemeTabs() {
-  const tabs = Array.from(document.querySelectorAll(".theme-tab"));
-  tabs.forEach((tab) => {
-    const tabTheme = tab.dataset.theme;
-    if (tabTheme === settingsCurrentTheme) {
-      tab.classList.add("active");
-    } else {
-      tab.classList.remove("active");
-    }
-  });
-}
-
 function initDragging() {
   if (!settingsPanel) return;
+  if (isDataManagerSettingsEmbedMode()) return;
 
   const header = settingsPanel.querySelector(".settings-header");
   let isDragging = false;
@@ -2035,6 +2336,11 @@ function initDragging() {
 
 // Tab switching functionality
 function initSettingsTabs() {
+  if (settingsTabsInitialized || !settingsPanel) {
+    return;
+  }
+  settingsTabsInitialized = true;
+
   const tabButtons = Array.from(settingsPanel.querySelectorAll(".tab-btn"));
   const tabPanels = Array.from(settingsPanel.querySelectorAll(".tab-panel"));
 
@@ -2077,6 +2383,11 @@ function initFontSizeControls() {
       updateRangeValue(input);
     }
   });
+
+  if (fontSizeControlsInitialized) {
+    return;
+  }
+  fontSizeControlsInitialized = true;
 
   // Add event listeners
   Object.keys(fontSizeInputs).forEach((key) => {
@@ -2158,15 +2469,31 @@ function applyFontSizes() {
 // Custom font input
 function initCustomFontInput() {
   const customFontInput = document.getElementById("custom-font");
+  const fontSelect = document.getElementById("font-select");
+  const storedFont = readHomepageFontSetting();
+
   if (customFontInput) {
-    customFontInput.addEventListener("change", () => {
-      const font = customFontInput.value.trim();
-      if (font) {
-        saveFont(font);
-        applyFont(font);
-      }
-    });
+    const storedFamily =
+      storedFont && typeof storedFont.family === "string"
+        ? storedFont.family.trim()
+        : "";
+    const selectedValue = fontSelect ? String(fontSelect.value || "").trim() : "";
+    customFontInput.value =
+      storedFamily && selectedValue !== storedFamily ? storedFamily : "";
   }
+
+  if (!customFontInput || customFontInputInitialized) {
+    return;
+  }
+  customFontInputInitialized = true;
+
+  customFontInput.addEventListener("change", () => {
+    const font = customFontInput.value.trim();
+    if (font) {
+      saveFont(font);
+      applyFont(font);
+    }
+  });
 }
 
 // Reset fonts
@@ -2215,15 +2542,19 @@ function resetFonts() {
 if (settingsBtn) {
   settingsBtn.addEventListener("click", () => {
     openSettings();
-    initSettingsTabs();
-    initFontSizeControls();
-    initCustomFontInput();
-    initInputSettings();
   });
 }
 
 if (settingsClose) {
-  settingsClose.addEventListener("click", closeSettings);
+  settingsClose.addEventListener("click", (event) => {
+    if (isDataManagerSettingsEmbedMode() && window.parent !== window) {
+      event.preventDefault();
+      emitHomepageSettingsSnapshot();
+      window.parent.postMessage({ type: "closeHomepageSettings" }, "*");
+      return;
+    }
+    closeSettings();
+  });
 }
 
 if (settingsPanel) {
@@ -2232,27 +2563,21 @@ if (settingsPanel) {
     if (settingsPanel.isResizing && settingsPanel.isResizing()) {
       return;
     }
+    if (isDataManagerSettingsEmbedMode()) {
+      return;
+    }
     if (e.target === settingsPanel) {
       closeSettings();
     }
   });
 
-  // Theme tab switching
-  const themeTabs = Array.from(settingsPanel.querySelectorAll(".theme-tab"));
-  themeTabs.forEach((tab) => {
-    tab.addEventListener("click", () => {
-      settingsCurrentTheme = tab.dataset.theme;
-      updateThemeTabs();
-      renderColorGrid(settingsCurrentTheme);
-    });
-  });
 }
 
 if (resetColorsBtn) {
   resetColorsBtn.addEventListener("click", () => {
     localStorage.removeItem("customColors");
     applyColors();
-    renderColorGrid(settingsCurrentTheme);
+    renderColorGrid();
   });
 }
 
@@ -2265,6 +2590,11 @@ if (resetFontsBtn) {
 // Close settings with Escape key
 window.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && settingsPanel && !settingsPanel.hidden) {
+    if (isDataManagerSettingsEmbedMode() && window.parent !== window) {
+      emitHomepageSettingsSnapshot();
+      window.parent.postMessage({ type: "closeHomepageSettings" }, "*");
+      return;
+    }
     closeSettings();
   }
 });
@@ -2384,6 +2714,18 @@ function initInputSettings() {
   
   if (skipAgeToggle) {
     skipAgeToggle.checked = prefs.skipAgeVerify;
+  }
+  
+  if (skipWelcomeToggle) {
+    skipWelcomeToggle.checked = prefs.skipWelcome;
+  }
+
+  if (inputSettingsInitialized) {
+    return;
+  }
+  inputSettingsInitialized = true;
+
+  if (skipAgeToggle) {
     skipAgeToggle.addEventListener('change', () => {
       const newPrefs = loadSkipPreferences();
       newPrefs.skipAgeVerify = skipAgeToggle.checked;
@@ -2392,7 +2734,6 @@ function initInputSettings() {
   }
   
   if (skipWelcomeToggle) {
-    skipWelcomeToggle.checked = prefs.skipWelcome;
     skipWelcomeToggle.addEventListener('change', () => {
       const newPrefs = loadSkipPreferences();
       newPrefs.skipWelcome = skipWelcomeToggle.checked;
@@ -3040,10 +3381,7 @@ const KeyboardNavigation = {
     // Settings panel using custom keybind
     if (key === this.getKeyForAction('settingsTab')) {
       event.preventDefault();
-    openSettings();
-    initSettingsTabs();
-    initFontSizeControls();
-      initCustomFontInput();
+      openSettings();
       this.showModeIndicator('⚙️ Settings Opened');
       return;
     }
@@ -3445,7 +3783,7 @@ const SettingsPanelKeyboardNav = {
     if (settingsPanel && !settingsPanel.hidden) {
       this.tabs = Array.from(settingsPanel.querySelectorAll('.settings-tabs .tab-btn'));
       this.focusableElements = Array.from(settingsPanel.querySelectorAll(
-        '.quick-font-btn, .theme-tab, .color-picker-btn, .color-item, .settings-reset-btn, .keybind-tag'
+        '.quick-font-btn, .color-picker-btn, .gradient-text-input, .color-item, .settings-reset-btn, .keybind-tag'
       )).filter(el => el.offsetParent !== null);
     }
   },
@@ -3680,6 +4018,23 @@ const KeybindManager = {
 
   customKeybinds: {},
 
+  normalizeKey(key) {
+    if (key === null || key === undefined) {
+      return "";
+    }
+    if (key === " ") {
+      return "space";
+    }
+    const normalized = String(key).trim().toLowerCase();
+    const aliases = {
+      spacebar: "space",
+      esc: "escape",
+      return: "enter",
+      del: "delete",
+    };
+    return aliases[normalized] || normalized;
+  },
+
   init() {
     this.loadKeybinds();
     this.renderKeybindList();
@@ -3703,7 +4058,15 @@ const KeybindManager = {
       }
     }
     
-    this.customKeybinds = keybinds || {};
+    const normalized = {};
+    Object.entries(keybinds || {}).forEach(([action, key]) => {
+      const normalizedKey = this.normalizeKey(key);
+      if (normalizedKey) {
+        normalized[action] = normalizedKey;
+      }
+    });
+
+    this.customKeybinds = normalized;
   },
 
   saveKeybinds() {
@@ -3720,12 +4083,20 @@ const KeybindManager = {
   },
 
   getKeyFor(action) {
-    return this.customKeybinds?.[action] || this.defaultKeybinds[action]?.key || '';
+    const custom = this.normalizeKey(this.customKeybinds?.[action]);
+    if (custom) {
+      return custom;
+    }
+    return this.normalizeKey(this.defaultKeybinds[action]?.key || "");
   },
 
   setKeybind(action, key) {
+    const normalized = this.normalizeKey(key);
+    if (!normalized) {
+      return;
+    }
     if (!this.customKeybinds) this.customKeybinds = {};
-    this.customKeybinds[action] = key.toLowerCase();
+    this.customKeybinds[action] = normalized;
     this.saveKeybinds();
     this.renderKeybindList();
   },
@@ -3869,9 +4240,10 @@ const KeybindManager = {
   },
 
   formatKeyDisplay(key) {
-    if (!key) return '-';
+    const normalized = this.normalizeKey(key);
+    if (!normalized) return '-';
     const keyMap = {
-      ' ': 'SPACEBAR',
+      'space': 'SPACEBAR',
       'arrowup': '↑',
       'arrowdown': '↓',
       'arrowleft': '←',
@@ -3882,7 +4254,7 @@ const KeybindManager = {
       'delete': 'DEL',
       '/': '/'
     };
-    return keyMap[key] || key.toUpperCase();
+    return keyMap[normalized] || normalized.toUpperCase();
   },
 
   startBinding(action) {
@@ -3915,12 +4287,12 @@ const KeybindManager = {
       }
 
       // Set new binding
-      const key = e.key.toLowerCase();
+      const key = this.normalizeKey(e.key);
       this.setKeybind(action, key);
       this.cancelBinding();
       updateBlackoutResumeText(); // Update blackout resume text with new keybind
       
-      KeyboardNavigation.showModeIndicator(`✅ Bound "${key}" to "${this.defaultKeybinds[action]?.label}"`);
+      KeyboardNavigation.showModeIndicator(`✅ Bound "${this.formatKeyDisplay(key)}" to "${this.defaultKeybinds[action]?.label}"`);
     };
 
     document.addEventListener('keydown', this.keybindListener, { capture: true });

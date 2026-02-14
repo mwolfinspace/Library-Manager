@@ -231,146 +231,16 @@ window.REPORT_CATALOG = [
   }
 ];
 window.VIEWER_SETTINGS = {
-  "version": "1.0.0",
-  "lastUpdated": null,
-  "settings": {
-    "theme": "dark",
-    "fontFamily": "'Share Tech Mono', monospace",
-    "fontSizes": {
-      "base": 14,
-      "header": 26,
-      "button": 12,
-      "card": 13
-    },
-    "panelPosition": {
-      "left": "auto",
-      "top": "auto",
-      "width": "400px",
-      "height": "auto"
-    },
-    "filterState": {
-      "filter": "all",
-      "search": "",
-      "layout": "grid",
-      "sort": "default",
-      "sortDirection": "asc"
-    },
-    "skipPreferences": {
-      "skipAgeVerify": false,
-      "skipWelcome": false
-    },
-    "keybinds": {}
-  },
-  "colors": {
-    "dark": {
-      "ink": "#e8f1ff",
-      "muted": "#e8f1ff",
-      "bg": "#03050b",
-      "bg-2": "#0a1220",
-      "panel": "#0c1422",
-      "accent": "#62f7ff",
-      "accent-2": "#8dff7b",
-      "card": "#0c1422",
-      "shadow": "#02060c",
-      "grid": "#62f7ff"
-    },
-    "light": {
-      "ink": "#0b1220",
-      "muted": "#0b1220",
-      "bg": "#eef3f9",
-      "bg-2": "#f8fbff",
-      "panel": "#ffffff",
-      "accent": "#0aa6c7",
-      "accent-2": "#3b5bff",
-      "card": "#ffffff",
-      "shadow": "#0c1626",
-      "grid": "#0aa6c7"
-    }
-  },
-  "viewerSettings": {
-    "theme": "dark",
-    "fontSize": 16,
-    "lineSpacing": 1.6,
-    "scrollStep": 40,
-    "zoomStep": 0.1,
-    "keyboardMode": "left",
-    "panKeys": true,
-    "rememberZoom": true,
-    "fontFamily": "'Quantico', sans-serif",
-    "customFont": "",
-    "rememberViewAll": false,
-    "customBindings": {},
-    "homepageSort": {
-      "type": "default",
-      "direction": "asc"
-    }
-  },
-  "data": {
-    "favorites": [],
-    "pinned": [],
-    "bookmarks": {}
-  },
-  "fontFamily": "Quantico",
-  "customFont": "",
-  "fontSize": 14,
-  "headerSize": 26,
-  "buttonSize": 12,
-  "cardSize": 13,
   "theme": "dark",
-  "skipAgeVerify": false,
-  "skipWelcome": false,
-  "keybinds": {
-    "navUp": "W",
-    "navDown": "S",
-    "navLeft": "A",
-    "navRight": "D",
-    "openCard": "Enter",
-    "pin": "Q",
-    "favorite": "E",
-    "layoutGrid": "1",
-    "layoutList": "2",
-    "layoutCompact": "3",
-    "layoutSpotlight": "4",
-    "settingsTab": ";",
-    "helpTab": "H",
-    "toggleTheme": "L",
-    "blackout": "Space",
-    "focusSearch": "/"
-  },
+  "fontSize": 16,
   "lineSpacing": 1.6,
   "scrollStep": 40,
   "zoomStep": 0.1,
-  "keyboardMode": "default",
+  "keyboardMode": "left",
   "panKeys": true,
   "rememberZoom": true,
   "rememberViewAll": false,
-  "customBindings": {},
-  "buttonFontSize": 12,
-  "cardFontSize": 13,
-  "customColors": {
-    "dark": {
-      "ink": "#e8f1ff",
-      "muted": "#e8f1ff",
-      "bg": "#03050b",
-      "bg-2": "#0a1220",
-      "panel": "#0c1422",
-      "accent": "#62f7ff",
-      "accent-2": "#8dff7b",
-      "card": "#0c1422",
-      "shadow": "#02060c",
-      "grid": "#62f7ff"
-    },
-    "light": {
-      "ink": "#0b1220",
-      "muted": "#0b1220",
-      "bg": "#eef3f9",
-      "bg-2": "#f8fbff",
-      "panel": "#ffffff",
-      "accent": "#0aa6c7",
-      "accent-2": "#3b5bff",
-      "card": "#ffffff",
-      "shadow": "#0c1626",
-      "grid": "#0aa6c7"
-    }
-  }
+  "fontFamily": "'Quantico', sans-serif",
+  "customFont": "",
+  "customBindings": {}
 };

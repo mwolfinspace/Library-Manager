@@ -73,6 +73,19 @@ const DEFAULT_SETTINGS = {
   rememberViewAll: false,
 };
 
+const DM_SETTINGS_EMBED = (() => {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("dm_settings") === "1";
+  } catch (error) {
+    return false;
+  }
+})();
+
+function isDataManagerSettingsEmbedMode() {
+  return DM_SETTINGS_EMBED;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   const els = {
     photo: document.getElementById("photo"),
@@ -145,6 +158,61 @@ document.addEventListener("DOMContentLoaded", () => {
   let cursorRaf = null;
   let cursorX = 0.5;
   let cursorY = 0.45;
+
+  function applyDataManagerEmbedLayout() {
+    if (!isDataManagerSettingsEmbedMode()) {
+      return;
+    }
+    document.body.classList.add("dm-settings-embed");
+    if (!els.settingsPanel) {
+      return;
+    }
+    els.settingsPanel.hidden = false;
+    els.settingsPanel.style.left = "0px";
+    els.settingsPanel.style.top = "0px";
+    els.settingsPanel.style.width = "100%";
+    els.settingsPanel.style.height = "100%";
+    els.settingsPanel.style.maxWidth = "none";
+    els.settingsPanel.style.maxHeight = "none";
+    els.settingsPanel.style.minWidth = "0";
+    els.settingsPanel.style.minHeight = "0";
+    els.settingsPanel.style.borderRadius = "0";
+    els.settingsPanel.style.resize = "none";
+  }
+
+  function getViewerSettingsSnapshotForDataManager() {
+    return {
+      ...settings,
+      customBindings: { ...(settings.customBindings || {}) },
+    };
+  }
+
+  function emitViewerSettingsSnapshot(token = null) {
+    if (!isDataManagerSettingsEmbedMode() || window.parent === window) {
+      return;
+    }
+    const payload = {
+      type: "viewerSettingsSnapshot",
+      settings: getViewerSettingsSnapshotForDataManager(),
+    };
+    if (typeof token === "string" && token) {
+      payload.token = token;
+    }
+    window.parent.postMessage(payload, "*");
+  }
+
+  window.addEventListener("message", (event) => {
+    if (!isDataManagerSettingsEmbedMode() || window.parent === window) {
+      return;
+    }
+    const payload = event && event.data ? event.data : null;
+    if (!payload || typeof payload !== "object" || !payload.type) {
+      return;
+    }
+    if (payload.type === "requestViewerSettingsSnapshot") {
+      emitViewerSettingsSnapshot(payload.token);
+    }
+  });
 
   const HUD_SYMBOLS = [
     "⟡⟢⟣⟤",
@@ -361,7 +429,10 @@ document.addEventListener("DOMContentLoaded", () => {
     document.body.dataset.theme = settings.theme;
     
     // Find the font object from FONTS array by name
-    const fontObj = window.FONTS?.find((f) => f.name === settings.fontFamily) || {};
+    const fontObj =
+      window.FONTS?.find(
+        (f) => f.name === settings.fontFamily || f.family === settings.fontFamily,
+      ) || {};
     const fontFamily = fontObj.family || (settings.customFont ? `'${settings.customFont}'` : null);
     const fallback = fontObj.fallback || 'monospace';
     
@@ -392,11 +463,14 @@ document.addEventListener("DOMContentLoaded", () => {
         });
       }
       // Try to match font family, or default to first available font
-      const fontNames = window.FONTS?.map(f => f.name) || [];
-      if (fontNames.includes(settings.fontFamily)) {
-        els.fontFamily.value = settings.fontFamily;
-      } else if (fontNames.length > 0) {
-        els.fontFamily.value = fontNames[0];
+      const fontByName = window.FONTS?.find((f) => f.name === settings.fontFamily);
+      const fontByFamily = window.FONTS?.find((f) => f.family === settings.fontFamily);
+      if (fontByName) {
+        els.fontFamily.value = fontByName.name;
+      } else if (fontByFamily) {
+        els.fontFamily.value = fontByFamily.name;
+      } else if ((window.FONTS || []).length > 0) {
+        els.fontFamily.value = window.FONTS[0].name;
       }
     }
     if (els.customFont) els.customFont.value = settings.customFont || "";
@@ -428,6 +502,37 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (error) {
       return null;
     }
+  }
+
+  function hydrateSettingsFromStorage() {
+    const storedSettings = loadSettingsFromStorage();
+    if (storedSettings) {
+      settings = { ...settings, ...storedSettings };
+    }
+
+    if (!settings.fontFamily || settings.fontFamily === "tech") {
+      settings.fontFamily = "Share Tech Mono";
+    }
+
+    settings.customBindings = Object.entries(settings.customBindings || {}).reduce((acc, [action, key]) => {
+      const normalized = normalizeKey(key);
+      if (normalized) {
+        acc[action] = normalized;
+      }
+      return acc;
+    }, {});
+
+    if (typeof settings.panKeys !== "boolean") {
+      settings.panKeys = true;
+    }
+    if (typeof settings.rememberZoom !== "boolean") {
+      settings.rememberZoom = true;
+    }
+    if (typeof settings.rememberViewAll !== "boolean") {
+      settings.rememberViewAll = false;
+    }
+
+    syncThemeWithHomepage();
   }
 
   function saveSettings() {
@@ -873,8 +978,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const profile = KEY_PROFILES[settings.keyboardMode] || KEY_PROFILES.default;
       const custom = settings.customBindings && settings.customBindings.blackout;
       const blackoutKey = custom || (profile.blackout && profile.blackout[0]) || 'space';
-      const keyDisplay = blackoutKey === 'space' ? 'spacebar' : blackoutKey.toUpperCase();
-      resumeKeyEl.textContent = keyDisplay;
+      const keyDisplay = prettyKeyLabel(blackoutKey);
+      resumeKeyEl.textContent = keyDisplay.toLowerCase() === 'spacebar' ? 'spacebar' : keyDisplay;
     }
   }
 
@@ -1001,7 +1106,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function initPanelDragging() {
     if (!els.settingsPanel) return;
-    
+    if (isDataManagerSettingsEmbedMode()) return;
+
     const header = els.settingsPanel.querySelector(".settings-header");
     if (!header) return;
 
@@ -1093,12 +1199,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function showSettings() {
     if (!els.settingsPanel) return;
+    hydrateSettingsFromStorage();
+    applySettings();
+    updateBlackoutResumeText();
+    loadPanelSettings();
     els.settingsPanel.hidden = false;
     setActiveTab("appearance");
     // Initialize dragging if not already done
     if (!els.settingsPanel.dataset.draggingInitialized) {
       initPanelDragging();
       els.settingsPanel.dataset.draggingInitialized = "true";
+    }
+    if (isDataManagerSettingsEmbedMode()) {
+      applyDataManagerEmbedLayout();
     }
   }
 
@@ -1120,16 +1233,28 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function normalizeKey(key) {
+    if (key === null || key === undefined) {
+      return "";
+    }
     if (key === " ") {
       return "space";
     }
-    return key.toLowerCase();
+    const normalized = String(key).trim().toLowerCase();
+    const aliases = {
+      spacebar: "space",
+      esc: "escape",
+      return: "enter",
+      del: "delete",
+    };
+    return aliases[normalized] || normalized;
   }
 
   function getCustomBinding(action) {
-    return settings.customBindings && settings.customBindings[action]
+    const value = settings.customBindings && settings.customBindings[action]
       ? settings.customBindings[action]
       : null;
+    const normalized = normalizeKey(value);
+    return normalized || null;
   }
 
   function keyMatches(list, key, action) {
@@ -1138,19 +1263,23 @@ document.addEventListener("DOMContentLoaded", () => {
     if (custom) {
       return custom === normalized;
     }
-    return list.includes(normalized);
+    return list.some(item => normalizeKey(item) === normalized);
   }
 
   function prettyKeyLabel(key) {
+    const normalized = normalizeKey(key);
     const map = {
       arrowup: "↑",
       arrowdown: "↓",
       arrowleft: "←",
       arrowright: "→",
-      space: "Space",
+      space: "Spacebar",
+      enter: "Enter",
       escape: "Esc",
+      backspace: "Backspace",
+      delete: "Delete",
     };
-    return map[key] || key;
+    return map[normalized] || normalized.toUpperCase();
   }
 
   function formatBinding(action, fallbackKeys) {
@@ -1331,6 +1460,11 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       if (event.key === "Escape") {
+        if (isDataManagerSettingsEmbedMode() && window.parent !== window) {
+          emitViewerSettingsSnapshot();
+          window.parent.postMessage({ type: "closeViewerSettings" }, "*");
+          return;
+        }
         hideSettings();
       }
       return;
@@ -1752,6 +1886,11 @@ document.addEventListener("DOMContentLoaded", () => {
     SFX.settingsOpen();
   });
   els.closeSettings.addEventListener("click", () => {
+    if (isDataManagerSettingsEmbedMode() && window.parent !== window) {
+      emitViewerSettingsSnapshot();
+      window.parent.postMessage({ type: "closeViewerSettings" }, "*");
+      return;
+    }
     hideSettings();
     SFX.click();
   });
@@ -1923,6 +2062,16 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   async function initialize() {
+    if (isDataManagerSettingsEmbedMode()) {
+      await loadDefaultSettings();
+      hydrateSettingsFromStorage();
+      applySettings();
+      showSettings();
+      applyDataManagerEmbedLayout();
+      emitViewerSettingsSnapshot();
+      return;
+    }
+
     storyId = getStoryId();
     setupBackLink();
     currentPhotoIndex = normalizePhotoIndex(
@@ -1931,22 +2080,7 @@ document.addEventListener("DOMContentLoaded", () => {
     );
 
     await loadDefaultSettings();
-    const storedSettings = loadSettingsFromStorage();
-    if (storedSettings) {
-      settings = { ...settings, ...storedSettings };
-    }
-    if (!settings.fontFamily || settings.fontFamily === "tech") {
-      settings.fontFamily = "Share Tech Mono";
-    }
-    if (!settings.customBindings) {
-      settings.customBindings = {};
-    }
-    if (typeof settings.rememberViewAll !== "boolean") {
-      settings.rememberViewAll = false;
-    }
-    
-    // Sync theme with homepage (viewer follows homepage theme)
-    syncThemeWithHomepage();
+    hydrateSettingsFromStorage();
     
     applySettings();
     updateBlackoutResumeText(); // Update blackout key text with current keybind

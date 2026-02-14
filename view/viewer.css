@@ -8,7 +8,7 @@
     --panel-2: rgba(12, 20, 34, 0.95);
     --accent: #62f7ff;
     --accent-2: #8dff7b;
-    --shadow: rgba(2, 6, 12, 0.75);
+    --shadow: rgba(2, 6, 12, 0.52);
     --grid: rgba(98, 247, 255, 0.12);
     --code: rgba(98, 247, 200, 0.32);
     --code-glow: rgba(98, 247, 200, 0.7);
@@ -18,7 +18,7 @@
     --button-bg: rgba(10, 16, 28, 0.86);
     --button-border: rgba(98, 247, 255, 0.35);
     --button-ink: #e8f1ff;
-    --button-shadow: 0 6px 14px rgba(2, 6, 12, 0.45);
+    --button-shadow: 0 3px 9px rgba(2, 6, 12, 0.3);
     
     /* Story panel colors */
     --story-panel-bg: rgba(12, 20, 34, 0.88);
@@ -28,7 +28,7 @@
     --control-bg: rgba(10, 16, 28, 0.86);
     --control-border: rgba(98, 247, 255, 0.35);
     --control-ink: var(--ink);
-    --control-shadow: 0 10px 20px rgba(2, 6, 12, 0.5);
+    --control-shadow: 0 5px 12px rgba(2, 6, 12, 0.34);
     --control-hover: rgba(98, 247, 255, 0.22);
     
     /* Fallback colors */
@@ -77,7 +77,7 @@ body[data-theme="light"] {
     --button-bg: rgba(255, 255, 255, 0.9);
     --button-border: rgba(11, 18, 32, 0.2);
     --button-ink: #0b1220;
-    --button-shadow: 0 6px 14px rgba(12, 22, 38, 0.18);
+    --button-shadow: 0 3px 9px rgba(12, 22, 38, 0.12);
     
     /* Story panel colors */
     --story-panel-bg: rgba(255, 255, 255, 0.92);
@@ -87,7 +87,7 @@ body[data-theme="light"] {
     --control-bg: rgba(255, 255, 255, 0.9);
     --control-border: rgba(11, 18, 32, 0.2);
     --control-ink: #0b1220;
-    --control-shadow: 0 10px 20px rgba(12, 22, 38, 0.18);
+    --control-shadow: 0 5px 12px rgba(12, 22, 38, 0.12);
     --control-hover: rgba(10, 166, 199, 0.22);
     
     /* Fallback colors */
@@ -543,7 +543,7 @@ body[data-theme="light"] .icon-btn.active {
     backdrop-filter: blur(8px);
     color: var(--control-ink);
     z-index: 3;
-    box-shadow: 0 0 14px rgba(88, 242, 201, 0.15);
+    box-shadow: 0 0 8px rgba(88, 242, 201, 0.12);
     transition:
         background 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
         border-color 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
@@ -554,7 +554,7 @@ body[data-theme="light"] .icon-btn.active {
 .image-controls:hover {
     background: rgba(6, 10, 18, 0.92);
     border-color: rgba(88, 242, 201, 0.5);
-    box-shadow: 0 0 22px rgba(88, 242, 201, 0.45);
+    box-shadow: 0 0 12px rgba(88, 242, 201, 0.3);
     backdrop-filter: blur(16px);
 }
 
@@ -788,13 +788,13 @@ body[data-theme="light"] .control-btn:hover {
 body[data-theme="light"] .image-controls {
     background: rgba(255, 255, 255, 0.4);
     border: 1px solid rgba(28, 139, 118, 0.25);
-    box-shadow: 0 0 14px rgba(58, 93, 181, 0.15);
+    box-shadow: 0 0 8px rgba(58, 93, 181, 0.12);
 }
 
 body[data-theme="light"] .image-controls:hover {
     background: rgba(255, 255, 255, 0.96);
     border-color: rgba(58, 93, 181, 0.5);
-    box-shadow: 0 0 22px rgba(58, 93, 181, 0.4);
+    box-shadow: 0 0 12px rgba(58, 93, 181, 0.28);
     backdrop-filter: blur(16px);
 }
 
@@ -828,7 +828,7 @@ body[data-theme="light"] .image-controls:hover {
     border-radius: 24px;
     padding: 20px 22px;
     border: 1px solid var(--story-panel-border);
-    box-shadow: 0 20px 40px var(--shadow);
+    box-shadow: 0 10px 24px var(--shadow);
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -1071,7 +1071,7 @@ body[data-theme="light"] .image-controls:hover {
     width: 100%;
     max-height: 90vh;
     border: 1px solid rgba(119, 169, 255, 0.3);
-    box-shadow: 0 24px 40px var(--shadow);
+    box-shadow: 0 12px 28px var(--shadow);
     overflow-y: auto;
 }
 
@@ -1944,7 +1944,7 @@ body[data-theme="light"] .shortcuts-category h4 {
     cursor: pointer;
     backdrop-filter: blur(12px);
     box-shadow:
-        0 8px 24px rgba(88, 242, 201, 0.25),
+        0 6px 16px rgba(88, 242, 201, 0.2),
         0 0 0 1px rgba(88, 242, 201, 0.3);
     transition: all 0.3s ease;
     text-transform: uppercase;
@@ -1954,7 +1954,7 @@ body[data-theme="light"] .shortcuts-category h4 {
 .restore-fullscreen-btn:hover {
     background: rgba(88, 242, 201, 0.15);
     box-shadow:
-        0 12px 32px rgba(88, 242, 201, 0.4),
+        0 8px 20px rgba(88, 242, 201, 0.3),
         0 0 0 1px rgba(88, 242, 201, 0.5);
     transform: scale(1.02);
 }
@@ -1971,14 +1971,14 @@ body[data-theme="light"] .restore-fullscreen-btn {
     border-color: var(--accent-2);
     color: var(--accent-2);
     box-shadow:
-        0 8px 24px rgba(58, 93, 181, 0.2),
+        0 6px 16px rgba(58, 93, 181, 0.16),
         0 0 0 1px rgba(58, 93, 181, 0.25);
 }
 
 body[data-theme="light"] .restore-fullscreen-btn:hover {
     background: rgba(58, 93, 181, 0.12);
     box-shadow:
-        0 12px 32px rgba(58, 93, 181, 0.35),
+        0 8px 20px rgba(58, 93, 181, 0.26),
         0 0 0 1px rgba(58, 93, 181, 0.4);
 }
 
@@ -1993,7 +1993,7 @@ body[data-theme="light"] .restore-fullscreen-btn:hover {
     background: var(--panel);
     border: 1px solid var(--button-border);
     border-radius: 20px;
-    box-shadow: 0 10px 30px var(--shadow);
+    box-shadow: 0 6px 18px var(--shadow);
     z-index: 1000;
     height: 96vh;
     min-height: 280px;
@@ -2237,7 +2237,37 @@ body[data-theme="light"] .restore-fullscreen-btn:hover {
 
 /* Light theme adjustments */
 body[data-theme="light"] .draggable-panel {
-    box-shadow: 0 10px 30px var(--shadow);
+    box-shadow: 0 6px 18px var(--shadow);
+}
+
+body.dm-settings-embed {
+    overflow: hidden;
+}
+
+body.dm-settings-embed .viewer,
+body.dm-settings-embed #help-overlay,
+body.dm-settings-embed #confirm-overlay,
+body.dm-settings-embed #blackout,
+body.dm-settings-embed .code-field {
+    display: none !important;
+}
+
+body.dm-settings-embed .draggable-panel {
+    inset: 0 !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none;
+    max-height: none;
+    min-width: 0;
+    min-height: 0;
+    border-radius: 0;
+    resize: none;
+}
+
+body.dm-settings-embed .settings-header {
+    cursor: default;
 }
 
 body[data-theme="light"] .settings-header {
@@ -2459,7 +2489,7 @@ body[data-theme="light"] .confirm-overlay {
     max-width: 420px;
     width: 100%;
     border: 1px solid var(--btn-border);
-    box-shadow: 0 24px 48px var(--shadow);
+    box-shadow: 0 12px 28px var(--shadow);
     animation: confirm-slide-in 0.3s ease;
 }
 
