@@ -37,7 +37,7 @@
     ],
     "story": "story/r20260210-185456.md",
     "createdAt": "2026-02-10T18:54:56.3998700+07:00",
-    "updatedAt": "2026-02-14T06:20:44.956Z",
+    "updatedAt": "2026-02-14T09:01:00.437Z",
     "displayOrder": 0
   },
   {
@@ -67,7 +67,7 @@
     ],
     "story": "story/r20260212-081642.md",
     "createdAt": "2026-02-12T01:16:42.777Z",
-    "updatedAt": "2026-02-14T06:21:52.310Z",
+    "updatedAt": "2026-02-14T09:01:00.438Z",
     "displayOrder": 1
   },
   {
@@ -95,7 +95,7 @@
     ],
     "story": "story/r20260212-083042.md",
     "createdAt": "2026-02-12T01:30:42.072Z",
-    "updatedAt": "2026-02-14T06:22:58.998Z",
+    "updatedAt": "2026-02-14T09:01:00.438Z",
     "displayOrder": 2
   },
   {
@@ -123,7 +123,7 @@
     ],
     "story": "story/r20260211-001017.md",
     "createdAt": "2026-02-10T17:10:17.861Z",
-    "updatedAt": "2026-02-14T06:24:44.311Z",
+    "updatedAt": "2026-02-14T09:01:00.437Z",
     "displayOrder": 3
   },
   {
@@ -154,7 +154,7 @@
     ],
     "story": "story/r20260211-001405.md",
     "createdAt": "2026-02-10T17:14:05.747Z",
-    "updatedAt": "2026-02-14T06:25:42.011Z",
+    "updatedAt": "2026-02-14T09:01:00.437Z",
     "displayOrder": 4
   },
   {
@@ -184,7 +184,7 @@
     ],
     "story": "story/r20260211-113938.md",
     "createdAt": "2026-02-11T04:39:38.195Z",
-    "updatedAt": "2026-02-14T06:28:10.369Z",
+    "updatedAt": "2026-02-14T09:01:00.437Z",
     "displayOrder": 5
   },
   {
@@ -212,7 +212,7 @@
     ],
     "story": "story/r20260211-142057.md",
     "createdAt": "2026-02-11T07:20:57.786Z",
-    "updatedAt": "2026-02-14T06:31:41.666Z",
+    "updatedAt": "2026-02-14T09:01:00.437Z",
     "displayOrder": 6
   },
   {
@@ -230,19 +230,19 @@
     "cover": "media-scr/r20260211-143637_001.png",
     "coverMedia": null,
     "coverPosition": "47% 11%",
-    "images": [
-      "media-scr/r20260211-143637_001.png"
-    ],
-    "story": "story/r20260211-143637.md",
-    "createdAt": "2026-02-11T07:36:37.976Z",
-    "updatedAt": "2026-02-14T04:58:01.270Z",
-    "displayOrder": 7,
     "coverPositions": {
       "grid": "47% 11%",
       "list": "47% 11%",
       "compact": "47% 11%",
       "spotlight": "47% 11%"
-    }
+    },
+    "images": [
+      "media-scr/r20260211-143637_001.png"
+    ],
+    "story": "story/r20260211-143637.md",
+    "createdAt": "2026-02-11T07:36:37.976Z",
+    "updatedAt": "2026-02-14T09:01:00.438Z",
+    "displayOrder": 7
   },
   {
     "id": "r20260211-144945",
@@ -257,19 +257,19 @@
     "cover": "media-scr/r20260211-144945_001.png",
     "coverMedia": null,
     "coverPosition": "53% 14%",
-    "images": [
-      "media-scr/r20260211-144945_001.png"
-    ],
-    "story": "story/r20260211-144945.md",
-    "createdAt": "2026-02-11T07:49:45.544Z",
-    "updatedAt": "2026-02-14T04:58:01.270Z",
-    "displayOrder": 8,
     "coverPositions": {
       "grid": "53% 14%",
       "list": "53% 14%",
       "compact": "53% 14%",
       "spotlight": "53% 14%"
-    }
+    },
+    "images": [
+      "media-scr/r20260211-144945_001.png"
+    ],
+    "story": "story/r20260211-144945.md",
+    "createdAt": "2026-02-11T07:49:45.544Z",
+    "updatedAt": "2026-02-14T09:01:00.438Z",
+    "displayOrder": 8
   },
   {
     "id": "r20260212-082326",
@@ -285,19 +285,19 @@
     "cover": "media-scr/r20260212-082326_001.jpg",
     "coverMedia": null,
     "coverPosition": "51% 10%",
-    "images": [
-      "media-scr/r20260212-082326_001.jpg"
-    ],
-    "story": "story/r20260212-082326.md",
-    "createdAt": "2026-02-12T01:23:26.567Z",
-    "updatedAt": "2026-02-14T04:58:01.270Z",
-    "displayOrder": 9,
     "coverPositions": {
       "grid": "51% 10%",
       "list": "51% 10%",
       "compact": "51% 10%",
       "spotlight": "51% 10%"
-    }
+    },
+    "images": [
+      "media-scr/r20260212-082326_001.jpg"
+    ],
+    "story": "story/r20260212-082326.md",
+    "createdAt": "2026-02-12T01:23:26.567Z",
+    "updatedAt": "2026-02-14T09:01:00.438Z",
+    "displayOrder": 9
   },
   {
     "id": "r20260214-142221",
@@ -315,11 +315,8 @@
       "human",
       "animation"
     ],
-    "cover": "media-scr/r20260214-142221_cover.png",
-    "coverMedia": {
-      "path": "media-scr/r20260214-142221_cover.png",
-      "type": "image"
-    },
+    "cover": "media-scr/r20260214-142221_001.gif",
+    "coverMedia": null,
     "coverPosition": "43% 0%",
     "coverPositions": {
       "grid": "43% 0%",
@@ -332,7 +329,7 @@
     ],
     "story": "story/r20260214-142221.md",
     "createdAt": "2026-02-14T07:22:21.836Z",
-    "updatedAt": "2026-02-14T07:22:21.836Z",
+    "updatedAt": "2026-02-14T09:01:00.438Z",
     "displayOrder": 10
   },
   {
@@ -358,7 +355,7 @@
     ],
     "story": "story/r20260214-142730.md",
     "createdAt": "2026-02-14T07:27:31.161Z",
-    "updatedAt": "2026-02-14T07:36:57.749Z",
+    "updatedAt": "2026-02-14T09:01:00.439Z",
     "displayOrder": 11
   }
 ]
