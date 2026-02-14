@@ -442,6 +442,38 @@ body {
     --card-cursor-y: 50%;
 }
 
+.story-card .card-cover-media {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.story-card.has-video-cover {
+    background-image: none !important;
+}
+
+.story-card.has-video-cover::before {
+    z-index: 1;
+}
+
+.story-card.has-video-cover::after {
+    z-index: 2;
+}
+
+.story-card.has-video-cover .card-content {
+    z-index: 3;
+}
+
+.story-card.has-video-cover .favorite-btn,
+.story-card.has-video-cover .bookmark-btn {
+    z-index: 4;
+}
+
 .story-card::after {
     content: "";
     position: absolute;

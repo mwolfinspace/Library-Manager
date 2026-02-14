@@ -1075,6 +1075,78 @@ function handleCursorMove(event) {
   });
 }
 
+function detectCoverAssetType(path = "", hint = "") {
+  const hintType = String(hint || "").toLowerCase();
+  if (hintType === "video" || hintType === "gif" || hintType === "image") {
+    return hintType;
+  }
+  const extMatch = String(path).toLowerCase().match(/\.([a-z0-9]+)(?:[?#].*)?$/);
+  const ext = extMatch ? extMatch[1] : "";
+  if (["mp4", "webm", "mov", "m4v", "ogg", "ogv"].includes(ext)) {
+    return "video";
+  }
+  if (ext === "gif") {
+    return "gif";
+  }
+  return "image";
+}
+
+function resolveStoryCoverAsset(story) {
+  const coverMedia =
+    story && story.coverMedia && typeof story.coverMedia === "object"
+      ? story.coverMedia
+      : null;
+  const mediaPath =
+    coverMedia && typeof coverMedia.path === "string"
+      ? coverMedia.path.trim()
+      : "";
+  const fallbackPath =
+    story && typeof story.cover === "string" ? story.cover.trim() : "";
+  const path =
+    mediaPath && (!fallbackPath || fallbackPath === mediaPath)
+      ? mediaPath
+      : (fallbackPath || mediaPath);
+  if (!path) {
+    return null;
+  }
+  return {
+    path,
+    type: detectCoverAssetType(path, coverMedia ? coverMedia.type : ""),
+  };
+}
+
+function normalizeLayoutKey(value) {
+  const key = String(value || "").trim().toLowerCase();
+  if (key === "list" || key === "compact" || key === "spotlight") {
+    return key;
+  }
+  return "grid";
+}
+
+function resolveStoryCoverPosition(story, layout) {
+  if (!story || typeof story !== "object") {
+    return "";
+  }
+  const mode = normalizeLayoutKey(layout);
+  if (story.coverPositions && typeof story.coverPositions === "object") {
+    const modeValue =
+      typeof story.coverPositions[mode] === "string"
+        ? story.coverPositions[mode].trim()
+        : "";
+    if (modeValue) {
+      return modeValue;
+    }
+    const gridValue =
+      typeof story.coverPositions.grid === "string"
+        ? story.coverPositions.grid.trim()
+        : "";
+    if (gridValue) {
+      return gridValue;
+    }
+  }
+  return typeof story.coverPosition === "string" ? story.coverPosition.trim() : "";
+}
+
 function render() {
   grid.innerHTML = "";
   const favorites = loadFavorites();
@@ -1102,13 +1174,31 @@ function render() {
     const card = document.createElement("a");
     card.className = "story-card";
     card.href = `view/viewer.html?story=${story.id}&from=homepage.html`;
+    const coverAsset = resolveStoryCoverAsset(story);
 
-    if (story.cover) {
-      card.style.backgroundImage = `url('${story.cover}')`;
+    if (coverAsset) {
+      if (coverAsset.type === "video") {
+        const video = document.createElement("video");
+        video.className = "card-cover-media";
+        video.src = coverAsset.path;
+        video.muted = true;
+        video.loop = true;
+        video.autoplay = true;
+        video.playsInline = true;
+        card.appendChild(video);
+        card.classList.add("has-video-cover");
+      } else {
+        card.style.backgroundImage = `url('${coverAsset.path}')`;
+      }
     }
 
-    if (story.coverPosition) {
-      card.style.backgroundPosition = story.coverPosition;
+    const coverPosition = resolveStoryCoverPosition(story, activeLayout);
+    if (coverPosition) {
+      card.style.backgroundPosition = coverPosition;
+      const coverVideo = card.querySelector(".card-cover-media");
+      if (coverVideo) {
+        coverVideo.style.objectPosition = coverPosition;
+      }
     }
 
     const pinBtn = document.createElement("button");
@@ -1292,6 +1382,9 @@ function applyLayout(layout) {
     button.classList.toggle("active", button.dataset.layout === activeLayout);
   });
   localStorage.setItem("homepageLayout", activeLayout);
+  if (Array.isArray(stories) && stories.length > 0) {
+    render();
+  }
 }
 
 function applySortPreference(sortData) {
@@ -1512,9 +1605,11 @@ async function startLoadingScreen() {
 
     setLoadingStatus("Preloading assets...");
     updateProgress(20);
-    const imageCovers = catalog.map((s) => s.cover).filter(Boolean);
+    const coverAssets = catalog
+      .map((story) => resolveStoryCoverAsset(story))
+      .filter(Boolean);
 
-    const assets = [...imageCovers];
+    const assets = [...coverAssets];
     const totalAssets = assets.length + 1; // +1 for fonts
     let loadedAssets = 0;
 
@@ -1534,27 +1629,45 @@ async function startLoadingScreen() {
       loadedAssets++;
     }
 
-    // Image loading promises
-    imageCovers.forEach((src) => {
-      const imgPromise = new Promise((resolve) => {
-        const img = new Image();
-        img.onload = () => {
-          loadedAssets++;
-          const progress = 20 + (loadedAssets / totalAssets) * 70;
-          updateProgress(progress);
-          setLoadingStatus(`Verifying asset: ${src.split("/").pop()}`);
-          resolve();
-        };
-        img.onerror = () => {
-          loadedAssets++;
-          const progress = 20 + (loadedAssets / totalAssets) * 70;
-          updateProgress(progress);
-          setLoadingStatus(`Asset corrupted: ${src.split("/").pop()}`);
-          resolve(); // Resolve even on error to not block the page
-        };
-        img.src = src;
-      });
-      assetPromises.push(imgPromise);
+    // Cover loading promises
+    coverAssets.forEach((asset) => {
+      const loadPromise =
+        asset.type === "video"
+          ? new Promise((resolve) => {
+              const video = document.createElement("video");
+              const done = (message) => {
+                loadedAssets++;
+                const progress = 20 + (loadedAssets / totalAssets) * 70;
+                updateProgress(progress);
+                setLoadingStatus(message);
+                resolve();
+              };
+              video.preload = "metadata";
+              video.onloadeddata = () =>
+                done(`Verifying asset: ${asset.path.split("/").pop()}`);
+              video.onerror = () =>
+                done(`Asset corrupted: ${asset.path.split("/").pop()}`);
+              video.src = asset.path;
+            })
+          : new Promise((resolve) => {
+              const img = new Image();
+              img.onload = () => {
+                loadedAssets++;
+                const progress = 20 + (loadedAssets / totalAssets) * 70;
+                updateProgress(progress);
+                setLoadingStatus(`Verifying asset: ${asset.path.split("/").pop()}`);
+                resolve();
+              };
+              img.onerror = () => {
+                loadedAssets++;
+                const progress = 20 + (loadedAssets / totalAssets) * 70;
+                updateProgress(progress);
+                setLoadingStatus(`Asset corrupted: ${asset.path.split("/").pop()}`);
+                resolve();
+              };
+              img.src = asset.path;
+            });
+      assetPromises.push(loadPromise);
     });
 
     await Promise.all(assetPromises);
