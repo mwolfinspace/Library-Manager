@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xedryk's Lab System - Data Manager</title>
+    <link rel="stylesheet" href="../css/fonts.css">
+    <link rel="stylesheet" href="css/data_manager.css" />
+</head>
+<body>
+    <div class="shell">
+        <header>
+            <div>
+                <p class="eyebrow">Xedryk's Lab System</p>
+                <h1>Data Manager</h1>
+            </div>
+            <div class="header-actions">
+                <div class="header-row">
+                    <button id="choose-folder">📁 Choose Library Folder</button>
+                    <button class="ghost" id="open-recent" type="button">📂 Open Recent</button>
+                    <button class="ghost" id="scan-library">🔄 Scan Files</button>
+                    <button class="ghost" id="reload-catalog">📋 Reload Catalog</button>
+                </div>
+                <div class="header-row">
+                    <button class="ghost" id="update-fonts">🔤 Update Fonts</button>
+                    <button class="ghost" id="fix-missing" type="button">🔧 Fix Missing</button>
+                    <button class="ghost" id="help-btn" type="button">? Help</button>
+                    <a class="link-btn ghost" href="Setting_Manager.html" target="_blank">⚙️ Setting Manager</a>
+                    <label class="checkbox auto-scan">
+                        <input type="checkbox" id="auto-scan">
+                        Auto Scan
+                    </label>
+                    <a class="link-btn ghost" href="../index.html" target="_blank">🌐 Homepage</a>
+                </div>
+            </div>
+        </header>
+
+        <main class="layout">
+            <section class="panel stories-panel">
+                <h2>Existing Stories</h2>
+                <div class="panel-content">
+                    <div class="story-list" id="story-list"></div>
+                    <div class="danger-zone">
+                        <label class="checkbox">
+                            <input type="checkbox" id="delete-files" checked>
+                            Delete files on removal
+                        </label>
+                        <div class="danger-actions">
+                            <button class="danger icon-btn" id="remove-selected" title="Remove Selected Stories" type="button">🗑️</button>
+                            <button class="ghost icon-btn" id="cleanup-selected" title="Cleanup Unused Images" type="button">🧹</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel details-panel story-panel">
+                <div class="panel-header">
+                    <h2>Story Manager</h2>
+                    <div class="panel-actions">
+                        <button type="submit" form="story-form">Save Story</button>
+                        <label class="checkbox close-after-save-toggle" title="After saving, clear editor for the next story">
+                            <input type="checkbox" id="close-after-save" checked>
+                            Close after save (Always)
+                        </label>
+                        <button type="button" class="ghost" id="load-story-btn">Load Story</button>
+                        <button type="button" class="ghost" id="clear-form" form="story-form">Clear Form</button>
+                    </div>
+                </div>
+                <div class="panel-content">
+                    <form id="story-form">
+                        <div class="form-row">
+                            <label>
+                                Report Number
+                                <input type="number" id="report-number" min="1" placeholder="Auto">
+                            </label>
+
+                            <label>
+                                Title
+                                <input type="text" id="report-title" placeholder="The Report #1">
+                            </label>
+                        </div>
+
+                        <div class="form-row compact">
+                            <label>
+                                Short Description
+                                <input type="text" id="report-description" placeholder="A short sci-fi summary.">
+                            </label>
+
+                            <label>
+                                Tags (comma separated)
+                                <input type="text" id="report-tags" placeholder="sci-fi, lab, mission">
+                            </label>
+                        </div>
+
+                        <input type="hidden" id="cover-position" value="50% 50%">
+                        <input type="file" id="story-file" accept=".md,.txt" hidden>
+
+                        <label class="story-text-field">
+                            <span>Story Text (Markdown)</span>
+                            <div class="markdown-toolbar" id="markdown-toolbar">
+                                <button type="button" class="md-icon-btn" data-md-action="heading" title="Heading" aria-label="Heading">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M4 5v14M10 5v14M4 12h6M15 8h5M15 12h5M15 16h5" />
+                                    </svg>
+                                </button>
+                                <button type="button" class="md-icon-btn" data-md-action="bold" title="Bold" aria-label="Bold">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M7 5h7a3 3 0 1 1 0 6H7z" />
+                                        <path d="M7 11h8a4 4 0 1 1 0 8H7z" />
+                                    </svg>
+                                </button>
+                                <button type="button" class="md-icon-btn" data-md-action="list" title="Bullet List" aria-label="Bullet List">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                                        <circle cx="6" cy="7" r="1.2" />
+                                        <circle cx="6" cy="12" r="1.2" />
+                                        <circle cx="6" cy="17" r="1.2" />
+                                        <path d="M10 7h10M10 12h10M10 17h10" />
+                                    </svg>
+                                </button>
+                                <button type="button" class="md-icon-btn" data-md-action="numbered" title="Numbered List" aria-label="Numbered List">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M10 7h10M10 12h10M10 17h10" />
+                                        <path d="M4 8h2V5M4 12h2M4 15h2M4 17h2" />
+                                    </svg>
+                                </button>
+                                <button type="button" class="md-icon-btn" data-md-action="link" title="Insert Link" aria-label="Insert Link">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M10 13a4 4 0 0 1 0-6l2-2a4 4 0 1 1 6 6l-1.5 1.5" />
+                                        <path d="M14 11a4 4 0 0 1 0 6l-2 2a4 4 0 0 1-6-6L7.5 11.5" />
+                                    </svg>
+                                </button>
+                            </div>
+                            <textarea id="story-text" rows="18" placeholder="Write the story here..."></textarea>
+                        </label>
+                    </form>
+                </div>
+            </section>
+
+            <section class="panel image-panel">
+                <div class="panel-header">
+                    <h2>Image Manager</h2>
+                    <div class="panel-actions">
+                        <button type="button" id="add-images-btn">Add Images</button>
+                        <button type="button" class="ghost" id="remove-images-btn">Remove Selected</button>
+                    </div>
+                </div>
+                <div class="panel-content">
+                    <div class="image-manager-actions">
+                        <button type="button" class="ghost" id="upload-cover-media-btn">Upload Homepage Cover</button>
+                        <button type="button" class="ghost" id="clear-cover-media-btn">Clear Homepage Cover</button>
+                        <button type="button" class="ghost" id="set-cover-position-btn">Set Cover Position</button>
+                        <div class="image-card-size-controls">
+                            <button type="button" class="ghost" id="card-height-dec">-</button>
+                            <span class="image-card-size-value" id="card-height-value">148px</span>
+                            <button type="button" class="ghost" id="card-height-inc">+</button>
+                        </div>
+                    </div>
+                    <p class="hint" id="image-manager-summary">No media selected yet.</p>
+                    <div class="image-card-grid" id="image-card-grid"></div>
+                    <input type="file" id="image-manager-input" accept="image/*,video/*" multiple hidden>
+                    <input type="file" id="replace-image-input" accept="image/*,video/*" hidden>
+                    <input type="file" id="cover-media-input" accept="image/*,video/*" hidden>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div class="status-bar">
+        <span id="status-bar-text">Ready.</span>
+        <span id="status-bar-recent">Recent folder: none ï¿½ Recent story: none</span>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <div class="cover-overlay" id="media-preview-overlay" hidden>
+        <div class="cover-modal media-preview-modal">
+            <div class="cover-header">
+                <strong>Media Preview</strong>
+                <button class="ghost" id="media-preview-close" type="button">Close</button>
+            </div>
+            <div class="media-preview-frame" id="media-preview-frame">
+                <img id="media-preview-image" alt="Preview image" hidden>
+                <video id="media-preview-video" controls loop playsinline hidden></video>
+            </div>
+        </div>
+    </div>
+
+    <div class="cover-overlay" id="cover-position-overlay" hidden>
+        <div class="cover-modal">
+            <div class="cover-header">
+                <strong>Position Cover</strong>
+                <button class="ghost" id="cover-position-close" type="button">Close</button>
+            </div>
+            <div class="cover-position-frame" id="cover-position-frame">
+                <div class="cover-layout-viewport" id="cover-layout-viewport"></div>
+                <span class="cover-layout-label" id="cover-layout-label">Grid crop preview</span>
+            </div>
+            <div class="cover-preset-panel">
+                <div class="cover-preset-modes" id="cover-preset-modes">
+                    <button type="button" class="ghost cover-preset-mode" data-cover-mode="grid">Grid</button>
+                    <button type="button" class="ghost cover-preset-mode" data-cover-mode="list">List</button>
+                    <button type="button" class="ghost cover-preset-mode" data-cover-mode="compact">Compact</button>
+                    <button type="button" class="ghost cover-preset-mode" data-cover-mode="spotlight">Spotlight</button>
+                </div>
+                <div class="cover-preset-grid" id="cover-preset-grid"></div>
+                <p class="cover-preset-hint" id="cover-preset-hint">Choose layout, adjust position, then click "Save This Layout".</p>
+                <div class="cover-nudge-controls">
+                    <button type="button" class="ghost" id="cover-pos-top" title="Move to top edge">Top</button>
+                    <button type="button" class="ghost" id="cover-pos-up" title="Move up">?</button>
+                    <button type="button" class="ghost" id="cover-pos-down" title="Move down">?</button>
+                    <button type="button" class="ghost" id="cover-pos-bottom" title="Move to bottom edge">Bottom</button>
+                    <button type="button" class="ghost" id="cover-pos-left" title="Move left">?</button>
+                    <button type="button" class="ghost" id="cover-pos-right" title="Move right">?</button>
+                </div>
+            </div>
+            <div class="cover-actions">
+                <button class="ghost" id="cover-position-save-layout" type="button">Save This Layout</button>
+                <button class="ghost" id="cover-position-reset" type="button">Center</button>
+                <button class="ghost" id="cover-position-cancel" type="button">Cancel</button>
+                <button type="button" id="cover-position-save">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="help-backdrop" id="help-modal" aria-hidden="true">
+        <div class="help-panel" role="dialog" aria-modal="true" aria-labelledby="help-title">
+            <div class="help-header">
+                <div>
+                    <p class="help-eyebrow">Xedryk's Lab System</p>
+                    <h2 id="help-title">Data Manager Help</h2>
+                </div>
+                <button class="help-close" id="help-close" type="button" aria-label="Close">?</button>
+            </div>
+            <p class="help-body" id="help-body"></p>
+            <div class="help-actions">
+                <button class="help-primary" id="help-ok" type="button">Got it</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="dialog-overlay" id="dialog-overlay" hidden>
+        <div class="dialog-modal" role="dialog" aria-modal="true" aria-labelledby="dialog-title" aria-describedby="dialog-message">
+            <div class="dialog-header">
+                <div class="dialog-title-wrap">
+                    <span class="dialog-icon" id="dialog-icon">ℹ️</span>
+                    <h3 id="dialog-title">Confirm</h3>
+                </div>
+                <button class="dialog-close" id="dialog-close" type="button" aria-label="Close">?</button>
+            </div>
+            <p class="dialog-message" id="dialog-message"></p>
+            <input type="text" class="dialog-input" id="dialog-input" hidden>
+            <div class="dialog-actions">
+                <button class="ghost" id="dialog-cancel" type="button">Cancel</button>
+                <button id="dialog-confirm" type="button">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/data_manager.js"></script>
+</body>
+</html>
+

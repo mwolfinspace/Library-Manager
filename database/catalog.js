@@ -19,7 +19,7 @@ window.REPORT_CATALOG = [
       "permanent",
       "trapped"
     ],
-    "cover": "img-scr/r20260210-185456_001.png",
+    "cover": "media-scr/r20260210-185456_001.png",
     "coverMedia": null,
     "coverPosition": "93% 8%",
     "coverPositions": {
@@ -29,11 +29,11 @@ window.REPORT_CATALOG = [
       "spotlight": "100% 0%"
     },
     "images": [
-      "img-scr/r20260210-185456_001.png",
-      "img-scr/r20260210-185456_002.png",
-      "img-scr/r20260210-185456_003.png",
-      "img-scr/r20260210-185456_004.png",
-      "img-scr/r20260210-185456_005.png"
+      "media-scr/r20260210-185456_001.png",
+      "media-scr/r20260210-185456_002.png",
+      "media-scr/r20260210-185456_003.png",
+      "media-scr/r20260210-185456_004.png",
+      "media-scr/r20260210-185456_005.png"
     ],
     "story": "story/r20260210-185456.md",
     "createdAt": "2026-02-10T18:54:56.3998700+07:00",
@@ -54,7 +54,7 @@ window.REPORT_CATALOG = [
       "fox",
       "harness"
     ],
-    "cover": "img-scr/r20260212-081642_001.jpg",
+    "cover": "media-scr/r20260212-081642_001.jpg",
     "coverMedia": null,
     "coverPosition": "58% 11%",
     "coverPositions": {
@@ -64,7 +64,7 @@ window.REPORT_CATALOG = [
       "spotlight": "58% 0%"
     },
     "images": [
-      "img-scr/r20260212-081642_001.jpg"
+      "media-scr/r20260212-081642_001.jpg"
     ],
     "story": "story/r20260212-081642.md",
     "createdAt": "2026-02-12T01:16:42.777Z",
@@ -83,7 +83,7 @@ window.REPORT_CATALOG = [
       "doodle",
       "casual"
     ],
-    "cover": "img-scr/r20260212-083042_001.jpg",
+    "cover": "media-scr/r20260212-083042_001.jpg",
     "coverMedia": null,
     "coverPosition": "54% 4%",
     "coverPositions": {
@@ -93,7 +93,7 @@ window.REPORT_CATALOG = [
       "spotlight": "59% 0%"
     },
     "images": [
-      "img-scr/r20260212-083042_001.jpg"
+      "media-scr/r20260212-083042_001.jpg"
     ],
     "story": "story/r20260212-083042.md",
     "createdAt": "2026-02-12T01:30:42.072Z",
@@ -112,7 +112,7 @@ window.REPORT_CATALOG = [
       "doodle",
       "chastity"
     ],
-    "cover": "img-scr/r20260211-001017_001.png",
+    "cover": "media-scr/r20260211-001017_001.png",
     "coverMedia": null,
     "coverPosition": "53% 2%",
     "coverPositions": {
@@ -122,7 +122,7 @@ window.REPORT_CATALOG = [
       "spotlight": "52% 0%"
     },
     "images": [
-      "img-scr/r20260211-001017_001.png"
+      "media-scr/r20260211-001017_001.png"
     ],
     "story": "story/r20260211-001017.md",
     "createdAt": "2026-02-10T17:10:17.861Z",
@@ -143,7 +143,7 @@ window.REPORT_CATALOG = [
       "latex",
       "fox"
     ],
-    "cover": "img-scr/r20260211-001405_001.jpeg",
+    "cover": "media-scr/r20260211-001405_001.jpeg",
     "coverMedia": null,
     "coverPosition": "50% 2%",
     "coverPositions": {
@@ -153,8 +153,8 @@ window.REPORT_CATALOG = [
       "spotlight": "58% 0%"
     },
     "images": [
-      "img-scr/r20260211-001405_001.jpeg",
-      "img-scr/r20260211-001405_002.jpeg"
+      "media-scr/r20260211-001405_001.jpeg",
+      "media-scr/r20260211-001405_002.jpeg"
     ],
     "story": "story/r20260211-001405.md",
     "createdAt": "2026-02-10T17:14:05.747Z",
@@ -175,7 +175,7 @@ window.REPORT_CATALOG = [
       "gas_mask",
       "collar"
     ],
-    "cover": "img-scr/r20260211-113938_001.jpg",
+    "cover": "media-scr/r20260211-113938_001.jpg",
     "coverMedia": null,
     "coverPosition": "45% 1%",
     "coverPositions": {
@@ -185,7 +185,7 @@ window.REPORT_CATALOG = [
       "spotlight": "43% 0%"
     },
     "images": [
-      "img-scr/r20260211-113938_001.jpg"
+      "media-scr/r20260211-113938_001.jpg"
     ],
     "story": "story/r20260211-113938.md",
     "createdAt": "2026-02-11T04:39:38.195Z",
@@ -204,7 +204,7 @@ window.REPORT_CATALOG = [
       "rubber",
       "pant"
     ],
-    "cover": "img-scr/r20260211-142057_001.png",
+    "cover": "media-scr/r20260211-142057_001.png",
     "coverMedia": null,
     "coverPosition": "50% 1%",
     "coverPositions": {
@@ -214,7 +214,7 @@ window.REPORT_CATALOG = [
       "spotlight": "49% 0%"
     },
     "images": [
-      "img-scr/r20260211-142057_001.png"
+      "media-scr/r20260211-142057_001.png"
     ],
     "story": "story/r20260211-142057.md",
     "createdAt": "2026-02-11T07:20:57.786Z",
@@ -234,11 +234,11 @@ window.REPORT_CATALOG = [
       "summer",
       "doodle"
     ],
-    "cover": "img-scr/r20260211-143637_001.png",
+    "cover": "media-scr/r20260211-143637_001.png",
     "coverMedia": null,
     "coverPosition": "47% 11%",
     "images": [
-      "img-scr/r20260211-143637_001.png"
+      "media-scr/r20260211-143637_001.png"
     ],
     "story": "story/r20260211-143637.md",
     "createdAt": "2026-02-11T07:36:37.976Z",
@@ -262,11 +262,11 @@ window.REPORT_CATALOG = [
       "wolf",
       "gift"
     ],
-    "cover": "img-scr/r20260211-144945_001.png",
+    "cover": "media-scr/r20260211-144945_001.png",
     "coverMedia": null,
     "coverPosition": "53% 14%",
     "images": [
-      "img-scr/r20260211-144945_001.png"
+      "media-scr/r20260211-144945_001.png"
     ],
     "story": "story/r20260211-144945.md",
     "createdAt": "2026-02-11T07:49:45.544Z",
@@ -291,11 +291,11 @@ window.REPORT_CATALOG = [
       "doodle",
       "gift"
     ],
-    "cover": "img-scr/r20260212-082326_001.jpg",
+    "cover": "media-scr/r20260212-082326_001.jpg",
     "coverMedia": null,
     "coverPosition": "51% 10%",
     "images": [
-      "img-scr/r20260212-082326_001.jpg"
+      "media-scr/r20260212-082326_001.jpg"
     ],
     "story": "story/r20260212-082326.md",
     "createdAt": "2026-02-12T01:23:26.567Z",
@@ -325,7 +325,7 @@ window.REPORT_CATALOG = [
       "human",
       "animation"
     ],
-    "cover": "img-scr/r20260214-142221_001.gif",
+    "cover": "media-scr/r20260214-142221_001.gif",
     "coverMedia": null,
     "coverPosition": "43% 0%",
     "coverPositions": {
@@ -335,7 +335,7 @@ window.REPORT_CATALOG = [
       "spotlight": "50% 10%"
     },
     "images": [
-      "img-scr/r20260214-142221_001.gif"
+      "media-scr/r20260214-142221_001.gif"
     ],
     "story": "story/r20260214-142221.md",
     "createdAt": "2026-02-14T07:22:21.836Z",
@@ -352,7 +352,7 @@ window.REPORT_CATALOG = [
       "video",
       "testing"
     ],
-    "cover": "img-scr/r20260214-142730_001.mp4",
+    "cover": "media-scr/r20260214-142730_001.mp4",
     "coverMedia": null,
     "coverPosition": "50% 50%",
     "coverPositions": {
@@ -362,7 +362,7 @@ window.REPORT_CATALOG = [
       "spotlight": "50% 50%"
     },
     "images": [
-      "img-scr/r20260214-142730_001.mp4"
+      "media-scr/r20260214-142730_001.mp4"
     ],
     "story": "story/r20260214-142730.md",
     "createdAt": "2026-02-14T07:27:31.161Z",

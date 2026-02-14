@@ -127,6 +127,7 @@ document.addEventListener("DOMContentLoaded", () => {
     shortcutList: document.getElementById("shortcut-list"),
     keybindList: document.getElementById("keybind-list"),
     backLink: document.getElementById("back-link"),
+    homeLink: document.getElementById("home-link"),
     storyPanel: document.querySelector(".story-panel"),
     storyHeader: document.querySelector(".story-header"),
     blackout: document.getElementById("blackout"),
@@ -170,6 +171,84 @@ document.addEventListener("DOMContentLoaded", () => {
     "mov",
     "m4v",
   ]);
+
+  function sanitizeHomeEntryFileName(rawValue) {
+    const value = String(rawValue || "").trim();
+    if (!value) {
+      return "";
+    }
+    const clean = value.split("?")[0].split("#")[0];
+    const fileName = clean.split("/").pop();
+    if (!fileName) {
+      return "";
+    }
+    return /^[a-zA-Z0-9._-]+\.html?$/i.test(fileName) ? fileName : "";
+  }
+
+  function resolveHomeEntryFileName() {
+    const params = new URLSearchParams(window.location.search);
+    const queryHome = sanitizeHomeEntryFileName(params.get("home"));
+    if (queryHome) {
+      return queryHome;
+    }
+    const queryFrom = sanitizeHomeEntryFileName(params.get("from"));
+    if (queryFrom) {
+      return queryFrom;
+    }
+    try {
+      const stored = sanitizeHomeEntryFileName(
+        localStorage.getItem("homeEntryFile"),
+      );
+      if (stored) {
+        return stored;
+      }
+    } catch (error) {
+      // Ignore localStorage failures.
+    }
+    return "index.html";
+  }
+
+  const HOME_ENTRY_FILE = resolveHomeEntryFileName();
+
+  try {
+    localStorage.setItem("homeEntryFile", HOME_ENTRY_FILE);
+  } catch (error) {
+    // Ignore localStorage failures.
+  }
+
+  function getHomeBaseUrl() {
+    return `../${HOME_ENTRY_FILE}`;
+  }
+
+  function buildHomeUrl(params = null) {
+    const baseUrl = getHomeBaseUrl();
+    if (!params || typeof params !== "object") {
+      return baseUrl;
+    }
+    const query = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value === null || value === undefined || value === "") {
+        return;
+      }
+      query.set(key, String(value));
+    });
+    const queryText = query.toString();
+    return queryText ? `${baseUrl}?${queryText}` : baseUrl;
+  }
+
+  function resolveBackBaseUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const fromParam = sanitizeHomeEntryFileName(params.get("from"));
+    if (fromParam) {
+      return `../${fromParam}`;
+    }
+    return getHomeBaseUrl();
+  }
+
+  function appendViewerSource(url) {
+    const separator = url.includes("?") ? "&" : "?";
+    return `${url}${separator}from=viewer`;
+  }
 
   els.video.loop = true;
   els.video.muted = true;
@@ -748,18 +827,14 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function setupBackLink() {
-    const params = new URLSearchParams(window.location.search);
-    const from = params.get("from");
-    if (!from || !els.backLink) {
-      return;
+    const returnUrl = appendViewerSource(resolveBackBaseUrl());
+    if (els.backLink) {
+      els.backLink.href = returnUrl;
+      els.backLink.hidden = false;
     }
-    const safe = from.replace(/[^a-zA-Z0-9._-]/g, "");
-    // Add from=viewer parameter when returning to homepage so it knows to restore state
-    const backUrl =
-      safe.startsWith("http") || safe.startsWith("/") ? safe : `../${safe}`;
-    const separator = backUrl.includes("?") ? "&" : "?";
-    els.backLink.href = `${backUrl}${separator}from=viewer`;
-    els.backLink.hidden = false;
+    if (els.homeLink) {
+      els.homeLink.href = returnUrl;
+    }
   }
 
   function getStorageKey(key, options = {}) {
@@ -865,7 +940,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const tagLink = document.createElement("a");
         tagLink.className = "tag-link";
         tagLink.textContent = tag;
-        tagLink.href = `../homepage.html?tag=${encodeURIComponent(tag)}`;
+        tagLink.href = buildHomeUrl({ tag });
         tagsWrapper.appendChild(tagLink);
       });
       els.storyMeta.appendChild(tagsWrapper);
@@ -1661,17 +1736,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (keyMatches(profile.goToGallery, key, "goToGallery")) {
       event.preventDefault();
-      // Navigate back to gallery/homepage
-      const params = new URLSearchParams(window.location.search);
-      const from = params.get("from");
-      if (from) {
-        const safe = from.replace(/[^a-zA-Z0-9._-]/g, "");
-        const backUrl = safe.startsWith("http") || safe.startsWith("/") ? safe : `../${safe}`;
-        const separator = backUrl.includes("?") ? "&" : "?";
-        window.location.href = `${backUrl}${separator}from=viewer`;
-      } else {
-        window.location.href = "../homepage.html?from=viewer";
-      }
+      window.location.href = appendViewerSource(resolveBackBaseUrl());
       return;
     }
 

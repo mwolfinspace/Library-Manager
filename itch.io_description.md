@@ -77,7 +77,7 @@ This is a **web-based archive** — no installation required!
 ### How to Run
 
 1. **Extract the ZIP file** to any folder on your computer
-2. **Open `homepage.html`** in a modern web browser (Chrome, Firefox, Edge, Safari)
+2. **Open `index.html` or `homepage.html`** in a modern web browser (Chrome, Firefox, Edge, Safari)
 3. That's it! The archive will load directly in your browser
 
 ### System Requirements
@@ -95,7 +95,7 @@ This is a **web-based archive** — no installation required!
 
 ### Troubleshooting
 
-- **Images not loading:** Make sure the `img-scr/`, `database/`, and `view/` folders are in the same directory as `homepage.html`
+- **Images not loading:** Make sure the `media-scr/`, `database/`, and `view/` folders are in the same directory as `index.html`/`homepage.html`
 - **Fonts missing:** The archive will use fallback fonts if custom fonts don't load
 - **Settings not saving:** Check that your browser allows localStorage
 

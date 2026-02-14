@@ -218,6 +218,53 @@ function isDataManagerSettingsEmbedMode() {
   return DM_SETTINGS_EMBED;
 }
 
+function sanitizeHomeEntryFileName(rawValue) {
+  const value = String(rawValue || "").trim();
+  if (!value) {
+    return "";
+  }
+  const clean = value.split("?")[0].split("#")[0];
+  const fileName = clean.split("/").pop();
+  if (!fileName) {
+    return "";
+  }
+  return /^[a-zA-Z0-9._-]+\.html?$/i.test(fileName) ? fileName : "";
+}
+
+function resolveHomeEntryFileName() {
+  const fromPath = sanitizeHomeEntryFileName(
+    window.location.pathname.split("/").pop(),
+  );
+  if (fromPath) {
+    return fromPath;
+  }
+  try {
+    const stored = sanitizeHomeEntryFileName(
+      localStorage.getItem("homeEntryFile"),
+    );
+    if (stored) {
+      return stored;
+    }
+  } catch (error) {
+    // Ignore localStorage failures.
+  }
+  return "homepage.html";
+}
+
+const HOME_ENTRY_FILE = resolveHomeEntryFileName();
+
+try {
+  localStorage.setItem("homeEntryFile", HOME_ENTRY_FILE);
+} catch (error) {
+  // Ignore localStorage failures.
+}
+
+function buildViewerStoryUrl(storyId) {
+  const encodedStoryId = encodeURIComponent(storyId);
+  const encodedHomeFile = encodeURIComponent(HOME_ENTRY_FILE);
+  return `view/viewer.html?story=${encodedStoryId}&from=${encodedHomeFile}&home=${encodedHomeFile}`;
+}
+
 function normalizeSnapshotKey(key) {
   if (key === null || key === undefined) {
     return "";
@@ -1393,7 +1440,7 @@ function render() {
   finalStories.forEach((story, index) => {
     const card = document.createElement("a");
     card.className = "story-card";
-    card.href = `view/viewer.html?story=${story.id}&from=homepage.html`;
+    card.href = buildViewerStoryUrl(story.id);
     const coverAsset = resolveStoryCoverAsset(story);
     const mediaProfile = resolveStoryMediaProfile(story);
     const coverToken = `${story.id}:${index}:${Date.now()}`;
