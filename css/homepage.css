@@ -274,7 +274,10 @@ body {
     display: flex;
     align-items: center;
     gap: 10px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
 }
 
 .search-panel label {
@@ -289,6 +292,7 @@ body {
     flex: 1 1 240px;
     display: flex;
     gap: 8px;
+    min-width: 220px;
 }
 
 .search-box input {
@@ -341,21 +345,32 @@ body {
 .controls-row {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
     gap: 10px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
 }
 
 .filters {
     display: flex;
     gap: 8px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    flex: 0 0 auto;
 }
 
 .layout-toggle {
     display: flex;
     align-items: center;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    gap: 8px;
+}
+
+.sort-toggle {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
     gap: 8px;
 }
 
@@ -723,6 +738,33 @@ body[data-theme="light"] .favorite-btn.active {
     border-color: rgba(98, 247, 255, 0.4);
     transform: translateY(-1px);
     box-shadow: 0 2px 8px rgba(98, 247, 255, 0.2);
+}
+
+.badge.media-badge {
+    background: rgba(255, 193, 77, 0.2);
+    color: #ffd9a6;
+    border: 1px solid rgba(255, 193, 77, 0.55);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.badge.media-badge.video-badge {
+    background: rgba(90, 165, 255, 0.2);
+    color: #bde6ff;
+    border-color: rgba(90, 165, 255, 0.55);
+}
+
+body[data-theme="light"] .badge.media-badge {
+    background: rgba(200, 120, 24, 0.12);
+    color: #7a3b00;
+    border-color: rgba(200, 120, 24, 0.45);
+}
+
+body[data-theme="light"] .badge.media-badge.video-badge {
+    background: rgba(10, 166, 199, 0.14);
+    color: #085b74;
+    border-color: rgba(10, 166, 199, 0.45);
 }
 
 body[data-theme="light"] .badge.new-badge {
@@ -1290,6 +1332,26 @@ body[data-theme="light"] .modal-btn:hover {
 }
 
 @media (max-width: 900px) {
+    .search-row {
+        flex-wrap: wrap;
+        overflow: visible;
+    }
+
+    .search-row .filters {
+        flex-wrap: wrap;
+    }
+
+    .controls-row {
+        flex-wrap: wrap;
+        overflow: visible;
+    }
+
+    .filters,
+    .layout-toggle,
+    .sort-toggle {
+        flex-wrap: wrap;
+    }
+
     .grid[data-layout="grid"] {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }

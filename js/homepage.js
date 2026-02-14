@@ -200,6 +200,8 @@ let settingsTabsInitialized = false;
 let fontSizeControlsInitialized = false;
 let customFontInputInitialized = false;
 let inputSettingsInitialized = false;
+const staticCoverThumbCache = new Map();
+const staticCoverThumbJobs = new Map();
 const DM_SETTINGS_EMBED = (() => {
   try {
     if (window.__DM_SETTINGS_EMBED__ === true) {
@@ -792,6 +794,15 @@ function filterStories(list, favorites, query) {
       return isPinned(story.id);
     }
 
+    const mediaProfile = resolveStoryMediaProfile(story);
+    if (activeFilter === "gif") {
+      return mediaProfile.hasGif;
+    }
+
+    if (activeFilter === "video") {
+      return mediaProfile.hasVideo;
+    }
+
     return true;
   });
 }
@@ -1082,13 +1093,222 @@ function detectCoverAssetType(path = "", hint = "") {
   }
   const extMatch = String(path).toLowerCase().match(/\.([a-z0-9]+)(?:[?#].*)?$/);
   const ext = extMatch ? extMatch[1] : "";
-  if (["mp4", "webm", "mov", "m4v", "ogg", "ogv"].includes(ext)) {
+  if (["mp4", "webm", "mov", "m4v", "ogg", "ogv", "avi"].includes(ext)) {
     return "video";
   }
   if (ext === "gif") {
     return "gif";
   }
   return "image";
+}
+
+function getPathExtension(path = "") {
+  const extMatch = String(path)
+    .trim()
+    .toLowerCase()
+    .match(/\.([a-z0-9]+)(?:[?#].*)?$/);
+  return extMatch ? extMatch[1] : "";
+}
+
+function toCssUrl(path = "") {
+  const safePath = String(path || "").replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+  return `url('${safePath}')`;
+}
+
+function drawElementThumbnail(element, width, height, mimeType, quality) {
+  const safeWidth = Number.isFinite(width) ? Math.max(1, Math.floor(width)) : 1;
+  const safeHeight = Number.isFinite(height) ? Math.max(1, Math.floor(height)) : 1;
+  const maxEdge = 640;
+  const scale = Math.min(1, maxEdge / Math.max(safeWidth, safeHeight));
+  const targetWidth = Math.max(1, Math.floor(safeWidth * scale));
+  const targetHeight = Math.max(1, Math.floor(safeHeight * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = targetWidth;
+  canvas.height = targetHeight;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    return "";
+  }
+  ctx.drawImage(element, 0, 0, targetWidth, targetHeight);
+  return canvas.toDataURL(mimeType, quality);
+}
+
+function captureVideoFirstFrame(path) {
+  return new Promise((resolve) => {
+    const video = document.createElement("video");
+    let finished = false;
+    const timeout = window.setTimeout(() => finish(""), 6000);
+
+    function cleanup() {
+      window.clearTimeout(timeout);
+      video.onloadeddata = null;
+      video.onerror = null;
+      video.onseeked = null;
+      video.removeAttribute("src");
+      video.load();
+    }
+
+    function finish(value) {
+      if (finished) {
+        return;
+      }
+      finished = true;
+      cleanup();
+      resolve(value || "");
+    }
+
+    function renderFrame() {
+      try {
+        const frame = drawElementThumbnail(
+          video,
+          video.videoWidth,
+          video.videoHeight,
+          "image/jpeg",
+          0.85,
+        );
+        finish(frame);
+      } catch (error) {
+        finish("");
+      }
+    }
+
+    video.preload = "auto";
+    video.muted = true;
+    video.playsInline = true;
+    video.onloadeddata = () => {
+      if (!video.videoWidth || !video.videoHeight) {
+        finish("");
+        return;
+      }
+      video.onseeked = renderFrame;
+      try {
+        video.currentTime = 0;
+      } catch (error) {
+        renderFrame();
+      }
+      window.setTimeout(() => {
+        if (!finished) {
+          renderFrame();
+        }
+      }, 220);
+    };
+    video.onerror = () => finish("");
+    video.src = path;
+    video.load();
+  });
+}
+
+function captureGifFirstFrame(path) {
+  return new Promise((resolve) => {
+    const image = new Image();
+    image.decoding = "async";
+    image.onload = () => {
+      try {
+        const frame = drawElementThumbnail(
+          image,
+          image.naturalWidth,
+          image.naturalHeight,
+          "image/png",
+        );
+        resolve(frame || "");
+      } catch (error) {
+        resolve("");
+      }
+    };
+    image.onerror = () => resolve("");
+    image.src = path;
+  });
+}
+
+function getStaticCoverThumbnail(path, type) {
+  const normalizedPath = String(path || "").trim();
+  if (!normalizedPath || (type !== "video" && type !== "gif")) {
+    return Promise.resolve(normalizedPath);
+  }
+  if (staticCoverThumbCache.has(normalizedPath)) {
+    return Promise.resolve(staticCoverThumbCache.get(normalizedPath));
+  }
+  if (staticCoverThumbJobs.has(normalizedPath)) {
+    return staticCoverThumbJobs.get(normalizedPath);
+  }
+
+  const task = (type === "video"
+    ? captureVideoFirstFrame(normalizedPath)
+    : captureGifFirstFrame(normalizedPath))
+    .then((thumb) => {
+      const resolved = thumb || normalizedPath;
+      staticCoverThumbCache.set(normalizedPath, resolved);
+      staticCoverThumbJobs.delete(normalizedPath);
+      return resolved;
+    })
+    .catch(() => {
+      staticCoverThumbJobs.delete(normalizedPath);
+      staticCoverThumbCache.set(normalizedPath, normalizedPath);
+      return normalizedPath;
+    });
+
+  staticCoverThumbJobs.set(normalizedPath, task);
+  return task;
+}
+
+function resolveStoryMediaProfile(story) {
+  const profile = {
+    hasGif: false,
+    hasVideo: false,
+    videoExt: "",
+  };
+  if (!story || typeof story !== "object") {
+    return profile;
+  }
+
+  const collectPath = (path, hint = "") => {
+    if (typeof path !== "string") {
+      return;
+    }
+    const trimmedPath = path.trim();
+    if (!trimmedPath) {
+      return;
+    }
+    const type = detectCoverAssetType(trimmedPath, hint);
+    if (type === "video") {
+      profile.hasVideo = true;
+      if (!profile.videoExt) {
+        const ext = getPathExtension(trimmedPath);
+        profile.videoExt = ext ? ext.toUpperCase() : "VIDEO";
+      }
+      return;
+    }
+    if (type === "gif") {
+      profile.hasGif = true;
+    }
+  };
+
+  if (Array.isArray(story.images)) {
+    story.images.forEach((mediaPath) => {
+      collectPath(mediaPath);
+    });
+  }
+
+  if (story.coverMedia && typeof story.coverMedia === "object") {
+    collectPath(story.coverMedia.path, story.coverMedia.type || "");
+  } else {
+    collectPath(story.cover);
+  }
+
+  return profile;
+}
+
+function getMediaBadgeLabel(mediaProfile) {
+  if (!mediaProfile) {
+    return "";
+  }
+  if (mediaProfile.hasVideo) {
+    return mediaProfile.videoExt || "VIDEO";
+  }
+  if (mediaProfile.hasGif) {
+    return "GIF";
+  }
+  return "";
 }
 
 function resolveStoryCoverAsset(story) {
@@ -1175,30 +1395,26 @@ function render() {
     card.className = "story-card";
     card.href = `view/viewer.html?story=${story.id}&from=homepage.html`;
     const coverAsset = resolveStoryCoverAsset(story);
+    const mediaProfile = resolveStoryMediaProfile(story);
+    const coverToken = `${story.id}:${index}:${Date.now()}`;
+    card.dataset.coverToken = coverToken;
 
     if (coverAsset) {
-      if (coverAsset.type === "video") {
-        const video = document.createElement("video");
-        video.className = "card-cover-media";
-        video.src = coverAsset.path;
-        video.muted = true;
-        video.loop = true;
-        video.autoplay = true;
-        video.playsInline = true;
-        card.appendChild(video);
-        card.classList.add("has-video-cover");
+      if (coverAsset.type === "image") {
+        card.style.backgroundImage = toCssUrl(coverAsset.path);
       } else {
-        card.style.backgroundImage = `url('${coverAsset.path}')`;
+        getStaticCoverThumbnail(coverAsset.path, coverAsset.type).then((thumbPath) => {
+          if (!card.isConnected || card.dataset.coverToken !== coverToken) {
+            return;
+          }
+          card.style.backgroundImage = toCssUrl(thumbPath);
+        });
       }
     }
 
     const coverPosition = resolveStoryCoverPosition(story, activeLayout);
     if (coverPosition) {
       card.style.backgroundPosition = coverPosition;
-      const coverVideo = card.querySelector(".card-cover-media");
-      if (coverVideo) {
-        coverVideo.style.objectPosition = coverPosition;
-      }
     }
 
     const pinBtn = document.createElement("button");
@@ -1251,6 +1467,16 @@ function render() {
       badge.textContent = "New";
       badge.addEventListener("click", createRipple);
       content.appendChild(badge);
+    }
+
+    const mediaBadgeLabel = getMediaBadgeLabel(mediaProfile);
+    if (mediaBadgeLabel) {
+      const mediaBadge = document.createElement("div");
+      mediaBadge.className = `badge media-badge ${
+        mediaProfile.hasVideo ? "video-badge" : "gif-badge"
+      }`;
+      mediaBadge.textContent = mediaBadgeLabel;
+      content.appendChild(mediaBadge);
     }
 
     const title = document.createElement("h2");
@@ -1643,7 +1869,7 @@ async function startLoadingScreen() {
                 resolve();
               };
               video.preload = "metadata";
-              video.onloadeddata = () =>
+              video.onloadedmetadata = () =>
                 done(`Verifying asset: ${asset.path.split("/").pop()}`);
               video.onerror = () =>
                 done(`Asset corrupted: ${asset.path.split("/").pop()}`);
@@ -3289,6 +3515,8 @@ const KeyboardNavigation = {
     '.filter-btn[data-filter="all"]',
     '.filter-btn[data-filter="favorites"]',
     '.filter-btn[data-filter="bookmarks"]',
+    '.filter-btn[data-filter="gif"]',
+    '.filter-btn[data-filter="video"]',
     '.layout-btn[data-layout="grid"]',
     '.layout-btn[data-layout="list"]',
     '.layout-btn[data-layout="compact"]',
@@ -3565,8 +3793,8 @@ const KeyboardNavigation = {
     });
     saveFilterState();
     render();
-    const labels = { 'all': 'All Stories', 'favorites': 'Favorites', 'bookmarks': 'Bookmarks' };
-    this.showModeIndicator(`🏷️ ${labels[filterName]}`);
+    const labels = { 'all': 'All Stories', 'favorites': 'Favorites', 'bookmarks': 'Bookmarks', 'gif': 'GIF Posts', 'video': 'Video Posts' };
+    this.showModeIndicator(`🏷️ ${labels[filterName] || 'Filter'}`);
   },
 
   activateSort(sortName) {

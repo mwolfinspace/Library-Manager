@@ -172,20 +172,20 @@
     ],
     "cover": "img-scr/r20260211-113938_001.jpg",
     "coverMedia": null,
-    "coverPosition": "45% 10%",
+    "coverPosition": "45% 1%",
+    "coverPositions": {
+      "grid": "45% 1%",
+      "list": "44% 9%",
+      "compact": "48% 0%",
+      "spotlight": "43% 0%"
+    },
     "images": [
       "img-scr/r20260211-113938_001.jpg"
     ],
     "story": "story/r20260211-113938.md",
     "createdAt": "2026-02-11T04:39:38.195Z",
-    "updatedAt": "2026-02-14T04:58:01.269Z",
-    "displayOrder": 5,
-    "coverPositions": {
-      "grid": "45% 10%",
-      "list": "45% 10%",
-      "compact": "45% 10%",
-      "spotlight": "45% 10%"
-    }
+    "updatedAt": "2026-02-14T06:28:10.369Z",
+    "displayOrder": 5
   },
   {
     "id": "r20260211-142057",
@@ -200,20 +200,20 @@
     ],
     "cover": "img-scr/r20260211-142057_001.png",
     "coverMedia": null,
-    "coverPosition": "50% 17%",
+    "coverPosition": "50% 1%",
+    "coverPositions": {
+      "grid": "50% 1%",
+      "list": "50% 18%",
+      "compact": "44% 0%",
+      "spotlight": "49% 0%"
+    },
     "images": [
       "img-scr/r20260211-142057_001.png"
     ],
     "story": "story/r20260211-142057.md",
     "createdAt": "2026-02-11T07:20:57.786Z",
-    "updatedAt": "2026-02-14T04:58:01.269Z",
-    "displayOrder": 6,
-    "coverPositions": {
-      "grid": "50% 17%",
-      "list": "50% 17%",
-      "compact": "50% 17%",
-      "spotlight": "50% 17%"
-    }
+    "updatedAt": "2026-02-14T06:31:41.666Z",
+    "displayOrder": 6
   },
   {
     "id": "r20260211-143637",
@@ -298,5 +298,64 @@
       "compact": "51% 10%",
       "spotlight": "51% 10%"
     }
+  },
+  {
+    "id": "r20260214-142221",
+    "reportNumber": 11,
+    "title": "GooTF Dragon",
+    "description": "A little doodle of human TF into dragon.",
+    "tags": [
+      "gif",
+      "animation",
+      "goo",
+      "rubber",
+      "latex",
+      "transformation",
+      "tf",
+      "human",
+      "animation"
+    ],
+    "cover": "img-scr/r20260214-142221_001.gif",
+    "coverMedia": null,
+    "coverPosition": "43% 0%",
+    "coverPositions": {
+      "grid": "43% 0%",
+      "list": "56% 15%",
+      "compact": "50% 7%",
+      "spotlight": "50% 10%"
+    },
+    "images": [
+      "img-scr/r20260214-142221_001.gif"
+    ],
+    "story": "story/r20260214-142221.md",
+    "createdAt": "2026-02-14T07:22:21.836Z",
+    "updatedAt": "2026-02-14T07:37:44.231Z",
+    "displayOrder": 10
+  },
+  {
+    "id": "r20260214-142730",
+    "reportNumber": 12,
+    "title": "Testing Video",
+    "description": "A small testing video",
+    "tags": [
+      "video",
+      "testing"
+    ],
+    "cover": "img-scr/r20260214-142730_001.mp4",
+    "coverMedia": null,
+    "coverPosition": "50% 50%",
+    "coverPositions": {
+      "grid": "50% 50%",
+      "list": "50% 50%",
+      "compact": "50% 50%",
+      "spotlight": "50% 50%"
+    },
+    "images": [
+      "img-scr/r20260214-142730_001.mp4"
+    ],
+    "story": "story/r20260214-142730.md",
+    "createdAt": "2026-02-14T07:27:31.161Z",
+    "updatedAt": "2026-02-14T07:36:57.749Z",
+    "displayOrder": 11
   }
 ]

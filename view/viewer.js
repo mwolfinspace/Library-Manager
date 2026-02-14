@@ -89,6 +89,8 @@ function isDataManagerSettingsEmbedMode() {
 document.addEventListener("DOMContentLoaded", () => {
   const els = {
     photo: document.getElementById("photo"),
+    video: document.getElementById("video"),
+    videoAudioBtn: document.getElementById("video-audio-btn"),
     imageFallback: document.getElementById("image-fallback"),
     prevBtn: document.getElementById("prev-btn"),
     nextBtn: document.getElementById("next-btn"),
@@ -133,7 +135,7 @@ document.addEventListener("DOMContentLoaded", () => {
     eyebrow: document.querySelector(".eyebrow"),
   };
 
-  if (!els.photo || !els.storyContent) {
+  if (!els.photo || !els.video || !els.storyContent) {
     return;
   }
 
@@ -145,6 +147,8 @@ document.addEventListener("DOMContentLoaded", () => {
   let zoomLevel = 1;
   let translateX = 0;
   let translateY = 0;
+  let activeMediaType = "image";
+  let dragMediaEl = null;
   let isDragging = false;
   let startX = 0;
   let startY = 0;
@@ -158,6 +162,19 @@ document.addEventListener("DOMContentLoaded", () => {
   let cursorRaf = null;
   let cursorX = 0.5;
   let cursorY = 0.45;
+  const VIDEO_EXTENSIONS = new Set([
+    "mp4",
+    "webm",
+    "ogg",
+    "ogv",
+    "mov",
+    "m4v",
+  ]);
+
+  els.video.loop = true;
+  els.video.muted = true;
+  els.video.autoplay = true;
+  els.video.playsInline = true;
 
   function applyDataManagerEmbedLayout() {
     if (!isDataManagerSettingsEmbedMode()) {
@@ -258,6 +275,139 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       return String(a).localeCompare(String(b));
     });
+  }
+
+  function getFileExtension(path) {
+    if (!path || typeof path !== "string") {
+      return "";
+    }
+    const cleanPath = path.split("?")[0].split("#")[0];
+    const parts = cleanPath.split(".");
+    if (parts.length < 2) {
+      return "";
+    }
+    return parts[parts.length - 1].toLowerCase();
+  }
+
+  function inferMediaType(path) {
+    return VIDEO_EXTENSIONS.has(getFileExtension(path)) ? "video" : "image";
+  }
+
+  function normalizeMediaItem(item) {
+    if (!item) {
+      return null;
+    }
+
+    if (typeof item === "string") {
+      return {
+        src: resolvePath(item),
+        type: inferMediaType(item),
+      };
+    }
+
+    if (typeof item !== "object") {
+      return null;
+    }
+
+    const rawSrc = item.src || item.path || item.url || "";
+    if (!rawSrc) {
+      return null;
+    }
+
+    const normalizedType =
+      typeof item.type === "string" ? item.type.toLowerCase() : "";
+
+    return {
+      src: resolvePath(rawSrc),
+      type:
+        normalizedType === "video" || normalizedType === "image"
+          ? normalizedType
+          : inferMediaType(rawSrc),
+    };
+  }
+
+  function collectMediaItems(entry) {
+    if (!entry || typeof entry !== "object") {
+      return [];
+    }
+
+    if (Array.isArray(entry.media) && entry.media.length > 0) {
+      return entry.media.map(normalizeMediaItem).filter((item) => item && item.src);
+    }
+
+    const rawItems = [];
+
+    if (Array.isArray(entry.images)) {
+      rawItems.push(...sortPhotos(entry.images));
+    } else if (typeof entry.images === "string") {
+      rawItems.push(entry.images);
+    }
+
+    if (Array.isArray(entry.videos)) {
+      rawItems.push(...sortPhotos(entry.videos));
+    } else if (typeof entry.video === "string") {
+      rawItems.push(entry.video);
+    }
+
+    return rawItems.map(normalizeMediaItem).filter((item) => item && item.src);
+  }
+
+  function getActiveMediaElement() {
+    return activeMediaType === "video" ? els.video : els.photo;
+  }
+
+  function pauseAndClearVideo() {
+    if (!els.video) {
+      return;
+    }
+    els.video.pause();
+    if (els.video.hasAttribute("src")) {
+      els.video.removeAttribute("src");
+      els.video.load();
+    }
+  }
+
+  function setActiveMedia(type) {
+    activeMediaType = type === "video" ? "video" : "image";
+
+    const isVideo = activeMediaType === "video";
+    els.photo.hidden = isVideo;
+    els.video.hidden = !isVideo;
+    els.photo.classList.remove("dragging");
+    els.video.classList.remove("dragging");
+
+    if (!isVideo) {
+      pauseAndClearVideo();
+    }
+    updateVideoAudioButton();
+  }
+
+  function playVideoIfPossible() {
+    if (activeMediaType !== "video" || !els.video) {
+      return;
+    }
+    const playPromise = els.video.play();
+    if (playPromise && typeof playPromise.catch === "function") {
+      playPromise.catch(() => {});
+    }
+  }
+
+  function updateVideoAudioButton() {
+    if (!els.videoAudioBtn) {
+      return;
+    }
+    const isVideo = activeMediaType === "video";
+    els.videoAudioBtn.hidden = !isVideo;
+    if (!isVideo) {
+      return;
+    }
+    const isMuted = !!els.video.muted;
+    els.videoAudioBtn.textContent = isMuted ? "🔇" : "🔊";
+    els.videoAudioBtn.title = isMuted ? "Unmute video" : "Mute video";
+    els.videoAudioBtn.setAttribute(
+      "aria-label",
+      isMuted ? "Unmute video" : "Mute video",
+    );
   }
 
   function randomBinary(length) {
@@ -362,7 +512,8 @@ document.addEventListener("DOMContentLoaded", () => {
     els.storyMeta.textContent = "Report corrupted";
     els.imageFallback.textContent = "Report corrupted";
     els.imageFallback.hidden = false;
-    els.photo.src = "";
+    els.photo.removeAttribute("src");
+    setActiveMedia("image");
     els.imageCounter.textContent = "0 / 0";
   }
 
@@ -720,19 +871,21 @@ document.addEventListener("DOMContentLoaded", () => {
       els.storyMeta.appendChild(tagsWrapper);
     }
 
-    photos = Array.isArray(entry.images)
-      ? sortPhotos(entry.images).map(resolvePath)
-      : [];
+    photos = collectMediaItems(entry);
     failedLoads = 0;
     currentPhotoIndex = normalizePhotoIndex(currentPhotoIndex, photos.length);
     if (photos.length > 0) {
       updatePhoto();
+    } else {
+      setActiveMedia("image");
+      els.photo.removeAttribute("src");
     }
   }
 
   function updatePhoto() {
     if (photos.length === 0) {
-      els.photo.src = "";
+      setActiveMedia("image");
+      els.photo.removeAttribute("src");
       els.imageCounter.textContent = "0 / 0";
       els.imageFallback.hidden = false;
       return;
@@ -742,8 +895,23 @@ document.addEventListener("DOMContentLoaded", () => {
       currentPhotoIndex = 0;
     }
 
+    const mediaItem = photos[currentPhotoIndex];
+    if (!mediaItem || !mediaItem.src) {
+      els.imageFallback.hidden = false;
+      return;
+    }
+
     els.imageFallback.hidden = true;
-    els.photo.src = photos[currentPhotoIndex];
+    if (mediaItem.type === "video") {
+      setActiveMedia("video");
+      els.photo.removeAttribute("src");
+      els.video.src = mediaItem.src;
+      els.video.currentTime = 0;
+      playVideoIfPossible();
+    } else {
+      setActiveMedia("image");
+      els.photo.src = mediaItem.src;
+    }
     els.imageCounter.textContent = `${currentPhotoIndex + 1} / ${photos.length}`;
     refreshHudMarks();
 
@@ -771,7 +939,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function updateTransform() {
-    els.photo.style.transform = `translate(${translateX}px, ${translateY}px) scale(${zoomLevel})`;
+    const transform = `translate(${translateX}px, ${translateY}px) scale(${zoomLevel})`;
+    els.photo.style.transform = transform;
+    els.video.style.transform = transform;
   }
 
   function saveZoomState() {
@@ -1738,19 +1908,30 @@ document.addEventListener("DOMContentLoaded", () => {
     SFX.click();
   });
 
-  els.photo.addEventListener("mousedown", (event) => {
+  function handleMediaMouseDown(event) {
     if (event.button !== 0) return;
+    const activeMediaElement = getActiveMediaElement();
+    if (!activeMediaElement || event.currentTarget !== activeMediaElement) {
+      return;
+    }
     event.preventDefault();
     isDragging = true;
-    els.photo.classList.add("dragging");
+    dragMediaEl = activeMediaElement;
+    dragMediaEl.classList.add("dragging");
     startX = event.pageX - translateX;
     startY = event.pageY - translateY;
-  });
+  }
+
+  els.photo.addEventListener("mousedown", handleMediaMouseDown);
+  els.video.addEventListener("mousedown", handleMediaMouseDown);
 
   window.addEventListener("mouseup", () => {
     if (isDragging) {
       isDragging = false;
-      els.photo.classList.remove("dragging");
+      if (dragMediaEl) {
+        dragMediaEl.classList.remove("dragging");
+        dragMediaEl = null;
+      }
       saveZoomState();
     }
   });
@@ -1778,7 +1959,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
       event.preventDefault();
 
-      const rect = els.photo.getBoundingClientRect();
+      const activeMediaElement = getActiveMediaElement();
+      if (!activeMediaElement) {
+        return;
+      }
+
+      const rect = activeMediaElement.getBoundingClientRect();
       const zoomOriginX = (event.clientX - rect.left) / zoomLevel;
       const zoomOriginY = (event.clientY - rect.top) / zoomLevel;
 
@@ -1795,9 +1981,26 @@ document.addEventListener("DOMContentLoaded", () => {
     { passive: false },
   );
 
-  els.photo.addEventListener("dragstart", (event) => {
+  function preventNativeDrag(event) {
     event.preventDefault();
-  });
+  }
+
+  els.photo.addEventListener("dragstart", preventNativeDrag);
+  els.video.addEventListener("dragstart", preventNativeDrag);
+
+  if (els.videoAudioBtn) {
+    els.videoAudioBtn.addEventListener("click", () => {
+      if (activeMediaType !== "video") {
+        return;
+      }
+      els.video.muted = !els.video.muted;
+      if (!els.video.muted) {
+        playVideoIfPossible();
+      }
+      updateVideoAudioButton();
+      SFX.toggle();
+    });
+  }
 
   els.storyContent.addEventListener("scroll", saveScrollPosition);
 
@@ -2040,17 +2243,17 @@ document.addEventListener("DOMContentLoaded", () => {
     { passive: true },
   );
 
-  els.photo.onload = () => {
+  function handleMediaLoadSuccess() {
     failedLoads = 0;
     els.imageFallback.hidden = true;
     localStorage.setItem(getStorageKey("currentPhotoIndex"), currentPhotoIndex);
-  };
+  }
 
-  els.photo.onerror = () => {
+  function handleMediaLoadError() {
     if (photos.length > 0) {
       failedLoads += 1;
       if (failedLoads >= photos.length) {
-        showCorrupted("Images missing.");
+        showCorrupted("Media missing.");
         return;
       }
       currentPhotoIndex = (currentPhotoIndex + 1) % photos.length;
@@ -2059,7 +2262,37 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       els.imageFallback.hidden = false;
     }
+  }
+
+  els.photo.onload = () => {
+    if (activeMediaType !== "image") {
+      return;
+    }
+    handleMediaLoadSuccess();
   };
+
+  els.photo.onerror = () => {
+    if (activeMediaType !== "image") {
+      return;
+    }
+    handleMediaLoadError();
+  };
+
+  els.video.addEventListener("loadeddata", () => {
+    if (activeMediaType !== "video") {
+      return;
+    }
+    handleMediaLoadSuccess();
+    playVideoIfPossible();
+    updateVideoAudioButton();
+  });
+
+  els.video.addEventListener("error", () => {
+    if (activeMediaType !== "video") {
+      return;
+    }
+    handleMediaLoadError();
+  });
 
   async function initialize() {
     if (isDataManagerSettingsEmbedMode()) {
@@ -2404,14 +2637,103 @@ document.addEventListener("DOMContentLoaded", () => {
   initialize();
 });
 
+let markdownRenderer = null;
+
+function escapeHtmlForFallback(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function createMarkdownRenderer() {
+  if (markdownRenderer) {
+    return markdownRenderer;
+  }
+
+  if (typeof window.markdownit !== "function") {
+    throw new Error("markdown-it is not loaded.");
+  }
+
+  const md = window.markdownit({
+    html: true,
+    linkify: true,
+    typographer: true,
+    breaks: false,
+  });
+
+  if (typeof window.markdownitFootnote === "function") {
+    md.use(window.markdownitFootnote);
+  }
+
+  if (typeof window.markdownitTaskLists === "function") {
+    md.use(window.markdownitTaskLists, {
+      enabled: false,
+      label: true,
+      labelAfter: true,
+    });
+  }
+
+  if (typeof window.markdownitKatex === "function") {
+    md.use(window.markdownitKatex, {
+      throwOnError: false,
+      strict: "ignore",
+      errorColor: "#ff6b6b",
+      trust: false,
+      output: "html",
+    });
+  }
+
+  const defaultValidateLink = md.validateLink.bind(md);
+  md.validateLink = function validateMarkdownLink(url) {
+    const normalized = String(url || "").trim().toLowerCase();
+    if (
+      normalized.startsWith("javascript:") ||
+      normalized.startsWith("vbscript:") ||
+      normalized.startsWith("data:")
+    ) {
+      return false;
+    }
+    return defaultValidateLink(url);
+  };
+
+  const defaultLinkOpen =
+    md.renderer.rules.link_open ||
+    function renderLinkToken(tokens, idx, options, env, self) {
+      return self.renderToken(tokens, idx, options);
+    };
+
+  md.renderer.rules.link_open = function renderExternalLinks(
+    tokens,
+    idx,
+    options,
+    env,
+    self,
+  ) {
+    const hrefIndex = tokens[idx].attrIndex("href");
+    if (hrefIndex >= 0) {
+      const href = String(tokens[idx].attrs[hrefIndex][1] || "");
+      if (/^(https?:)?\/\//i.test(href)) {
+        tokens[idx].attrSet("target", "_blank");
+        tokens[idx].attrSet("rel", "noopener noreferrer");
+      }
+    }
+    return defaultLinkOpen(tokens, idx, options, env, self);
+  };
+
+  markdownRenderer = md;
+  return markdownRenderer;
+}
+
 function marked(text) {
-  let output = text;
-  output = output.replace(/^### (.*$)/gim, "<h3>$1</h3>");
-  output = output.replace(/^## (.*$)/gim, "<h2>$1</h2>");
-  output = output.replace(/^# (.*$)/gim, "<h1>$1</h1>");
-  output = output.replace(/\*\*(.*)\*\*/gim, "<b>$1</b>");
-  output = output.replace(/\*(.*)\*/gim, "<i>$1</i>");
-  output = output.replace(/`(.*?)`/gim, "<code>$1</code>");
-  output = output.replace(/\n$/gim, "<br>");
-  return output;
+  const source = String(text || "");
+  if (!source.trim()) {
+    return "";
+  }
+  try {
+    return createMarkdownRenderer().render(source);
+  } catch (error) {
+    console.error("Markdown render failed:", error);
+    return `<pre class="markdown-render-fallback">${escapeHtmlForFallback(source)}</pre>`;
+  }
 }

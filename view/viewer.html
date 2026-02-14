@@ -6,6 +6,7 @@
         <title>Viewer</title>
         <link rel="icon" href="../database/favicon.png" />
         <link rel="stylesheet" href="viewer.css" />
+        <link rel="stylesheet" href="vendor/katex.min.css" />
         <link rel="stylesheet" href="../css/fonts.css" />
     </head>
     <body>
@@ -19,9 +20,28 @@
                     <span class="hud-mark br"></span>
                 </div>
                 <div id="image-fallback" class="image-fallback" hidden>
-                    Image missing
+                    Media missing
                 </div>
                 <img id="photo" src="" alt="Photo" />
+                <video
+                    id="video"
+                    playsinline
+                    muted
+                    loop
+                    preload="metadata"
+                    hidden
+                    aria-label="Video"
+                ></video>
+                <button
+                    id="video-audio-btn"
+                    class="video-audio-btn"
+                    type="button"
+                    title="Unmute video"
+                    aria-label="Unmute video"
+                    hidden
+                >
+                    🔇
+                </button>
                 <div class="image-controls">
                     <button
                         id="prev-btn"
@@ -552,6 +572,11 @@
 
         <script src="../database/fonts.js"></script>
         <script src="../database/catalog.js"></script>
+        <script src="vendor/markdown-it.min.js"></script>
+        <script src="vendor/markdown-it-footnote.min.js"></script>
+        <script src="vendor/markdown-it-task-lists.min.js"></script>
+        <script src="vendor/katex.min.js"></script>
+        <script src="vendor/markdown-it-katex-plugin.js"></script>
         <script src="viewer.js"></script>
     </body>
 </html>

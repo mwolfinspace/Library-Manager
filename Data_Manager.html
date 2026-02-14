@@ -1076,6 +1076,49 @@
             color: var(--accent-2);
         }
 
+        .media-type-badge {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            z-index: 2;
+            font-size: 10px;
+            padding: 3px 7px;
+            border-radius: 999px;
+            background: rgba(62, 240, 193, 0.18);
+            border: 1px solid rgba(62, 240, 193, 0.55);
+            color: var(--ink);
+            letter-spacing: 0.03em;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .image-card.has-selectbox .media-type-badge {
+            left: 30px;
+        }
+
+        .image-card.cover-media-highlight {
+            border: 2px solid rgba(255, 184, 76, 0.95);
+            box-shadow: 0 0 0 1px rgba(255, 184, 76, 0.3), 0 0 18px rgba(255, 184, 76, 0.2);
+        }
+
+        .image-card.cover-media-highlight .cover-badge {
+            background: rgba(255, 184, 76, 0.22);
+            border-color: rgba(255, 184, 76, 0.8);
+            color: #ffd8a8;
+            font-weight: 700;
+        }
+
+        body[data-theme='light'] .image-card.cover-media-highlight {
+            border-color: rgba(200, 120, 24, 0.9);
+            box-shadow: 0 0 0 1px rgba(200, 120, 24, 0.25), 0 0 14px rgba(200, 120, 24, 0.16);
+        }
+
+        body[data-theme='light'] .image-card.cover-media-highlight .cover-badge {
+            background: rgba(200, 120, 24, 0.16);
+            border-color: rgba(200, 120, 24, 0.7);
+            color: #8a4300;
+        }
+
         .image-card-selectbox {
             position: absolute;
             top: 8px;
@@ -1931,8 +1974,8 @@
                 </div>
                 <div class="panel-content">
                     <div class="image-manager-actions">
-                        <button type="button" class="ghost" id="upload-cover-media-btn">Upload GIF/Video Cover</button>
-                        <button type="button" class="ghost" id="clear-cover-media-btn">Clear GIF/Video Cover</button>
+                        <button type="button" class="ghost" id="upload-cover-media-btn">Upload Homepage Cover</button>
+                        <button type="button" class="ghost" id="clear-cover-media-btn">Clear Homepage Cover</button>
                         <button type="button" class="ghost" id="set-cover-position-btn">Set Cover Position</button>
                         <div class="image-card-size-controls">
                             <button type="button" class="ghost" id="card-height-dec">-</button>
@@ -1940,11 +1983,11 @@
                             <button type="button" class="ghost" id="card-height-inc">+</button>
                         </div>
                     </div>
-                    <p class="hint" id="image-manager-summary">No images selected yet.</p>
+                    <p class="hint" id="image-manager-summary">No media selected yet.</p>
                     <div class="image-card-grid" id="image-card-grid"></div>
-                    <input type="file" id="image-manager-input" accept="image/*" multiple hidden>
-                    <input type="file" id="replace-image-input" accept="image/*" hidden>
-                    <input type="file" id="cover-media-input" accept="image/gif,video/*" hidden>
+                    <input type="file" id="image-manager-input" accept="image/*,video/*" multiple hidden>
+                    <input type="file" id="replace-image-input" accept="image/*,video/*" hidden>
+                    <input type="file" id="cover-media-input" accept="image/*,video/*" hidden>
                 </div>
             </section>
         </main>
@@ -3259,7 +3302,7 @@
                 : `${mode}: ${currentPosition} (saved ${modePosition})`;
 
             if (coverSelection && coverSelection.kind === 'external' && externalCoverMedia) {
-                const label = externalCoverMedia.mediaType === 'video' ? 'Video cover' : 'GIF cover';
+                const label = `${formatMediaTypeLabel(externalCoverMedia.mediaType)} cover`;
                 const name = externalCoverMedia.name || getFileName(externalCoverMedia.path) || 'cover media';
                 coverSummary.textContent = `Cover: ${label} (${name}) · Homepage only · Position: ${posLabel}`;
                 return;
@@ -3283,11 +3326,11 @@
             const selected = selectedMediaIds.size;
             let coverText = 'No cover selected';
             if (coverSelection && coverSelection.kind === 'external') {
-                coverText = 'GIF/Video cover';
+                coverText = 'Homepage cover';
             } else if (coverSelection && coverSelection.kind === 'image') {
-                coverText = 'Story image cover';
+                coverText = 'Story media cover';
             }
-            imageManagerSummary.textContent = `${total} image(s) in story · ${selected} selected · ${coverText}`;
+            imageManagerSummary.textContent = `${total} media item(s) in story · ${selected} selected · ${coverText}`;
         }
 
         function normalizeKey(key) {
@@ -3313,6 +3356,24 @@
             return 'Image';
         }
 
+        function formatMediaTypeBadge(mediaType) {
+            if (mediaType === 'video') return '🎬 VIDEO';
+            if (mediaType === 'gif') return 'GIF';
+            return '';
+        }
+
+        function appendMediaTypeBadge(card, mediaType) {
+            const badgeText = formatMediaTypeBadge(mediaType);
+            if (!card || !badgeText) {
+                return;
+            }
+            const badge = document.createElement('span');
+            badge.className = 'media-type-badge';
+            badge.textContent = badgeText;
+            card.classList.add('has-media-type-badge');
+            card.appendChild(badge);
+        }
+
         function getCurrentCoverPreviewUrl() {
             normalizeCoverSelection();
             if (coverSelection && coverSelection.kind === 'external') {
@@ -3328,10 +3389,11 @@
         function getCurrentCoverMediaType() {
             normalizeCoverSelection();
             if (coverSelection && coverSelection.kind === 'external' && externalCoverMedia) {
-                return externalCoverMedia.mediaType || 'gif';
+                return externalCoverMedia.mediaType || 'image';
             }
             if (coverSelection && coverSelection.kind === 'image') {
-                return 'image';
+                const item = getMediaItemById(coverSelection.itemId);
+                return item && item.mediaType ? item.mediaType : 'image';
             }
             return '';
         }
@@ -3471,14 +3533,16 @@
             if (externalCoverMedia) {
                 const card = document.createElement('div');
                 card.className = 'image-card';
+                card.classList.add('cover-media-highlight');
                 if (coverSelection && coverSelection.kind === 'external') {
                     card.classList.add('selected');
                 }
 
                 const badge = document.createElement('span');
                 badge.className = 'cover-badge';
-                badge.textContent = 'Homepage Cover';
+                badge.textContent = 'Cover';
                 card.appendChild(badge);
+                appendMediaTypeBadge(card, externalCoverMedia.mediaType);
 
                 const thumb = document.createElement('div');
                 thumb.className = 'image-card-thumb';
@@ -3559,33 +3623,50 @@
             workingMediaItems.forEach((item, index) => {
                 const card = document.createElement('div');
                 card.className = 'image-card';
+                card.classList.add('has-selectbox');
                 card.dataset.id = item.id;
                 card.draggable = true;
                 if (selectedMediaIds.has(item.id)) {
                     card.classList.add('selected');
                 }
+                appendMediaTypeBadge(card, item.mediaType);
 
                 if (coverSelection && coverSelection.kind === 'image' && coverSelection.itemId === item.id) {
                     const badge = document.createElement('span');
                     badge.className = 'cover-badge';
                     badge.textContent = 'Cover';
                     card.appendChild(badge);
+                    if (item.mediaType === 'gif' || item.mediaType === 'video') {
+                        card.classList.add('cover-media-highlight');
+                    }
                 }
 
                 const thumb = document.createElement('div');
                 thumb.className = 'image-card-thumb';
-                const img = document.createElement('img');
-                img.src = getMediaPreviewUrl(item);
-                img.alt = item.name || `Image ${index + 1}`;
-                img.addEventListener('click', () => openMediaPreview(item));
-                thumb.appendChild(img);
+                const mediaSrc = getMediaPreviewUrl(item);
+                if (item.mediaType === 'video') {
+                    const video = document.createElement('video');
+                    video.src = mediaSrc;
+                    video.muted = true;
+                    video.loop = true;
+                    video.playsInline = true;
+                    video.autoplay = true;
+                    video.addEventListener('click', () => openMediaPreview(item));
+                    thumb.appendChild(video);
+                } else {
+                    const img = document.createElement('img');
+                    img.src = mediaSrc;
+                    img.alt = item.name || `Media ${index + 1}`;
+                    img.addEventListener('click', () => openMediaPreview(item));
+                    thumb.appendChild(img);
+                }
                 card.appendChild(thumb);
 
                 const meta = document.createElement('div');
                 meta.className = 'image-card-meta';
                 const name = document.createElement('span');
                 name.className = 'image-card-name';
-                name.textContent = `${index + 1}. ${item.name}`;
+                name.textContent = `${index + 1}. ${formatMediaTypeLabel(item.mediaType)}: ${item.name}`;
 
                 const controls = document.createElement('div');
                 controls.className = 'image-card-controls';
@@ -3594,7 +3675,7 @@
                 selectBox.type = 'checkbox';
                 selectBox.className = 'image-card-selectbox';
                 selectBox.checked = selectedMediaIds.has(item.id);
-                selectBox.title = 'Select image';
+                selectBox.title = 'Select media';
                 selectBox.addEventListener('click', event => {
                     event.stopPropagation();
                 });
@@ -3633,7 +3714,7 @@
                 replaceBtn.type = 'button';
                 replaceBtn.className = 'ghost image-mini-btn';
                 replaceBtn.textContent = '🔁';
-                replaceBtn.title = 'Replace image';
+                replaceBtn.title = 'Replace media';
                 replaceBtn.addEventListener('click', event => {
                     event.stopPropagation();
                     pendingReplaceMediaId = item.id;
@@ -3647,7 +3728,7 @@
                 removeBtn.type = 'button';
                 removeBtn.className = 'ghost image-mini-btn';
                 removeBtn.textContent = '🗑';
-                removeBtn.title = 'Remove image';
+                removeBtn.title = 'Remove media';
                 removeBtn.addEventListener('click', event => {
                     event.stopPropagation();
                     workingMediaItems = workingMediaItems.filter(media => media.id !== item.id);
@@ -3687,7 +3768,7 @@
             if (!externalCoverMedia && workingMediaItems.length === 0) {
                 const empty = document.createElement('p');
                 empty.className = 'image-empty';
-                empty.textContent = 'No images selected yet.';
+                empty.textContent = 'No media selected yet.';
                 imageCardGrid.appendChild(empty);
             }
 
@@ -3705,7 +3786,7 @@
             let skipped = 0;
             list.forEach(file => {
                 const type = detectCoverMediaType(file.name, file.type);
-                if (type !== 'image') {
+                if (type !== 'image' && type !== 'gif' && type !== 'video') {
                     skipped += 1;
                     return;
                 }
@@ -3713,7 +3794,7 @@
                 added += 1;
             });
             if (skipped > 0) {
-                setStatus(`Skipped ${skipped} GIF/video file(s). Use "Upload GIF/Video Cover" for those.`);
+                setStatus(`Skipped ${skipped} unsupported file(s).`);
             }
             normalizeCoverSelection();
             renderImageManager();
@@ -3725,7 +3806,7 @@
                 return false;
             }
             const fileType = detectCoverMediaType(file.name, file.type);
-            if (fileType !== 'image') {
+            if (fileType !== 'image' && fileType !== 'gif' && fileType !== 'video') {
                 return false;
             }
             const index = workingMediaItems.findIndex(item => item.id === itemId);
@@ -3743,14 +3824,14 @@
                 file,
                 path: '',
                 name: file.name,
-                mediaType: 'image',
+                mediaType: fileType,
             };
             return true;
         }
 
         function removeSelectedMedia() {
             if (selectedMediaIds.size === 0) {
-                setStatus('Select images to remove first.');
+                setStatus('Select media to remove first.');
                 return;
             }
             workingMediaItems = workingMediaItems.filter(item => !selectedMediaIds.has(item.id));
@@ -3931,7 +4012,7 @@
             normalizeCoverSelection();
             const src = getCurrentCoverPreviewUrl();
             if (!src) {
-                setStatus('Choose a cover image or GIF/video cover first.');
+                setStatus('Choose a story cover or homepage cover first.');
                 return;
             }
             coverPositionsByLayout = normalizeCoverPositionMap(coverPositionsByLayout, coverPositionInput && coverPositionInput.value ? coverPositionInput.value : '50% 50%');
@@ -4069,7 +4150,7 @@
                 if (entry.coverMedia && typeof entry.coverMedia === 'object' && typeof entry.coverMedia.path === 'string') {
                     const path = entry.coverMedia.path.trim();
                     const mediaType = detectCoverMediaType(path, entry.coverMedia.type || '');
-                    if (path && (mediaType === 'gif' || mediaType === 'video')) {
+                    if (path && (mediaType === 'gif' || mediaType === 'video' || mediaType === 'image')) {
                         coverMedia = { path, type: mediaType };
                     }
                 }
@@ -4079,7 +4160,7 @@
                     const coverName = getFileName(coverPath);
                     if (new RegExp(`^${escapeRegExp(id)}_cover\\.`, 'i').test(coverName)) {
                         const mediaType = detectCoverMediaType(coverPath, '');
-                        if (mediaType === 'gif' || mediaType === 'video') {
+                        if (mediaType === 'gif' || mediaType === 'video' || mediaType === 'image') {
                             coverMedia = { path: coverPath, type: mediaType };
                         }
                     }
@@ -4561,8 +4642,8 @@
             const hasExistingOrder = hasDisplayOrder(existingCatalog);
             let nextDisplayOrder = hasExistingOrder ? getNextDisplayOrder(existingCatalog) : 0;
 
-            const validExt = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg', '.avif'];
-            const coverExt = ['.gif', '.mp4', '.webm', '.mov', '.m4v', '.ogg', '.ogv'];
+            const validExt = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg', '.avif', '.mp4', '.webm', '.mov', '.m4v', '.ogg', '.ogv', '.avi'];
+            const coverExt = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg', '.avif', '.mp4', '.webm', '.mov', '.m4v', '.ogg', '.ogv', '.avi'];
             const imageMap = new Map();
             const coverMediaMap = new Map();
 
@@ -4578,7 +4659,7 @@
                     }
                     const id = coverMatch[1];
                     const mediaType = detectCoverMediaType(name, '');
-                    if (mediaType === 'gif' || mediaType === 'video') {
+                    if (mediaType === 'gif' || mediaType === 'video' || mediaType === 'image') {
                         coverMediaMap.set(id, {
                             path: `img-scr/${name}`,
                             type: mediaType,
@@ -4623,7 +4704,7 @@
 
                 const coverMedia = coverMediaMap.get(id) || (existing && existing.coverMedia ? existing.coverMedia : null);
                 let cover = images[0] || '';
-                if (coverMedia && (coverMedia.type === 'gif' || coverMedia.type === 'video')) {
+                if (coverMedia && (coverMedia.type === 'gif' || coverMedia.type === 'video' || coverMedia.type === 'image')) {
                     cover = coverMedia.path;
                 } else if (existing?.cover && images.includes(existing.cover)) {
                     cover = existing.cover;
@@ -4916,7 +4997,7 @@
             externalCoverMedia = null;
             if (story.coverMedia && typeof story.coverMedia === 'object' && story.coverMedia.path) {
                 const type = detectCoverMediaType(story.coverMedia.path, story.coverMedia.type || '');
-                if (type === 'gif' || type === 'video') {
+                if (type === 'gif' || type === 'video' || type === 'image') {
                     externalCoverMedia = {
                         source: 'existing',
                         file: null,
@@ -4931,7 +5012,7 @@
                 const coverName = getFileName(story.cover);
                 if (new RegExp(`^${escapeRegExp(id)}_cover\\.`, 'i').test(coverName)) {
                     const type = detectCoverMediaType(story.cover, '');
-                    if (type === 'gif' || type === 'video') {
+                    if (type === 'gif' || type === 'video' || type === 'image') {
                         externalCoverMedia = {
                             source: 'existing',
                             file: null,
@@ -5086,7 +5167,7 @@
             }
 
             if (workingMediaItems.length === 0 && !externalCoverMedia) {
-                setStatus('Add at least one image or GIF/video cover.');
+                setStatus('Add at least one story media item or homepage cover.');
                 return;
             }
             try {
@@ -5099,7 +5180,7 @@
                 const coverMedia = await persistCoverMedia(id, shouldUseExternalCover ? externalCoverMedia : null);
 
                 if (imagePaths.length === 0 && !(coverMedia && coverMedia.path)) {
-                    throw new Error('Story must include at least one image or GIF/video cover.');
+                    throw new Error('Story must include at least one story media item or homepage cover.');
                 }
 
                 let cover = imagePaths[0] || '';
@@ -5189,7 +5270,7 @@
                 if (item.path) {
                     const existingName = getFileName(item.path);
                     if (!existingName) {
-                        throw new Error('One or more image paths are invalid. Re-add the image before saving.');
+                        throw new Error('One or more media paths are invalid. Re-add the file before saving.');
                     }
                     try {
                         const fileHandle = await imageDir.getFileHandle(existingName);
@@ -5200,15 +5281,15 @@
                             extension: getFileExtension(existingName) || 'jpg',
                         });
                     } catch (error) {
-                        throw new Error(`Image file is missing: ${existingName}. Run Fix Missing or re-add the image.`);
+                        throw new Error(`Media file is missing: ${existingName}. Run Fix Missing or re-add the file.`);
                     }
                     continue;
                 }
-                throw new Error('One or more images are invalid. Re-add the image before saving.');
+                throw new Error('One or more media items are invalid. Re-add the file before saving.');
             }
 
             // Safety: if there are no resolved image sources, do not delete any existing files here.
-            // Save caller can still proceed with GIF/video cover-only stories.
+            // Save caller can still proceed with homepage-cover-only stories.
             if (sources.length === 0) {
                 return { paths: [], pathByItemId: new Map() };
             }
@@ -5275,7 +5356,7 @@
             let mediaType = '';
             let extension = '';
 
-            if (media && (media.mediaType === 'gif' || media.mediaType === 'video')) {
+            if (media && (media.mediaType === 'gif' || media.mediaType === 'video' || media.mediaType === 'image')) {
                 mediaType = media.mediaType;
                 if (media.source === 'new' && media.file) {
                     sourceFile = media.file;
@@ -5304,7 +5385,7 @@
             if (!sourceFile || !mediaType) {
                 if (media) {
                     const missingName = media.path ? (getFileName(media.path) || media.path) : (media.name || 'cover media');
-                    throw new Error(`Cover media is missing: ${missingName}. Re-add GIF/video cover before saving.`);
+                    throw new Error(`Cover media is missing: ${missingName}. Re-add homepage cover before saving.`);
                 }
                 for (const name of existingCoverNames) {
                     await imageDir.removeEntry(name);
@@ -5314,7 +5395,7 @@
 
             const safeExtension = /^[a-z0-9]+$/i.test(extension)
                 ? extension.toLowerCase()
-                : (mediaType === 'video' ? 'mp4' : 'gif');
+                : (mediaType === 'video' ? 'mp4' : (mediaType === 'gif' ? 'gif' : 'jpg'));
             const fileName = `${id}_cover.${safeExtension}`;
             const tempName = `${id}__tmp_cover_${Date.now()}.${safeExtension}`;
 
@@ -5478,10 +5559,12 @@
                             const imagePath = entry.images[j];
                             const fileName = getFileName(imagePath);
                             if (!fileName) continue;
+                            const mediaType = detectCoverMediaType(fileName, '');
                             const imageExists = await fileExists(imageDir, fileName);
                             if (!imageExists) {
-                                const locateImage = await themedConfirm(`Image missing (${fileName}) for "${title}". Locate a replacement?`, {
-                                    title: 'Missing Image',
+                                const mediaLabel = mediaType === 'video' ? 'Video' : (mediaType === 'gif' ? 'GIF' : 'Image');
+                                const locateImage = await themedConfirm(`${mediaLabel} missing (${fileName}) for "${title}". Locate a replacement?`, {
+                                    title: `Missing ${mediaLabel}`,
                                     type: 'warning',
                                     confirmText: 'Locate',
                                     cancelText: 'Skip',
@@ -5491,8 +5574,10 @@
                                         const handle = await pickRelocationFile({
                                             types: [
                                                 {
-                                                    description: 'Image files',
-                                                    accept: { 'image/*': ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp'] },
+                                                    description: mediaType === 'video' ? 'Video files' : 'Image files',
+                                                    accept: mediaType === 'video'
+                                                        ? { 'video/*': ['.mp4', '.webm', '.mov', '.m4v', '.ogg', '.ogv', '.avi'] }
+                                                        : { 'image/*': ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp', '.svg', '.avif'] },
                                                 },
                                             ],
                                         });
@@ -5509,8 +5594,8 @@
                                         // user cancelled
                                     }
                                 } else {
-                                    const removeImage = await themedConfirm(`Remove missing image (${fileName}) from the catalog?`, {
-                                        title: 'Remove Missing Image',
+                                    const removeImage = await themedConfirm(`Remove missing ${mediaLabel.toLowerCase()} (${fileName}) from the catalog?`, {
+                                        title: `Remove Missing ${mediaLabel}`,
                                         type: 'warning',
                                         confirmText: 'Remove',
                                         cancelText: 'Keep',
@@ -5537,20 +5622,25 @@
                             });
                             if (locateCover) {
                                 try {
+                                    const expectedCoverType = detectCoverMediaType(mediaName || '', entry.coverMedia.type || '');
                                     const handle = await pickRelocationFile({
                                         types: [
                                             {
-                                                description: 'GIF or Video',
-                                                accept: {
-                                                    'image/gif': ['.gif'],
-                                                    'video/*': ['.mp4', '.webm', '.mov', '.m4v', '.ogg', '.ogv'],
-                                                },
+                                                description: expectedCoverType === 'video' ? 'Video cover' : (expectedCoverType === 'gif' ? 'GIF cover' : 'Image cover'),
+                                                accept: expectedCoverType === 'video'
+                                                    ? { 'video/*': ['.mp4', '.webm', '.mov', '.m4v', '.ogg', '.ogv', '.avi'] }
+                                                    : {
+                                                        'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg', '.avif'],
+                                                    },
                                             },
                                         ],
                                     });
                                     if (handle) {
                                         const file = await handle.getFile();
-                                        const ext = getFileExtension(file.name) || (entry.coverMedia.type === 'video' ? 'mp4' : 'gif');
+                                        const ext = getFileExtension(file.name)
+                                            || (entry.coverMedia.type === 'video'
+                                                ? 'mp4'
+                                                : (entry.coverMedia.type === 'gif' ? 'gif' : 'jpg'));
                                         const outName = `${entry.id}_cover.${ext}`;
                                         const outHandle = await imageDir.getFileHandle(outName, { create: true });
                                         const writable = await outHandle.createWritable();
@@ -5717,22 +5807,22 @@
                     return;
                 }
                 const type = detectCoverMediaType(file.name, file.type);
-                if (type !== 'image') {
-                    setStatus('Replacement must be an image file.');
-                    showToast('Replacement must be an image file.', 'error');
+                if (type !== 'image' && type !== 'gif' && type !== 'video') {
+                    setStatus('Replacement must be an image/GIF/video file.');
+                    showToast('Replacement must be an image/GIF/video file.', 'error');
                     replaceImageInput.value = '';
                     return;
                 }
                 const replaced = replaceMediaItemFile(targetId, file);
                 if (!replaced) {
-                    setStatus('Image to replace was not found.');
-                    showToast('Image to replace was not found.', 'warning');
+                    setStatus('Media to replace was not found.');
+                    showToast('Media to replace was not found.', 'warning');
                     replaceImageInput.value = '';
                     return;
                 }
                 renderImageManager();
-                setStatus(`Replaced image with ${file.name}.`);
-                showToast(`🖼 Replaced image: ${file.name}`, 'success');
+                setStatus(`Replaced media with ${file.name}.`);
+                showToast(`🖼 Replaced media: ${file.name}`, 'success');
                 replaceImageInput.value = '';
             });
         }
@@ -5759,8 +5849,8 @@
                     return;
                 }
                 const mediaType = detectCoverMediaType(file.name, file.type);
-                if (mediaType !== 'gif' && mediaType !== 'video') {
-                    setStatus('Cover media must be a GIF or video file.');
+                if (mediaType !== 'image' && mediaType !== 'gif' && mediaType !== 'video') {
+                    setStatus('Homepage cover must be an image/GIF/video file.');
                     coverMediaInput.value = '';
                     return;
                 }
@@ -5774,7 +5864,7 @@
                 coverSelection = { kind: 'external' };
                 normalizeCoverSelection();
                 renderImageManager();
-                showToast(`🎞 Cover media set: ${file.name}`, 'success');
+                showToast(`🖼 Homepage cover set: ${file.name}`, 'success');
                 coverMediaInput.value = '';
             });
         }
