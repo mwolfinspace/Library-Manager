@@ -263,7 +263,7 @@
 
         .story-card {
             display: grid;
-            grid-template-columns: auto minmax(0, 1fr) auto auto;
+            grid-template-columns: auto minmax(0, 1fr) auto;
             align-items: center;
             gap: 8px;
             padding: 8px 10px;
@@ -271,7 +271,14 @@
             background: rgba(15, 24, 38, 0.9);
             border: 1px solid rgba(90, 165, 255, 0.2);
             font-size: 11.5px;
-            transition: border-color 0.14s ease, box-shadow 0.14s ease, transform 0.14s ease, opacity 0.14s ease;
+            transition: border-color 0.14s ease, box-shadow 0.14s ease, transform 0.14s ease, opacity 0.14s ease, background-color 0.14s ease;
+            cursor: pointer;
+        }
+
+        .story-card:hover {
+            border-color: rgba(62, 240, 193, 0.5);
+            background: rgba(20, 30, 45, 0.95);
+            box-shadow: 0 0 12px rgba(62, 240, 193, 0.15);
         }
 
         .story-card.dragging {
@@ -335,21 +342,39 @@
         }
 
         .drag-handle {
-            width: 26px;
-            height: 26px;
-            border-radius: 9px;
-            border: 1px dashed rgba(90, 165, 255, 0.45);
-            background: transparent;
+            width: 100%;
+            height: 100%;
+            border-radius: 0 9px 9px 0;
+            border: none;
+            border-left: 1px dashed rgba(90, 165, 255, 0.35);
+            background: linear-gradient(180deg, rgba(15, 24, 38, 0.4), rgba(15, 24, 38, 0.15));
             color: var(--ink-muted);
             display: inline-flex;
             align-items: center;
             justify-content: center;
             cursor: grab;
             font-size: 15px;
+            padding: 0;
+            min-height: 40px;
         }
 
-        .drag-handle:active {
+        .drag-handle:hover {
+            background: linear-gradient(180deg, rgba(62, 240, 193, 0.15), rgba(62, 240, 193, 0.08));
+            color: var(--accent);
+            border-left-color: rgba(62, 240, 193, 0.5);
+        }
+
+        .drag-handle:active,
+        .drag-handle.dragging {
             cursor: grabbing;
+            background: linear-gradient(180deg, rgba(62, 240, 193, 0.25), rgba(62, 240, 193, 0.12));
+        }
+
+        .story-drag-zone {
+            display: flex;
+            align-items: stretch;
+            justify-content: center;
+            min-height: 40px;
         }
 
         .danger-zone {
@@ -564,6 +589,14 @@
             border-color: rgba(62, 240, 193, 0.6);
             background: rgba(62, 240, 193, 0.12);
             color: var(--accent);
+        }
+
+        /* Fix: Don't show hover style on toolbar buttons when textarea is focused or mouse is over textarea */
+        .story-text-field:focus-within .md-icon-btn:not(:hover),
+        .story-text-field:has(#story-text:hover) .md-icon-btn:not(:hover) {
+            border-color: rgba(90, 165, 255, 0.35);
+            background: rgba(12, 20, 34, 0.76);
+            color: var(--ink);
         }
 
         .markdown-toolbar .md-icon-btn svg {

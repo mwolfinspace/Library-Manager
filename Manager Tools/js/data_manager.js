@@ -85,6 +85,14 @@
             selectedEntry: null,
         };
 
+        // Undo/Redo state for story text
+        const undoRedoState = {
+            history: [],
+            historyIndex: -1,
+            maxHistorySize: 50,
+            isUndoRedoOperation: false,
+        };
+
         const AUTO_SCAN_KEY = 'dataManagerAutoScan';
         const RECENT_FOLDER_KEY = 'dataManagerRecentFolder';
         const RECENT_STORY_KEY = 'dataManagerRecentStory';
@@ -2997,13 +3005,85 @@
             textarea.setSelectionRange(nextStart, nextEnd);
         }
 
+        // Undo/Redo functions for story text
+        function saveToUndoHistory() {
+            if (!storyTextInput) return;
+            const currentValue = storyTextInput.value;
+            
+            // Don't save if same as last entry
+            if (undoRedoState.historyIndex >= 0) {
+                const lastEntry = undoRedoState.history[undoRedoState.historyIndex];
+                if (lastEntry === currentValue) return;
+            }
+            
+            // Remove any entries after current index (for new edits after undo)
+            undoRedoState.history = undoRedoState.history.slice(0, undoRedoState.historyIndex + 1);
+            
+            // Add new entry
+            undoRedoState.history.push(currentValue);
+            
+            // Limit history size
+            if (undoRedoState.history.length > undoRedoState.maxHistorySize) {
+                undoRedoState.history.shift();
+            } else {
+                undoRedoState.historyIndex++;
+            }
+        }
+
+        function performUndo() {
+            if (!storyTextInput) return;
+            if (undoRedoState.historyIndex > 0) {
+                undoRedoState.historyIndex--;
+                storyTextInput.value = undoRedoState.history[undoRedoState.historyIndex];
+                storyTextInput.focus();
+            }
+        }
+
+        function performRedo() {
+            if (!storyTextInput) return;
+            if (undoRedoState.historyIndex < undoRedoState.history.length - 1) {
+                undoRedoState.historyIndex++;
+                storyTextInput.value = undoRedoState.history[undoRedoState.historyIndex];
+                storyTextInput.focus();
+            }
+        }
+
+        function clearUndoHistory() {
+            undoRedoState.history = [];
+            undoRedoState.historyIndex = -1;
+        }
+
+        // Initialize undo history when loading a story
+        function initUndoHistory(text) {
+            clearUndoHistory();
+            if (text) {
+                undoRedoState.history.push(text);
+                undoRedoState.historyIndex = 0;
+            }
+        }
+
         async function applyMarkdownAction(action) {
+            // Handle undo
+            if (action === 'undo') {
+                performUndo();
+                return;
+            }
+
+            // Handle redo
+            if (action === 'redo') {
+                performRedo();
+                return;
+            }
+
             if (!storyTextInput) {
                 return;
             }
             const start = storyTextInput.selectionStart || 0;
             const end = storyTextInput.selectionEnd || 0;
             const selected = storyTextInput.value.slice(start, end);
+
+            // Save current state to undo history before making changes
+            saveToUndoHistory();
 
             if (action === 'bold') {
                 const content = selected || 'bold text';
@@ -3480,6 +3560,77 @@
             storyListEl.classList.add('drag-active');
         }
 
+        // Auto-save current story before switching to another
+        async function autoSaveCurrentStory() {
+            // Check if there's a story being edited and it has content
+            if (state.selectedId && storyTextInput && storyTextInput.value.trim()) {
+                // Check if there are unsaved changes by comparing with current catalog
+                const currentStory = state.stories.find(s => s.id === state.selectedId);
+                if (currentStory) {
+                    // We have a story selected - check if form has changes
+                    const titleChanged = reportTitleInput && reportTitleInput.value.trim() !== (currentStory.title || '');
+                    const descChanged = reportDescriptionInput && reportDescriptionInput.value.trim() !== (currentStory.description || '');
+                    const tagsChanged = reportTagsInput && reportTagsInput.value.trim() !== (currentStory.tags || []).join(', ');
+                    const textChanged = storyTextInput && storyTextInput.value.trim().length > 0;
+                    
+                    if (titleChanged || descChanged || tagsChanged || textChanged) {
+                        // Form has unsaved changes - need to save
+                        // Get form data
+                        let reportNumber = parseInt(reportNumberInput && reportNumberInput.value, 10);
+                        if (!reportNumber) {
+                            reportNumber = getNextReportNumber();
+                        }
+                        const title = (reportTitleInput && reportTitleInput.value.trim()) || `The Report #${reportNumber}`;
+                        const description = reportDescriptionInput && reportDescriptionInput.value.trim();
+                        const tags = parseTags(reportTagsInput && reportTagsInput.value);
+                        const storyMarkdown = storyTextInput && storyTextInput.value.trim();
+                        
+                        if (storyMarkdown) {
+                            try {
+                                // Save the story
+                                const id = state.selectedId;
+                                const storyFile = `${id}.md`;
+                                const storyDir = await getStoryDir();
+                                await writeFile(storyDir, storyFile, storyMarkdown);
+                                
+                                // Update catalog entry
+                                const existingIndex = state.stories.findIndex(item => item.id === id);
+                                if (existingIndex >= 0) {
+                                    state.stories[existingIndex] = {
+                                        ...state.stories[existingIndex],
+                                        title,
+                                        description,
+                                        tags,
+                                        updatedAt: new Date().toISOString(),
+                                    };
+                                }
+                                
+                                await writeCatalog(state.stories);
+                                setStatus(`Auto-saved ${title}.`);
+                            } catch (error) {
+                                console.error('Auto-save failed:', error);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Click handler for editing story - with auto-save
+        async function handleCardClick(storyId, event) {
+            // Don't trigger edit if clicking on checkbox or drag zone
+            const target = event.target;
+            if (target.closest('.story-check') || target.closest('.story-drag-zone')) {
+                return;
+            }
+            
+            // Auto-save current story before switching
+            await autoSaveCurrentStory();
+            
+            // Now open the clicked story for editing
+            editStory(storyId);
+        }
+
         function renderStoryList() {
             storyListEl.innerHTML = '';
 
@@ -3498,11 +3649,23 @@
                     card.classList.add('selected');
                 }
 
+                // Click to edit story (with auto-save)
+                card.addEventListener('click', (event) => {
+                    handleCardClick(story.id, event);
+                });
+
+                // Double-click to preview story
+                card.addEventListener('dblclick', (event) => {
+                    event.preventDefault();
+                    void openStoryPreviewInSelectedLibrary(story.id);
+                });
+
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
                 checkbox.className = 'story-check';
                 checkbox.checked = selectedStoryIds.has(story.id);
-                checkbox.addEventListener('change', () => {
+                checkbox.addEventListener('change', (event) => {
+                    event.stopPropagation();
                     if (checkbox.checked) {
                         selectedStoryIds.add(story.id);
                     } else {
@@ -3510,9 +3673,15 @@
                     }
                     renderStoryList();
                 });
+                // Prevent click on checkbox from triggering card click
+                checkbox.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                });
 
                 const info = document.createElement('div');
                 info.className = 'story-info';
+                // Make info area clickable
+                info.style.cursor = 'pointer';
                 const title = document.createElement('strong');
                 title.textContent = story.title || `The Report #${story.reportNumber || ''}`;
                 const meta = document.createElement('div');
@@ -3534,27 +3703,9 @@
                     info.appendChild(tagList);
                 }
 
-                const actions = document.createElement('div');
-                actions.className = 'story-actions';
-
-                const editBtn = document.createElement('button');
-                editBtn.type = 'button';
-                editBtn.className = 'icon-btn';
-                editBtn.title = 'Edit story';
-                editBtn.textContent = '✏️';
-                editBtn.addEventListener('click', () => editStory(story.id));
-
-                const previewBtn = document.createElement('button');
-                previewBtn.type = 'button';
-                previewBtn.textContent = '👁️';
-                previewBtn.className = 'ghost icon-btn';
-                previewBtn.title = 'Preview story';
-                previewBtn.addEventListener('click', () => {
-                    void openStoryPreviewInSelectedLibrary(story.id);
-                });
-
-                actions.appendChild(editBtn);
-                actions.appendChild(previewBtn);
+                // Drag zone - full height on the right
+                const dragZone = document.createElement('div');
+                dragZone.className = 'story-drag-zone';
 
                 const dragHandle = document.createElement('button');
                 dragHandle.type = 'button';
@@ -3562,9 +3713,13 @@
                 dragHandle.textContent = '↕️';
                 dragHandle.title = 'Drag to reorder';
                 dragHandle.draggable = true;
+                dragHandle.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                });
                 dragHandle.addEventListener('dragstart', event => {
                     storyDragId = story.id;
                     card.classList.add('dragging');
+                    dragHandle.classList.add('dragging');
                     event.dataTransfer.effectAllowed = 'move';
                     event.dataTransfer.setData('text/plain', story.id);
                     updateStoryDropPlaceholder(event.clientY);
@@ -3572,13 +3727,15 @@
                 dragHandle.addEventListener('dragend', () => {
                     storyDragId = null;
                     card.classList.remove('dragging');
+                    dragHandle.classList.remove('dragging');
                     clearStoryDropPlaceholder();
                 });
 
+                dragZone.appendChild(dragHandle);
+
                 card.appendChild(checkbox);
                 card.appendChild(info);
-                card.appendChild(actions);
-                card.appendChild(dragHandle);
+                card.appendChild(dragZone);
                 storyListEl.appendChild(card);
             });
         }
@@ -3689,6 +3846,9 @@
 
             const storyDir = await getStoryDir();
             storyTextInput.value = await readTextFile(storyDir, `${id}.md`);
+            
+            // Initialize undo history for this story
+            initUndoHistory(storyTextInput.value);
 
             storyFileInput.value = '';
             imageManagerInput.value = '';
@@ -3711,6 +3871,7 @@
             coverPositionInput.value = coverPositionsByLayout.grid;
             storyFileInput.value = '';
             storyTextInput.value = '';
+            clearUndoHistory();
             imageManagerInput.value = '';
             coverMediaInput.value = '';
             state.selectedId = null;
@@ -4410,6 +4571,17 @@
                 closeMediaPreview();
                 if (coverPositionOverlay && !coverPositionOverlay.hidden) {
                     cancelCoverPositionEdit();
+                }
+            }
+            
+            // Undo/Redo keyboard shortcuts
+            if (storyTextInput && document.activeElement === storyTextInput) {
+                if ((event.ctrlKey || event.metaKey) && event.key === 'z' && !event.shiftKey) {
+                    event.preventDefault();
+                    performUndo();
+                } else if ((event.ctrlKey || event.metaKey) && (event.key === 'y' || (event.key === 'z' && event.shiftKey))) {
+                    event.preventDefault();
+                    performRedo();
                 }
             }
         });
