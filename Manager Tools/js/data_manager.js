@@ -3624,9 +3624,16 @@
                 return rest;
             });
             const catalogJson = JSON.stringify(jsonCatalog, null, 2);
+
+            const storyDir = await getStoryDir();
+            const catalogWithText = [];
+            for (const entry of catalog) {
+                const storyText = entry.storyText || await readTextFile(storyDir, `${entry.id}.md`);
+                catalogWithText.push({ ...entry, storyText });
+            }
             const rawSettings = (await readJsonFile(databaseDir, 'settings.json')) || {};
             const viewerSettings = extractViewerSettings(rawSettings);
-            const catalogJs = `window.REPORT_CATALOG = ${JSON.stringify(jsonCatalog, null, 2)};\n` +
+            const catalogJs = `window.REPORT_CATALOG = ${JSON.stringify(catalogWithText, null, 2)};\n` +
                 `window.VIEWER_SETTINGS = ${JSON.stringify(viewerSettings, null, 2)};\n`;
 
             await writeFile(databaseDir, 'catalog.json', catalogJson);
@@ -4099,9 +4106,10 @@
             coverPositionsByLayoutBeforeEdit = null;
             coverPositionBeforeEdit = null;
             coverViewportPositionBeforeEdit = null;
-            pendingReplaceMediaId = null;
-            releaseUnusedMediaUrls();
-            updateCoverPresetModeButtons();
+    pendingReplaceMediaId = null;
+    releaseUnusedMediaUrls();
+    clearLibraryPreviewAssetUrls();
+    updateCoverPresetModeButtons();
             renderCoverPresetGrid();
             applyCoverPosition();
             renderImageManager();
@@ -4257,8 +4265,7 @@
                 await writeCatalog(state.stories);
 
                 setStatus(`Saved ${title}.`);
-                selectedStoryIds.clear();
-                renderStoryList();
+                await loadLibrary();
                 saveRecentStory(entry);
                 resetForm();
                 setStatus(`Saved ${title}. Ready for next story.`);

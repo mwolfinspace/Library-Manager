@@ -37,7 +37,7 @@
     ],
     "story": "story/r20260210-185456.md",
     "createdAt": "2026-02-10T18:54:56.3998700+07:00",
-    "updatedAt": "2026-02-18T06:59:14.513Z",
+    "updatedAt": "2026-02-18T08:21:53.288Z",
     "displayOrder": 0
   },
   {
@@ -67,7 +67,7 @@
     ],
     "story": "story/r20260212-081642.md",
     "createdAt": "2026-02-12T01:16:42.777Z",
-    "updatedAt": "2026-02-18T06:58:53.606Z",
+    "updatedAt": "2026-02-18T08:22:34.619Z",
     "displayOrder": 1
   },
   {
@@ -95,7 +95,7 @@
     ],
     "story": "story/r20260212-083042.md",
     "createdAt": "2026-02-12T01:30:42.072Z",
-    "updatedAt": "2026-02-18T06:58:55.145Z",
+    "updatedAt": "2026-02-18T08:21:41.551Z",
     "displayOrder": 2
   },
   {
@@ -123,7 +123,7 @@
     ],
     "story": "story/r20260211-001017.md",
     "createdAt": "2026-02-10T17:10:17.861Z",
-    "updatedAt": "2026-02-18T06:58:56.889Z",
+    "updatedAt": "2026-02-18T08:21:41.549Z",
     "displayOrder": 3
   },
   {
@@ -154,7 +154,7 @@
     ],
     "story": "story/r20260211-001405.md",
     "createdAt": "2026-02-10T17:14:05.747Z",
-    "updatedAt": "2026-02-18T06:58:58.260Z",
+    "updatedAt": "2026-02-18T08:21:41.549Z",
     "displayOrder": 4
   },
   {
@@ -184,7 +184,7 @@
     ],
     "story": "story/r20260211-113938.md",
     "createdAt": "2026-02-11T04:39:38.195Z",
-    "updatedAt": "2026-02-18T06:59:18.027Z",
+    "updatedAt": "2026-02-18T08:21:41.549Z",
     "displayOrder": 5
   },
   {
@@ -212,7 +212,7 @@
     ],
     "story": "story/r20260211-142057.md",
     "createdAt": "2026-02-11T07:20:57.786Z",
-    "updatedAt": "2026-02-18T06:59:01.955Z",
+    "updatedAt": "2026-02-18T08:21:41.550Z",
     "displayOrder": 6
   },
   {
@@ -241,7 +241,7 @@
     ],
     "story": "story/r20260211-143637.md",
     "createdAt": "2026-02-11T07:36:37.976Z",
-    "updatedAt": "2026-02-18T06:59:03.616Z",
+    "updatedAt": "2026-02-18T08:21:41.550Z",
     "displayOrder": 7
   },
   {
@@ -268,7 +268,7 @@
     ],
     "story": "story/r20260211-144945.md",
     "createdAt": "2026-02-11T07:49:45.544Z",
-    "updatedAt": "2026-02-18T06:59:05.103Z",
+    "updatedAt": "2026-02-18T08:21:41.550Z",
     "displayOrder": 8
   },
   {
@@ -296,7 +296,7 @@
     ],
     "story": "story/r20260212-082326.md",
     "createdAt": "2026-02-12T01:23:26.567Z",
-    "updatedAt": "2026-02-18T06:59:19.426Z",
+    "updatedAt": "2026-02-18T08:21:41.551Z",
     "displayOrder": 9
   },
   {
@@ -329,33 +329,7 @@
     ],
     "story": "story/r20260214-142221.md",
     "createdAt": "2026-02-14T07:22:21.836Z",
-    "updatedAt": "2026-02-18T06:59:08.240Z",
+    "updatedAt": "2026-02-18T08:21:41.551Z",
     "displayOrder": 10
-  },
-  {
-    "id": "r20260214-142730",
-    "reportNumber": 12,
-    "title": "Testing Video",
-    "description": "A small testing video",
-    "tags": [
-      "video",
-      "testing"
-    ],
-    "cover": "media-scr/r20260214-142730_001.mp4",
-    "coverMedia": null,
-    "coverPosition": "50% 50%",
-    "coverPositions": {
-      "grid": "50% 50%",
-      "list": "50% 50%",
-      "compact": "50% 50%",
-      "spotlight": "50% 50%"
-    },
-    "images": [
-      "media-scr/r20260214-142730_001.mp4"
-    ],
-    "story": "story/r20260214-142730.md",
-    "createdAt": "2026-02-14T07:27:31.161Z",
-    "updatedAt": "2026-02-18T06:59:11.623Z",
-    "displayOrder": 11
   }
 ]
