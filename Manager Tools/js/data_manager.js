@@ -15,6 +15,7 @@
         const recentInfoEl = document.getElementById('recent-info');
         const statusBarText = document.getElementById('status-bar-text');
         const statusBarRecent = document.getElementById('status-bar-recent');
+        const statusBarLibrary = document.getElementById('status-bar-library');
         const storyForm = document.getElementById('story-form');
         const reportNumberInput = document.getElementById('report-number');
         const reportTitleInput = document.getElementById('report-title');
@@ -60,9 +61,12 @@
         const mediaPreviewClose = document.getElementById('media-preview-close');
         const mediaPreviewImage = document.getElementById('media-preview-image');
         const mediaPreviewVideo = document.getElementById('media-preview-video');
+        const storyTextField = document.querySelector('.story-text-field');
         const storyTextInput = document.getElementById('story-text');
         const storyFileInput = document.getElementById('story-file');
         const storyListEl = document.getElementById('story-list');
+        const storySearchInput = document.getElementById('story-search');
+        const storySearchClearBtn = document.getElementById('story-search-clear');
         const closeAfterSaveToggle = document.getElementById('close-after-save');
         const loadStoryBtn = document.getElementById('load-story-btn');
         const clearFormBtn = document.getElementById('clear-form');
@@ -188,6 +192,8 @@
             pinned: [],
             bookmarks: {},
         };
+        const SUPPORTED_IMAGE_CONVERT_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'webp', 'bmp', 'tif', 'tiff', 'heic', 'heif', 'avif']);
+        const SUPPORTED_VIDEO_CONVERT_EXTENSIONS = new Set(['mp4', 'webm', 'ogg', 'mov', 'm4v', 'avi', 'mkv', 'ogv']);
 
         function toFiniteNumber(value, fallback) {
             const parsed = Number(value);
@@ -441,6 +447,7 @@
         let mediaDropIndex = null;
         let mediaDropPlaceholderEl = null;
         let selectedStoryIds = new Set();
+        let storySearchQuery = '';
         let storyDragId = null;
         let storyDropIndex = null;
         let storyDropPlaceholderEl = null;
@@ -461,6 +468,16 @@
         let pendingReplaceMediaId = null;
         const mediaObjectUrls = new Map();
         let imageManagerRefreshQueued = false;
+        let imageManagerRefreshFrameId = 0;
+        let libraryStatsRequestId = 0;
+        let libraryStats = {
+            loading: false,
+            ready: false,
+            totalBytes: 0,
+            photoCount: 0,
+            gifCount: 0,
+            videoCount: 0,
+        };
 
         function setStatus(message) {
             if (statusEl) {
@@ -826,6 +843,140 @@
             }
         }
 
+        function formatByteSize(totalBytes = 0) {
+            const bytes = Math.max(0, Number(totalBytes) || 0);
+            if (bytes < 1024) {
+                return `${bytes} B`;
+            }
+            const units = ['KB', 'MB', 'GB', 'TB'];
+            let value = bytes / 1024;
+            let unitIndex = 0;
+            while (value >= 1024 && unitIndex < units.length - 1) {
+                value /= 1024;
+                unitIndex += 1;
+            }
+            const precision = value >= 100 ? 0 : (value >= 10 ? 1 : 2);
+            return `${value.toFixed(precision)} ${units[unitIndex]}`;
+        }
+
+        function buildLibraryStatsText() {
+            if (!state.rootHandle) {
+                return 'Library: none';
+            }
+            if (libraryStats.loading) {
+                return `Library ${state.rootHandle.name}: calculating stats...`;
+            }
+            if (!libraryStats.ready) {
+                return `Library ${state.rootHandle.name}: stats unavailable`;
+            }
+            return `Library ${state.rootHandle.name} | Size: ${formatByteSize(libraryStats.totalBytes)} | Photos: ${libraryStats.photoCount} | GIFs: ${libraryStats.gifCount} | Videos: ${libraryStats.videoCount}`;
+        }
+
+        function renderLibraryStatsBar() {
+            if (!statusBarLibrary) {
+                return;
+            }
+            statusBarLibrary.textContent = buildLibraryStatsText();
+        }
+
+        async function collectLibraryStats(rootHandle) {
+            const stats = {
+                totalBytes: 0,
+                photoCount: 0,
+                gifCount: 0,
+                videoCount: 0,
+            };
+            const stack = [{ handle: rootHandle, path: '' }];
+
+            while (stack.length > 0) {
+                const current = stack.pop();
+                for await (const [name, handle] of current.handle.entries()) {
+                    const relativePath = current.path ? `${current.path}/${name}` : name;
+                    if (handle.kind === 'directory') {
+                        stack.push({ handle, path: relativePath });
+                        continue;
+                    }
+                    if (handle.kind !== 'file') {
+                        continue;
+                    }
+
+                    try {
+                        const file = await handle.getFile();
+                        stats.totalBytes += Number(file.size) || 0;
+                    } catch (error) {
+                        // ignore unreadable files in size total
+                    }
+
+                    const lowerPath = normalizeRelativePath(relativePath).toLowerCase();
+                    if (!lowerPath.startsWith('media-scr/')) {
+                        continue;
+                    }
+                    const ext = getFileExtension(name);
+                    if (!ext) {
+                        continue;
+                    }
+                    if (ext === 'gif') {
+                        stats.gifCount += 1;
+                    } else if (SUPPORTED_VIDEO_CONVERT_EXTENSIONS.has(ext)) {
+                        stats.videoCount += 1;
+                    } else if (SUPPORTED_IMAGE_CONVERT_EXTENSIONS.has(ext)) {
+                        stats.photoCount += 1;
+                    }
+                }
+            }
+
+            return stats;
+        }
+
+        async function refreshLibraryStats() {
+            const requestId = ++libraryStatsRequestId;
+            if (!state.rootHandle) {
+                libraryStats = {
+                    loading: false,
+                    ready: false,
+                    totalBytes: 0,
+                    photoCount: 0,
+                    gifCount: 0,
+                    videoCount: 0,
+                };
+                renderLibraryStatsBar();
+                return;
+            }
+
+            libraryStats = {
+                ...libraryStats,
+                loading: true,
+                ready: false,
+            };
+            renderLibraryStatsBar();
+
+            try {
+                const nextStats = await collectLibraryStats(state.rootHandle);
+                if (requestId !== libraryStatsRequestId) {
+                    return;
+                }
+                libraryStats = {
+                    loading: false,
+                    ready: true,
+                    ...nextStats,
+                };
+            } catch (error) {
+                if (requestId !== libraryStatsRequestId) {
+                    return;
+                }
+                libraryStats = {
+                    loading: false,
+                    ready: false,
+                    totalBytes: 0,
+                    photoCount: 0,
+                    gifCount: 0,
+                    videoCount: 0,
+                };
+            }
+
+            renderLibraryStatsBar();
+        }
+
         function updateRecentInfo() {
             const folder = localStorage.getItem(RECENT_FOLDER_KEY);
             const storyTitle = localStorage.getItem(RECENT_STORY_TITLE_KEY);
@@ -843,6 +994,7 @@
             if (openRecentBtn) {
                 openRecentBtn.disabled = !folder;
             }
+            renderLibraryStatsBar();
         }
 
         async function tryUseRecentHandle(auto = false) {
@@ -1166,8 +1318,9 @@
                 return;
             }
             imageManagerRefreshQueued = true;
-            Promise.resolve().then(() => {
+            imageManagerRefreshFrameId = window.requestAnimationFrame(() => {
                 imageManagerRefreshQueued = false;
+                imageManagerRefreshFrameId = 0;
                 renderImageManager();
             });
         }
@@ -3325,6 +3478,7 @@
 
         async function loadLibrary() {
             if (!state.rootHandle) {
+                void refreshLibraryStats();
                 return;
             }
 
@@ -3340,6 +3494,7 @@
             }
             renderStoryList();
             renderImageManager();
+            void refreshLibraryStats();
             setStatus(`Loaded ${state.stories.length} stories from ${state.rootHandle.name}.`);
             saveRecentFolder(state.rootHandle);
         }
@@ -3457,6 +3612,7 @@
             await writeCatalog(state.stories);
             renderStoryList();
             renderImageManager();
+            void refreshLibraryStats();
             setStatus(`Scanned library and rebuilt ${state.stories.length} stories.`);
             saveRecentFolder(state.rootHandle);
         }
@@ -3468,16 +3624,9 @@
                 return rest;
             });
             const catalogJson = JSON.stringify(jsonCatalog, null, 2);
-
-            const storyDir = await getStoryDir();
-            const catalogWithText = [];
-            for (const entry of catalog) {
-                const storyText = entry.storyText || await readTextFile(storyDir, `${entry.id}.md`);
-                catalogWithText.push({ ...entry, storyText });
-            }
             const rawSettings = (await readJsonFile(databaseDir, 'settings.json')) || {};
             const viewerSettings = extractViewerSettings(rawSettings);
-            const catalogJs = `window.REPORT_CATALOG = ${JSON.stringify(catalogWithText, null, 2)};\n` +
+            const catalogJs = `window.REPORT_CATALOG = ${JSON.stringify(jsonCatalog, null, 2)};\n` +
                 `window.VIEWER_SETTINGS = ${JSON.stringify(viewerSettings, null, 2)};\n`;
 
             await writeFile(databaseDir, 'catalog.json', catalogJson);
@@ -3631,17 +3780,77 @@
             editStory(storyId);
         }
 
+        function getStorySearchTokens(query) {
+            return (query || '')
+                .toLowerCase()
+                .split(/\s+/)
+                .map(token => token.trim())
+                .filter(Boolean);
+        }
+
+        function refreshStorySearchUi() {
+            if (!storySearchClearBtn) {
+                return;
+            }
+            const hasQuery = getStorySearchTokens(storySearchQuery).length > 0;
+            storySearchClearBtn.hidden = !hasQuery;
+        }
+
+        function applyStorySearchQuery(query) {
+            storySearchQuery = typeof query === 'string' ? query : '';
+            refreshStorySearchUi();
+            renderStoryList();
+        }
+
+        function setTextZoneActive(active) {
+            if (!storyTextField) {
+                return;
+            }
+            storyTextField.classList.toggle('text-zone-active', !!active);
+        }
+
+        function refreshTextZoneActiveState() {
+            const hasFocus = !!storyTextInput && document.activeElement === storyTextInput;
+            const hasHover = !!storyTextInput && storyTextInput.matches(':hover');
+            setTextZoneActive(hasFocus || hasHover);
+        }
+
+        function storyMatchesSearch(story, tokens) {
+            if (!Array.isArray(tokens) || tokens.length === 0) {
+                return true;
+            }
+            const searchable = [
+                story.id,
+                story.title,
+                story.description,
+                story.reportNumber ? String(story.reportNumber) : '',
+                Array.isArray(story.tags) ? story.tags.join(' ') : '',
+            ]
+                .filter(Boolean)
+                .join(' ')
+                .toLowerCase();
+            return tokens.every(token => searchable.includes(token));
+        }
+
         function renderStoryList() {
             storyListEl.innerHTML = '';
+            const searchTokens = getStorySearchTokens(storySearchQuery);
+            const isSearchActive = searchTokens.length > 0;
+            const visibleStories = isSearchActive
+                ? state.stories.filter(story => storyMatchesSearch(story, searchTokens))
+                : state.stories;
+            storyListEl.dataset.searchActive = isSearchActive ? 'true' : 'false';
 
-            if (state.stories.length === 0) {
+            if (visibleStories.length === 0) {
                 const empty = document.createElement('p');
-                empty.textContent = 'No stories yet.';
+                empty.textContent = state.stories.length === 0
+                    ? 'No stories yet.'
+                    : 'No stories match your search.';
                 storyListEl.appendChild(empty);
                 return;
             }
 
-            state.stories.forEach(story => {
+            visibleStories.forEach(story => {
                 const card = document.createElement('div');
                 card.className = 'story-card';
                 card.dataset.id = story.id;
@@ -3711,25 +3920,30 @@
                 dragHandle.type = 'button';
                 dragHandle.className = 'drag-handle';
                 dragHandle.textContent = '↕️';
-                dragHandle.title = 'Drag to reorder';
-                dragHandle.draggable = true;
+                dragHandle.title = isSearchActive ? 'Clear search to reorder' : 'Drag to reorder';
+                dragHandle.draggable = !isSearchActive;
+                if (isSearchActive) {
+                    dragHandle.setAttribute('aria-disabled', 'true');
+                }
                 dragHandle.addEventListener('click', (event) => {
                     event.stopPropagation();
                 });
-                dragHandle.addEventListener('dragstart', event => {
-                    storyDragId = story.id;
-                    card.classList.add('dragging');
-                    dragHandle.classList.add('dragging');
-                    event.dataTransfer.effectAllowed = 'move';
-                    event.dataTransfer.setData('text/plain', story.id);
-                    updateStoryDropPlaceholder(event.clientY);
-                });
-                dragHandle.addEventListener('dragend', () => {
-                    storyDragId = null;
-                    card.classList.remove('dragging');
-                    dragHandle.classList.remove('dragging');
-                    clearStoryDropPlaceholder();
-                });
+                if (!isSearchActive) {
+                    dragHandle.addEventListener('dragstart', event => {
+                        storyDragId = story.id;
+                        card.classList.add('dragging');
+                        dragHandle.classList.add('dragging');
+                        event.dataTransfer.effectAllowed = 'move';
+                        event.dataTransfer.setData('text/plain', story.id);
+                        updateStoryDropPlaceholder(event.clientY);
+                    });
+                    dragHandle.addEventListener('dragend', () => {
+                        storyDragId = null;
+                        card.classList.remove('dragging');
+                        dragHandle.classList.remove('dragging');
+                        clearStoryDropPlaceholder();
+                    });
+                }
 
                 dragZone.appendChild(dragHandle);
 
@@ -3887,7 +4101,6 @@
             coverViewportPositionBeforeEdit = null;
             pendingReplaceMediaId = null;
             releaseUnusedMediaUrls();
-            clearLibraryPreviewAssetUrls();
             updateCoverPresetModeButtons();
             renderCoverPresetGrid();
             applyCoverPosition();
@@ -4044,7 +4257,8 @@
                 await writeCatalog(state.stories);
 
                 setStatus(`Saved ${title}.`);
-                await loadLibrary();
+                selectedStoryIds.clear();
+                renderStoryList();
                 saveRecentStory(entry);
                 resetForm();
                 setStatus(`Saved ${title}. Ready for next story.`);
@@ -4589,13 +4803,66 @@
         storyForm.addEventListener('submit', handleSave);
 
         if (markdownToolbar) {
+            let toolbarPointerButton = null;
+
+            markdownToolbar.addEventListener('pointerdown', event => {
+                toolbarPointerButton = event.target.closest('button[data-md-action]');
+            });
+
+            markdownToolbar.addEventListener('pointercancel', () => {
+                toolbarPointerButton = null;
+            });
+
             markdownToolbar.addEventListener('click', event => {
                 const button = event.target.closest('button[data-md-action]');
                 if (!button) {
+                    toolbarPointerButton = null;
                     return;
                 }
+
+                const isKeyboardActivation = event.detail === 0;
+                const isPointerActivation = toolbarPointerButton === button;
+                toolbarPointerButton = null;
+
+                if (!isKeyboardActivation && !isPointerActivation) {
+                    // Ignore synthetic activation when clicking empty label/toolbar space.
+                    event.preventDefault();
+                    button.blur();
+                    return;
+                }
+
                 event.preventDefault();
+                button.blur();
                 void applyMarkdownAction(button.dataset.mdAction || '');
+            });
+        }
+
+        if (storyTextInput) {
+            storyTextInput.addEventListener('focus', () => setTextZoneActive(true));
+            storyTextInput.addEventListener('mouseenter', () => setTextZoneActive(true));
+            storyTextInput.addEventListener('blur', () => {
+                requestAnimationFrame(refreshTextZoneActiveState);
+            });
+            storyTextInput.addEventListener('mouseleave', () => {
+                requestAnimationFrame(refreshTextZoneActiveState);
+            });
+        }
+
+        if (storySearchInput) {
+            storySearchInput.addEventListener('input', () => {
+                applyStorySearchQuery(storySearchInput.value || '');
+            });
+            storySearchInput.addEventListener('search', () => {
+                applyStorySearchQuery(storySearchInput.value || '');
+            });
+        }
+        if (storySearchClearBtn) {
+            storySearchClearBtn.addEventListener('click', () => {
+                if (storySearchInput) {
+                    storySearchInput.value = '';
+                    storySearchInput.focus();
+                }
+                applyStorySearchQuery('');
             });
         }
 
@@ -4880,6 +5147,9 @@
         applyCoverPosition();
         updateRecentInfo();
         renderImageManager();
+        storySearchQuery = storySearchInput ? (storySearchInput.value || '') : '';
+        refreshStorySearchUi();
+        refreshTextZoneActiveState();
         window.addEventListener('beforeunload', () => {
             releaseAllMediaUrls();
             clearLibraryPreviewCaches();

@@ -37,7 +37,13 @@
 
         <main class="layout">
             <section class="panel stories-panel">
-                <h2>Existing Stories</h2>
+                <div class="panel-header stories-header">
+                    <h2>Existing Stories</h2>
+                    <div class="story-search-wrap">
+                        <input type="search" id="story-search" class="story-search-input" placeholder="Search stories..." aria-label="Search stories">
+                        <button type="button" id="story-search-clear" class="story-search-clear" title="Clear search" aria-label="Clear search" hidden>&times;</button>
+                    </div>
+                </div>
                 <div class="panel-content">
                     <div class="story-list" id="story-list"></div>
                     <div class="danger-zone">
@@ -95,8 +101,8 @@
                         <input type="hidden" id="cover-position" value="50% 50%">
                         <input type="file" id="story-file" accept=".md,.txt" hidden>
 
-                        <label class="story-text-field">
-                            <span>Story Text (Markdown)</span>
+                        <div class="story-text-field">
+                            <label class="story-text-label" for="story-text">Story Text (Markdown)</label>
                             <div class="markdown-toolbar" id="markdown-toolbar">
                                 <button type="button" class="md-icon-btn" data-md-action="heading" title="Heading" aria-label="Heading">
                                     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -131,7 +137,7 @@
                                 </button>
                             </div>
                             <textarea id="story-text" rows="18" placeholder="Write the story here..."></textarea>
-                        </label>
+                        </div>
                     </form>
                 </div>
             </section>
@@ -168,6 +174,7 @@
     <div class="status-bar">
         <span id="status-bar-text">Ready.</span>
         <span id="status-bar-recent">Recent folder: none &bull; Recent story: none</span>
+        <span id="status-bar-library">Library: none</span>
     </div>
 
     <!-- Toast Notification Container -->
@@ -238,7 +245,6 @@
             </div>
         </div>
     </div>
-
     <div class="dialog-overlay" id="dialog-overlay" hidden>
         <div class="dialog-modal" role="dialog" aria-modal="true" aria-labelledby="dialog-title" aria-describedby="dialog-message">
             <div class="dialog-header">
@@ -260,4 +266,6 @@
     <script src="js/data_manager.js"></script>
 </body>
 </html>
+
+
 
