@@ -275,9 +275,10 @@ body {
     align-items: center;
     gap: 10px;
     flex-wrap: nowrap;
-    overflow-x: auto;
-    overflow-y: hidden;
+    overflow: visible;
     scrollbar-width: thin;
+    padding: 4px;
+    margin: -4px;
 }
 
 .search-panel label {
@@ -348,9 +349,10 @@ body {
     justify-content: flex-start;
     gap: 10px;
     flex-wrap: nowrap;
-    overflow-x: auto;
-    overflow-y: hidden;
+    overflow: visible;
     scrollbar-width: thin;
+    padding: 4px;
+    margin: -4px;
 }
 
 .filters {
@@ -2762,7 +2764,7 @@ body[data-theme="light"] .story-card.keyboard-focused .card-desc {
     color: #0b1220 !important;
 }
 
-/* Top control elements highlight */
+/* Top control elements highlight - using ::before for floating outline above overflow */
 .search-box input.keyboard-focused,
 .filter-btn.keyboard-focused,
 .layout-btn.keyboard-focused,
@@ -2771,12 +2773,28 @@ body[data-theme="light"] .story-card.keyboard-focused .card-desc {
 .help-btn.keyboard-focused,
 #settings-btn.keyboard-focused {
     outline: none;
+    transform: translateY(-2px);
+    position: relative;
+    z-index: 100;
+}
+
+.search-box input.keyboard-focused::before,
+.filter-btn.keyboard-focused::before,
+.layout-btn.keyboard-focused::before,
+.sort-btn.keyboard-focused::before,
+.theme-toggle.keyboard-focused::before,
+.help-btn.keyboard-focused::before,
+#settings-btn.keyboard-focused::before {
+    content: "";
+    position: absolute;
+    inset: -4px;
+    border-radius: inherit;
+    border: 3px solid var(--accent);
     box-shadow:
-        0 0 0 3px var(--accent),
         0 0 15px var(--accent),
         0 0 30px var(--accent-2);
-    transform: translateY(-2px);
-    z-index: 100;
+    pointer-events: none;
+    z-index: -1;
 }
 
 /* Special highlight for search input when focused via keyboard */
