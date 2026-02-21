@@ -768,20 +768,6 @@ document.addEventListener("DOMContentLoaded", () => {
   function saveSettings() {
     // Save to localStorage for immediate access
     localStorage.setItem("viewerSettings", JSON.stringify(settings));
-    
-    // Also attempt to save to database for persistence across sessions
-    saveSettingsToDatabase();
-  }
-
-  async function saveSettingsToDatabase() {
-    try {
-      // API saving is disabled for local file usage.
-      // Settings are saved to localStorage in saveSettings().
-      console.log("Settings saved to localStorage (API not available).");
-    } catch (error) {
-      // API not available, localStorage is the fallback
-      console.log("Settings saved to localStorage");
-    }
   }
 
   async function loadDefaultSettings() {
@@ -1542,22 +1528,39 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
     const profile = KEY_PROFILES[settings.keyboardMode] || KEY_PROFILES.default;
+    const panKeysEnabled = settings.panKeys;
 
     // All bindings sorted by category but rendered as tag-like pills
+    // Keys change based on panKeys setting
     const allBindings = [
-      // Image Navigation (Shift + Arrow is hardcoded, show it as default)
-      { action: "prev", label: "Previous image", keys: profile.prev.length > 0 ? profile.prev : ["shift+arrowleft"], category: "nav" },
-      { action: "next", label: "Next image", keys: profile.next.length > 0 ? profile.next : ["shift+arrowright"], category: "nav" },
-      // Pan Image
-      { action: "panUp", label: "Pan image up", keys: ["w", "arrowup"], category: "pan" },
-      { action: "panDown", label: "Pan image down", keys: ["s", "arrowdown"], category: "pan" },
-      { action: "panLeft", label: "Pan image left", keys: ["a", "arrowleft"], category: "pan" },
-      { action: "panRight", label: "Pan image right", keys: ["d", "arrowright"], category: "pan" },
+      // Image Navigation - changes based on panKeys setting
+      { 
+        action: "prev", 
+        label: "Previous image", 
+        keys: panKeysEnabled 
+          ? (profile.prev.length > 0 ? profile.prev : ["shift+arrowleft"])
+          : ["a", "arrowleft"],
+        category: "nav" 
+      },
+      { 
+        action: "next", 
+        label: "Next image", 
+        keys: panKeysEnabled 
+          ? (profile.next.length > 0 ? profile.next : ["shift+arrowright"])
+          : ["d", "arrowright"],
+        category: "nav" 
+      },
+      // Pan Image - only shown when panKeys is enabled
+      { action: "panUp", label: "Pan image up", keys: ["w", "arrowup"], category: "pan", hide: !panKeysEnabled },
+      { action: "panDown", label: "Pan image down", keys: ["s", "arrowdown"], category: "pan", hide: !panKeysEnabled },
+      { action: "panLeft", label: "Pan image left", keys: ["a", "arrowleft"], category: "pan", hide: !panKeysEnabled },
+      { action: "panRight", label: "Pan image right", keys: ["d", "arrowright"], category: "pan", hide: !panKeysEnabled },
+      // Story Scroll - only shown when panKeys is disabled
+      { action: "scrollUp", label: "Scroll story up", keys: ["w", "arrowup"], category: "scroll", hide: panKeysEnabled },
+      { action: "scrollDown", label: "Scroll story down", keys: ["s", "arrowdown"], category: "scroll", hide: panKeysEnabled },
       // Story Navigation
       { action: "prevStory", label: "Previous story", keys: ["ctrl+arrowleft", "pageup"], category: "story" },
       { action: "nextStory", label: "Next story", keys: ["ctrl+arrowright", "pagedown"], category: "story" },
-      { action: "scrollUp", label: "Scroll story up", keys: profile.scrollUp, category: "story" },
-      { action: "scrollDown", label: "Scroll story down", keys: profile.scrollDown, category: "story" },
       // Zoom Controls
       { action: "zoomOut", label: "Zoom out", keys: profile.zoomOut, category: "zoom" },
       { action: "zoomIn", label: "Zoom in", keys: profile.zoomIn, category: "zoom" },
@@ -1576,9 +1579,12 @@ document.addEventListener("DOMContentLoaded", () => {
       { action: "goToGallery", label: "Back to gallery", keys: profile.goToGallery, category: "ui" },
     ];
 
+    // Filter out hidden bindings based on panKeys setting
+    const visibleBindings = allBindings.filter(binding => !binding.hide);
+    
     let content = '<div class="keybind-tags-container">';
 
-    allBindings.forEach((binding) => {
+    visibleBindings.forEach((binding) => {
       const currentKey = formatBinding(binding.action, binding.keys) || "—";
       const active = bindingTarget === binding.action;
       const activeClass = active ? " active" : "";
@@ -1858,30 +1864,65 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // Check for customizable pan keys (only if Ctrl is NOT pressed)
-    if (settings.panKeys && !event.ctrlKey) {
-      const panStep = 24;
-      let panHandled = false;
-      
-      if (keyMatches(["w", "arrowup"], key, "panUp")) {
-        translateY -= panStep;
-        panHandled = true;
-      } else if (keyMatches(["s", "arrowdown"], key, "panDown")) {
-        translateY += panStep;
-        panHandled = true;
-      } else if (keyMatches(["a", "arrowleft"], key, "panLeft")) {
-        translateX -= panStep;
-        panHandled = true;
-      } else if (keyMatches(["d", "arrowright"], key, "panRight")) {
-        translateX += panStep;
-        panHandled = true;
-      }
-      
-      if (panHandled) {
-        event.preventDefault();
-        updateTransform();
-        saveZoomState();
-        return;
+    // Handle arrow/WASD keys based on panKeys setting
+    if (!event.ctrlKey && !event.shiftKey) {
+      if (settings.panKeys) {
+        // Pan Keys ENABLED: Arrow/WASD keys pan the image
+        const panStep = 24;
+        let panHandled = false;
+        
+        if (keyMatches(["w", "arrowup"], key, "panUp")) {
+          translateY -= panStep;
+          panHandled = true;
+        } else if (keyMatches(["s", "arrowdown"], key, "panDown")) {
+          translateY += panStep;
+          panHandled = true;
+        } else if (keyMatches(["a", "arrowleft"], key, "panLeft")) {
+          translateX -= panStep;
+          panHandled = true;
+        } else if (keyMatches(["d", "arrowright"], key, "panRight")) {
+          translateX += panStep;
+          panHandled = true;
+        }
+        
+        if (panHandled) {
+          event.preventDefault();
+          updateTransform();
+          saveZoomState();
+          return;
+        }
+      } else {
+        // Pan Keys DISABLED: Arrow/WASD keys for navigation and scrolling
+        let navHandled = false;
+        
+        // W/S and Up/Down: Scroll story
+        if (key === "w" || key === "arrowup") {
+          els.storyContent.scrollBy(0, -settings.scrollStep);
+          navHandled = true;
+        } else if (key === "s" || key === "arrowdown") {
+          els.storyContent.scrollBy(0, settings.scrollStep);
+          navHandled = true;
+        }
+        // A/D and Left/Right: Previous/Next image
+        else if (key === "a" || key === "arrowleft") {
+          if (photos.length > 0) {
+            currentPhotoIndex = (currentPhotoIndex - 1 + photos.length) % photos.length;
+            updatePhoto();
+          }
+          navHandled = true;
+        } else if (key === "d" || key === "arrowright") {
+          if (photos.length > 0) {
+            currentPhotoIndex = (currentPhotoIndex + 1) % photos.length;
+            updatePhoto();
+          }
+          navHandled = true;
+        }
+        
+        if (navHandled) {
+          event.preventDefault();
+          saveScrollPosition();
+          return;
+        }
       }
     }
 
@@ -1951,7 +1992,6 @@ document.addEventListener("DOMContentLoaded", () => {
       currentPhotoIndex =
         (currentPhotoIndex - 1 + photos.length) % photos.length;
       updatePhoto();
-      SFX.navigation();
     }
   });
 
@@ -1959,7 +1999,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (photos.length > 0) {
       currentPhotoIndex = (currentPhotoIndex + 1) % photos.length;
       updatePhoto();
-      SFX.navigation();
     }
   });
 
@@ -1967,20 +2006,17 @@ document.addEventListener("DOMContentLoaded", () => {
     zoomLevel += settings.zoomStep;
     updateTransform();
     saveZoomState();
-    SFX.adjust();
   });
 
   els.zoomOutBtn.addEventListener("click", () => {
     zoomLevel = Math.max(0.1, zoomLevel - settings.zoomStep);
     updateTransform();
     saveZoomState();
-    SFX.adjust();
   });
 
   els.fitViewBtn.addEventListener("click", () => {
     resetView();
     saveZoomState();
-    SFX.click();
   });
 
   function handleMediaMouseDown(event) {
@@ -2073,7 +2109,6 @@ document.addEventListener("DOMContentLoaded", () => {
         playVideoIfPossible();
       }
       updateVideoAudioButton();
-      SFX.toggle();
     });
   }
 
@@ -2153,15 +2188,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   els.favoriteBtn.addEventListener("click", () => {
     toggleFavorite();
-    SFX.favorite();
   });
   els.bookmarkBtn.addEventListener("click", () => {
     toggleBookmark();
-    SFX.toggle();
   });
   els.settingsBtn.addEventListener("click", () => {
     showSettings();
-    SFX.settingsOpen();
   });
   els.closeSettings.addEventListener("click", () => {
     if (isDataManagerSettingsEmbedMode() && window.parent !== window) {
@@ -2170,13 +2202,11 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
     hideSettings();
-    SFX.click();
   });
   if (els.tabButtons) {
     els.tabButtons.forEach((button) => {
       button.addEventListener("click", () => {
         setActiveTab(button.dataset.tab);
-        SFX.tab();
       });
     });
   }
@@ -2186,7 +2216,6 @@ document.addEventListener("DOMContentLoaded", () => {
       saveThemeToHomepage(settings.theme); // Sync to homepage
       applySettings();
       saveSettings();
-      SFX.theme();
     });
   }
 
@@ -2195,7 +2224,6 @@ document.addEventListener("DOMContentLoaded", () => {
       settings.fontSize = Math.min(26, settings.fontSize + 1);
       applySettings();
       saveSettings();
-      SFX.adjust();
     });
   }
 
@@ -2204,7 +2232,6 @@ document.addEventListener("DOMContentLoaded", () => {
       settings.fontSize = Math.max(14, settings.fontSize - 1);
       applySettings();
       saveSettings();
-      SFX.adjust();
     });
   }
 

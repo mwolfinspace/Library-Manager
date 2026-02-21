@@ -235,14 +235,6 @@
                             <h4>📷 Image Controls</h4>
                             <div class="shortcuts-pill-grid">
                                 <div class="shortcut-pill">
-                                    <span class="shortcut-pill-key">W/A/S/D</span>
-                                    <span class="shortcut-pill-desc">Pan Image</span>
-                                </div>
-                                <div class="shortcut-pill">
-                                    <span class="shortcut-pill-key">Arrow Keys</span>
-                                    <span class="shortcut-pill-desc">Pan Image</span>
-                                </div>
-                                <div class="shortcut-pill">
                                     <span class="shortcut-pill-key">Shift + ←/→</span>
                                     <span class="shortcut-pill-desc">Prev/Next Image</span>
                                 </div>
@@ -258,6 +250,16 @@
                                     <span class="shortcut-pill-key">1 / 0</span>
                                     <span class="shortcut-pill-desc">Fit to View</span>
                                 </div>
+                            </div>
+                        </div>
+
+                        <div class="shortcuts-category">
+                            <h4>🔄 Navigation Modes <span style="font-size:10px;color:var(--muted);">(toggle in Settings)</span></h4>
+                            <div style="margin-bottom:8px;padding:8px;background:rgba(98,247,255,0.05);border-radius:8px;font-size:12px;">
+                                <strong style="color:var(--accent);">Pan Keys ON:</strong> W/A/S/D + Arrows pan the image
+                            </div>
+                            <div style="margin-bottom:8px;padding:8px;background:rgba(255,107,107,0.05);border-radius:8px;font-size:12px;">
+                                <strong style="color:#ff9d9d;">Pan Keys OFF:</strong> A/D + ←/→ = Prev/Next Image, W/S + ↑/↓ = Scroll Story
                             </div>
                         </div>
 
@@ -534,17 +536,29 @@
 
                     <div class="settings-section">
                         <h4>Options</h4>
-                        <label class="checkbox">
+                        <label class="toggle-switch">
                             <input type="checkbox" id="pan-keys" />
-                            Enable Pan Keys (WASD / Arrows)
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">
+                                <span class="toggle-title">Pan Keys</span>
+                                <span class="toggle-desc">WASD / Arrows pan the image. OFF = navigate images & scroll story</span>
+                            </span>
                         </label>
-                        <label class="checkbox">
+                        <label class="toggle-switch">
                             <input type="checkbox" id="remember-zoom" />
-                            Remember Zoom Per Story
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">
+                                <span class="toggle-title">Remember Zoom</span>
+                                <span class="toggle-desc">Save zoom level per story</span>
+                            </span>
                         </label>
-                        <label class="checkbox">
+                        <label class="toggle-switch">
                             <input type="checkbox" id="remember-view-all" />
-                            Remember View Across All Stories
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">
+                                <span class="toggle-title">Global View</span>
+                                <span class="toggle-desc">Remember view across all stories</span>
+                            </span>
                         </label>
                     </div>
                 </div>
