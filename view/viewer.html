@@ -501,21 +501,38 @@
 
                     <div class="settings-section">
                         <h4>Scroll Step</h4>
-                        <select id="scroll-step" class="font-select">
-                            <option value="20">20 px</option>
-                            <option value="40">40 px</option>
-                            <option value="60">60 px</option>
-                            <option value="80">80 px</option>
-                        </select>
+                        <input
+                            type="range"
+                            id="scroll-step"
+                            min="20"
+                            max="300"
+                            step="10"
+                        />
+                        <span class="range-value" id="scroll-step-value">100 px</span>
                     </div>
 
                     <div class="settings-section">
                         <h4>Zoom Step</h4>
-                        <select id="zoom-step" class="font-select">
-                            <option value="0.05">0.05</option>
-                            <option value="0.1">0.1</option>
-                            <option value="0.2">0.2</option>
-                        </select>
+                        <input
+                            type="range"
+                            id="zoom-step"
+                            min="0.05"
+                            max="0.5"
+                            step="0.05"
+                        />
+                        <span class="range-value" id="zoom-step-value">0.25</span>
+                    </div>
+
+                    <div class="settings-section">
+                        <h4>Scroll Behavior</h4>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="smooth-scroll" />
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">
+                                <span class="toggle-title">Smooth Scroll</span>
+                                <span class="toggle-desc">Animate keyboard scrolling like mouse wheel</span>
+                            </span>
+                        </label>
                     </div>
                 </div>
 

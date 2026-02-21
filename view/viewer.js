@@ -62,8 +62,8 @@ const DEFAULT_SETTINGS = {
   theme: "dark",
   fontSize: 16,
   lineSpacing: 1.6,
-  scrollStep: 40,
-  zoomStep: 0.1,
+  scrollStep: 100,
+  zoomStep: 0.25,
   keyboardMode: "default",
   panKeys: true,
   rememberZoom: true,
@@ -71,6 +71,7 @@ const DEFAULT_SETTINGS = {
   customFont: "",
   customBindings: {},
   rememberViewAll: false,
+  smoothScroll: true,
 };
 
 const DM_SETTINGS_EMBED = (() => {
@@ -124,6 +125,7 @@ document.addEventListener("DOMContentLoaded", () => {
     panKeys: document.getElementById("pan-keys"),
     rememberZoom: document.getElementById("remember-zoom"),
     rememberViewAll: document.getElementById("remember-view-all"),
+    smoothScroll: document.getElementById("smooth-scroll"),
     shortcutList: document.getElementById("shortcut-list"),
     keybindList: document.getElementById("keybind-list"),
     backLink: document.getElementById("back-link"),
@@ -708,11 +710,23 @@ document.addEventListener("DOMContentLoaded", () => {
     if (els.lineSpacing) els.lineSpacing.value = settings.lineSpacing;
     if (els.scrollStep) els.scrollStep.value = settings.scrollStep;
     if (els.zoomStep) els.zoomStep.value = settings.zoomStep;
+    
+    // Update range value displays
+    const scrollStepValue = document.getElementById('scroll-step-value');
+    if (scrollStepValue) scrollStepValue.textContent = `${settings.scrollStep} px`;
+    const zoomStepValue = document.getElementById('zoom-step-value');
+    if (zoomStepValue) zoomStepValue.textContent = settings.zoomStep;
     if (els.keyboardMode) els.keyboardMode.value = settings.keyboardMode;
     if (els.panKeys) els.panKeys.checked = settings.panKeys;
     if (els.rememberZoom) els.rememberZoom.checked = settings.rememberZoom;
     if (els.rememberViewAll)
       els.rememberViewAll.checked = settings.rememberViewAll;
+    if (els.smoothScroll) els.smoothScroll.checked = settings.smoothScroll;
+
+    // Apply smooth scroll behavior
+    if (els.storyContent) {
+      els.storyContent.style.scrollBehavior = settings.smoothScroll ? 'smooth' : 'auto';
+    }
 
     // Apply homepage colors after setting theme
     applyHomepageColors();
@@ -760,6 +774,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     if (typeof settings.rememberViewAll !== "boolean") {
       settings.rememberViewAll = false;
+    }
+    if (typeof settings.smoothScroll !== "boolean") {
+      settings.smoothScroll = true;
     }
 
     syncThemeWithHomepage();
@@ -2296,13 +2313,17 @@ document.addEventListener("DOMContentLoaded", () => {
     saveSettings();
   });
 
-  els.scrollStep.addEventListener("change", () => {
+  els.scrollStep.addEventListener("input", () => {
     settings.scrollStep = parseInt(els.scrollStep.value, 10);
+    const scrollStepValue = document.getElementById('scroll-step-value');
+    if (scrollStepValue) scrollStepValue.textContent = `${settings.scrollStep} px`;
     saveSettings();
   });
 
-  els.zoomStep.addEventListener("change", () => {
+  els.zoomStep.addEventListener("input", () => {
     settings.zoomStep = parseFloat(els.zoomStep.value);
+    const zoomStepValue = document.getElementById('zoom-step-value');
+    if (zoomStepValue) zoomStepValue.textContent = settings.zoomStep;
     saveSettings();
   });
 
@@ -2327,6 +2348,16 @@ document.addEventListener("DOMContentLoaded", () => {
       settings.rememberViewAll = els.rememberViewAll.checked;
       if (settings.rememberZoom) {
         saveZoomState();
+      }
+      saveSettings();
+    });
+  }
+
+  if (els.smoothScroll) {
+    els.smoothScroll.addEventListener("change", () => {
+      settings.smoothScroll = els.smoothScroll.checked;
+      if (els.storyContent) {
+        els.storyContent.style.scrollBehavior = settings.smoothScroll ? 'smooth' : 'auto';
       }
       saveSettings();
     });
