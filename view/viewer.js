@@ -1,9 +1,9 @@
 ﻿const KEY_PROFILES = {
   default: {
-    prev: ["arrowleft"],
-    next: ["arrowright"],
-    scrollUp: ["arrowup"],
-    scrollDown: ["arrowdown"],
+    prev: [],
+    next: [],
+    scrollUp: [],
+    scrollDown: [],
     zoomIn: ["=", "e"],
     zoomOut: ["-", "q"],
     fit: ["0", "1"],
@@ -19,8 +19,8 @@
     goToGallery: ["2", "/"],
   },
   left: {
-    prev: ["a"],
-    next: ["d"],
+    prev: [],
+    next: [],
     scrollUp: ["w"],
     scrollDown: ["s"],
     zoomIn: ["e"],
@@ -1545,9 +1545,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // All bindings sorted by category but rendered as tag-like pills
     const allBindings = [
-      // Image Navigation
-      { action: "prev", label: "Previous image", keys: profile.prev, category: "nav" },
-      { action: "next", label: "Next image", keys: profile.next, category: "nav" },
+      // Image Navigation (Shift + Arrow is hardcoded, show it as default)
+      { action: "prev", label: "Previous image", keys: profile.prev.length > 0 ? profile.prev : ["shift+arrowleft"], category: "nav" },
+      { action: "next", label: "Next image", keys: profile.next.length > 0 ? profile.next : ["shift+arrowright"], category: "nav" },
       // Pan Image
       { action: "panUp", label: "Pan image up", keys: ["w", "arrowup"], category: "pan" },
       { action: "panDown", label: "Pan image down", keys: ["s", "arrowdown"], category: "pan" },
@@ -1595,7 +1595,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     content += "</div>";
 
-    els.keybindList.innerHTML = `<div class="keybind-instructions">Click <strong>Assign</strong> then press a key. <strong>Backspace</strong> to clear. <strong>Esc</strong> to cancel.</div>${content}`;
+    els.keybindList.innerHTML = `<div class="keybind-instructions">Click <strong>Assign</strong> then press a key. <strong>Backspace</strong> to clear. <strong>Esc</strong> to cancel.</div>${content}<button type="button" class="reset-shortcuts-btn" id="reset-shortcuts-btn">Reset All to Default</button>`;
 
     els.keybindList.querySelectorAll("button[data-bind]").forEach((button) => {
       button.addEventListener("click", () => {
@@ -1603,6 +1603,16 @@ document.addEventListener("DOMContentLoaded", () => {
         renderKeybindList();
       });
     });
+
+    const resetBtn = document.getElementById("reset-shortcuts-btn");
+    if (resetBtn) {
+      resetBtn.addEventListener("click", () => {
+        settings.customBindings = {};
+        saveSettings();
+        renderKeybindList();
+        updateBlackoutResumeText();
+      });
+    }
   }
 
   // Blackout search functionality

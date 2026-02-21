@@ -1803,6 +1803,48 @@ body[data-theme="light"] .help-header {
     color: var(--accent);
 }
 
+/* Reset Shortcuts Button */
+.reset-shortcuts-btn {
+    display: block;
+    width: 100%;
+    margin-top: 16px;
+    padding: 10px 16px;
+    border-radius: 999px;
+    border: 1px solid var(--button-border);
+    background: transparent;
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.reset-shortcuts-btn:hover {
+    background: rgba(98, 247, 255, 0.15);
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 0 12px rgba(98, 247, 255, 0.2);
+}
+
+.reset-shortcuts-btn:active {
+    transform: scale(0.98);
+}
+
+body[data-theme="light"] .reset-shortcuts-btn {
+    border-color: rgba(11, 18, 32, 0.3);
+    color: var(--ink);
+}
+
+body[data-theme="light"] .reset-shortcuts-btn:hover {
+    background: rgba(10, 166, 199, 0.15);
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 0 12px rgba(10, 166, 199, 0.2);
+}
+
 /* Light theme - better contrast for all text */
 body[data-theme="light"] .keybind-instructions strong {
     color: var(--ink);
