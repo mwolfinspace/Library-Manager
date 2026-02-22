@@ -1359,12 +1359,11 @@ function openProtectedUnlockModal(story) {
   }
 
   unlockModalState.story = story;
-  const storyTitle =
-    story.title ||
-    (story.reportNumber ? `Report #${story.reportNumber}` : story.id || "Report");
+  const storyReportId = String(story.id || story.reportNumber || "").trim();
+  const reportLabel = storyReportId ? `report #${storyReportId}` : "this report";
 
   if (unlockModalState.message) {
-    unlockModalState.message.textContent = `Enter password to open "${storyTitle}".`;
+    unlockModalState.message.textContent = `Enter password to open ${reportLabel}.`;
   }
 
   const protectedSettings = getProtectedPostSettings();
