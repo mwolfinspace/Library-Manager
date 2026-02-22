@@ -259,10 +259,1228 @@ try {
   // Ignore localStorage failures.
 }
 
-function buildViewerStoryUrl(storyId) {
+const ENCRYPTION_PREFIX = "XEDRYK_ENC_V1:";
+const ENCRYPTION_ITERATIONS_FALLBACK = 210000;
+const PROTECTED_POST_SETTINGS_KEY = "protectedPostSettings";
+const PROTECTED_LOCAL_PASSWORDS_KEY = "protectedStorySavedPasswords";
+const PROTECTED_SESSION_PASSWORDS_KEY = "protectedStorySessionPasswords";
+const PROTECTED_UNLOCK_TICKETS_KEY = "protectedStoryUnlockTickets";
+const PROTECTED_UNLOCK_TICKET_PARAM = "unlock_token";
+const PROTECTED_UNLOCK_TICKET_TTL_MS = 10 * 60 * 1000;
+const PROTECTED_CARD_LOCKED_BACKGROUND =
+  "radial-gradient(circle at 16% 18%, rgba(98,247,255,0.22), transparent 45%), linear-gradient(145deg, rgba(8,14,24,0.96), rgba(4,8,14,0.98))";
+const PROTECTED_CARD_UNLOCKED_BACKGROUND =
+  "radial-gradient(circle at 14% 16%, rgba(141,255,123,0.18), transparent 42%), linear-gradient(145deg, rgba(8,18,22,0.93), rgba(6,12,17,0.95))";
+let protectedPostSettingsCache = null;
+const protectedStoryRawTextCache = new Map();
+const protectedStoryUnlockCache = new Map();
+const protectedStoryUnlockJobs = new Map();
+const protectedCoverAssetCache = new Map();
+const protectedCoverAssetJobs = new Map();
+const protectedCoverObjectUrls = new Set();
+
+const unlockModalState = {
+  initialized: false,
+  busy: false,
+  story: null,
+  overlay: null,
+  modal: null,
+  message: null,
+  password: null,
+  savePassword: null,
+  hint: null,
+  feedback: null,
+  cancelBtn: null,
+  submitBtn: null,
+};
+
+function stripQueryAndHash(path) {
+  return String(path || "").split("#")[0].split("?")[0];
+}
+
+function isLikelyWindowsAbsolutePath(path) {
+  return /^[a-zA-Z]:\//.test(path) || /^\/[a-zA-Z]:\//.test(path);
+}
+
+function canonicalizeProjectRelativePath(path) {
+  const relative = String(path || "").replace(/^\/+/, "").trim();
+  if (!relative) {
+    return "";
+  }
+  const separatorIndex = relative.indexOf("/");
+  const head =
+    separatorIndex >= 0
+      ? relative.slice(0, separatorIndex).toLowerCase()
+      : relative.toLowerCase();
+  const tail = separatorIndex >= 0 ? relative.slice(separatorIndex + 1) : "";
+  if (head === "media-scr" || head === "story" || head === "database") {
+    return tail ? `${head}/${tail}` : head;
+  }
+  return relative;
+}
+
+function extractProjectRelativePath(rawPath) {
+  const normalized = String(rawPath || "").replace(/\\/g, "/").trim();
+  if (!normalized) {
+    return "";
+  }
+
+  const cleanPath = stripQueryAndHash(normalized);
+  const lowerPath = cleanPath.toLowerCase();
+  const markers = [
+    "/media-scr/",
+    "/story/",
+    "/database/",
+    "media-scr/",
+    "story/",
+    "database/",
+  ];
+  for (const marker of markers) {
+    const markerIndex = lowerPath.lastIndexOf(marker);
+    if (markerIndex >= 0) {
+      const offset = marker.startsWith("/") ? markerIndex + 1 : markerIndex;
+      return canonicalizeProjectRelativePath(cleanPath.slice(offset));
+    }
+  }
+
+  const relativePath = canonicalizeProjectRelativePath(
+    cleanPath.replace(/^\/+/, ""),
+  );
+  if (
+    relativePath.startsWith("media-scr/") ||
+    relativePath.startsWith("story/") ||
+    relativePath.startsWith("database/")
+  ) {
+    return relativePath;
+  }
+
+  return "";
+}
+
+function normalizeCatalogPath(rawPath) {
+  if (typeof rawPath !== "string") {
+    return "";
+  }
+  const trimmed = rawPath.trim();
+  if (!trimmed) {
+    return "";
+  }
+  if (/^(?:https?:|blob:|data:)/i.test(trimmed)) {
+    return trimmed;
+  }
+
+  if (/^file:/i.test(trimmed)) {
+    try {
+      const fileUrl = new URL(trimmed);
+      const fromUrl = extractProjectRelativePath(
+        decodeURIComponent(fileUrl.pathname || ""),
+      );
+      if (fromUrl) {
+        return fromUrl;
+      }
+    } catch (error) {
+      // Ignore malformed file URLs and continue with string normalization.
+    }
+    return "";
+  }
+
+  const slashPath = trimmed.replace(/\\/g, "/");
+  const extracted = extractProjectRelativePath(slashPath);
+  if (extracted) {
+    return extracted;
+  }
+
+  if (isLikelyWindowsAbsolutePath(stripQueryAndHash(slashPath))) {
+    return "";
+  }
+
+  if (slashPath.startsWith("/")) {
+    return stripQueryAndHash(slashPath).replace(/^\/+/, "");
+  }
+
+  return slashPath;
+}
+
+function normalizeCatalogEntryPaths(entry) {
+  if (!entry || typeof entry !== "object") {
+    return entry;
+  }
+
+  const normalized = { ...entry };
+  if (typeof normalized.story === "string") {
+    normalized.story = normalizeCatalogPath(normalized.story);
+  }
+  if (typeof normalized.cover === "string") {
+    normalized.cover = normalizeCatalogPath(normalized.cover);
+  }
+  if (typeof normalized.video === "string") {
+    normalized.video = normalizeCatalogPath(normalized.video);
+  }
+  if (Array.isArray(normalized.images)) {
+    normalized.images = normalized.images
+      .map((path) => (typeof path === "string" ? normalizeCatalogPath(path) : path))
+      .filter(Boolean);
+  }
+  if (Array.isArray(normalized.videos)) {
+    normalized.videos = normalized.videos
+      .map((path) => (typeof path === "string" ? normalizeCatalogPath(path) : path))
+      .filter(Boolean);
+  }
+  if (
+    normalized.coverMedia &&
+    typeof normalized.coverMedia === "object" &&
+    typeof normalized.coverMedia.path === "string"
+  ) {
+    normalized.coverMedia = {
+      ...normalized.coverMedia,
+      path: normalizeCatalogPath(normalized.coverMedia.path),
+    };
+  }
+  if (Array.isArray(normalized.media)) {
+    normalized.media = normalized.media
+      .map((item) => {
+        if (typeof item === "string") {
+          const nextPath = normalizeCatalogPath(item);
+          return nextPath || null;
+        }
+        if (!item || typeof item !== "object") {
+          return null;
+        }
+        const rawSrc = item.src || item.path || item.url || "";
+        const nextPath = normalizeCatalogPath(rawSrc);
+        if (!nextPath) {
+          return null;
+        }
+        return {
+          ...item,
+          src: nextPath,
+        };
+      })
+      .filter(Boolean);
+  }
+  return normalized;
+}
+
+function normalizeCatalogEntries(entries) {
+  if (!Array.isArray(entries)) {
+    return [];
+  }
+  return entries.map((entry) => normalizeCatalogEntryPaths(entry));
+}
+
+function buildViewerStoryUrl(storyId, unlockToken = "") {
   const encodedStoryId = encodeURIComponent(storyId);
   const encodedHomeFile = encodeURIComponent(HOME_ENTRY_FILE);
-  return `view/viewer.html?story=${encodedStoryId}&from=${encodedHomeFile}&home=${encodedHomeFile}`;
+  const unlockPart = unlockToken
+    ? `&${PROTECTED_UNLOCK_TICKET_PARAM}=${encodeURIComponent(unlockToken)}`
+    : "";
+  return `view/viewer.html?story=${encodedStoryId}&from=${encodedHomeFile}&home=${encodedHomeFile}${unlockPart}`;
+}
+
+function normalizeProtectedPostSettings(input) {
+  const base = {
+    showProtectedPosts: false,
+    autoSavePasswords: false,
+  };
+  if (!input || typeof input !== "object") {
+    return base;
+  }
+  return {
+    showProtectedPosts: input.showProtectedPosts === true,
+    autoSavePasswords: input.autoSavePasswords === true,
+  };
+}
+
+function loadProtectedPostSettings() {
+  try {
+    const raw = localStorage.getItem(PROTECTED_POST_SETTINGS_KEY);
+    if (!raw) {
+      return normalizeProtectedPostSettings(null);
+    }
+    return normalizeProtectedPostSettings(JSON.parse(raw));
+  } catch (error) {
+    localStorage.removeItem(PROTECTED_POST_SETTINGS_KEY);
+    return normalizeProtectedPostSettings(null);
+  }
+}
+
+function saveProtectedPostSettings(settings) {
+  const normalized = normalizeProtectedPostSettings(settings);
+  protectedPostSettingsCache = normalized;
+  localStorage.setItem(PROTECTED_POST_SETTINGS_KEY, JSON.stringify(normalized));
+  return normalized;
+}
+
+function getProtectedPostSettings() {
+  if (!protectedPostSettingsCache) {
+    protectedPostSettingsCache = loadProtectedPostSettings();
+  }
+  return { ...protectedPostSettingsCache };
+}
+
+function updateProtectedPostSettings(partial = {}) {
+  const current = getProtectedPostSettings();
+  const next = {
+    ...current,
+    ...(partial && typeof partial === "object" ? partial : {}),
+  };
+  return saveProtectedPostSettings(next);
+}
+
+function loadPasswordStore(storage, key) {
+  try {
+    const raw = storage.getItem(key);
+    if (!raw) {
+      return {};
+    }
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      storage.removeItem(key);
+      return {};
+    }
+    const normalized = {};
+    Object.entries(parsed).forEach(([storyId, password]) => {
+      if (typeof storyId !== "string" || !storyId.trim()) {
+        return;
+      }
+      if (typeof password !== "string") {
+        return;
+      }
+      const trimmed = password.trim();
+      if (!trimmed) {
+        return;
+      }
+      normalized[storyId] = trimmed;
+    });
+    return normalized;
+  } catch (error) {
+    try {
+      storage.removeItem(key);
+    } catch (removeError) {
+      // Ignore storage failures.
+    }
+    return {};
+  }
+}
+
+function savePasswordStore(storage, key, store) {
+  const safeStore = store && typeof store === "object" ? store : {};
+  const next = {};
+  Object.entries(safeStore).forEach(([storyId, password]) => {
+    if (typeof storyId !== "string" || !storyId.trim()) {
+      return;
+    }
+    if (typeof password !== "string") {
+      return;
+    }
+    const trimmed = password.trim();
+    if (!trimmed) {
+      return;
+    }
+    next[storyId] = trimmed;
+  });
+
+  if (Object.keys(next).length === 0) {
+    storage.removeItem(key);
+    return;
+  }
+  storage.setItem(key, JSON.stringify(next));
+}
+
+function getLocalSavedStoryPassword(storyId) {
+  if (!storyId) {
+    return "";
+  }
+  const store = loadPasswordStore(localStorage, PROTECTED_LOCAL_PASSWORDS_KEY);
+  return typeof store[storyId] === "string" ? store[storyId] : "";
+}
+
+function getSessionSavedStoryPassword(storyId) {
+  if (!storyId) {
+    return "";
+  }
+  const store = loadPasswordStore(sessionStorage, PROTECTED_SESSION_PASSWORDS_KEY);
+  return typeof store[storyId] === "string" ? store[storyId] : "";
+}
+
+function getRememberedStoryPassword(storyId) {
+  const fromSession = getSessionSavedStoryPassword(storyId);
+  if (fromSession) {
+    return fromSession;
+  }
+  return getLocalSavedStoryPassword(storyId);
+}
+
+function rememberStoryPasswordInSession(storyId, password) {
+  if (!storyId || !password) {
+    return;
+  }
+  const store = loadPasswordStore(sessionStorage, PROTECTED_SESSION_PASSWORDS_KEY);
+  store[storyId] = String(password).trim();
+  savePasswordStore(sessionStorage, PROTECTED_SESSION_PASSWORDS_KEY, store);
+}
+
+function rememberStoryPasswordInLocal(storyId, password) {
+  if (!storyId || !password) {
+    return;
+  }
+  const store = loadPasswordStore(localStorage, PROTECTED_LOCAL_PASSWORDS_KEY);
+  store[storyId] = String(password).trim();
+  savePasswordStore(localStorage, PROTECTED_LOCAL_PASSWORDS_KEY, store);
+}
+
+function forgetSavedStoryPassword(
+  storyId,
+  { local = true, session = true } = {},
+) {
+  if (!storyId) {
+    return;
+  }
+  if (local) {
+    const localStore = loadPasswordStore(localStorage, PROTECTED_LOCAL_PASSWORDS_KEY);
+    if (Object.prototype.hasOwnProperty.call(localStore, storyId)) {
+      delete localStore[storyId];
+      savePasswordStore(localStorage, PROTECTED_LOCAL_PASSWORDS_KEY, localStore);
+    }
+  }
+  if (session) {
+    const sessionStore = loadPasswordStore(sessionStorage, PROTECTED_SESSION_PASSWORDS_KEY);
+    if (Object.prototype.hasOwnProperty.call(sessionStore, storyId)) {
+      delete sessionStore[storyId];
+      savePasswordStore(sessionStorage, PROTECTED_SESSION_PASSWORDS_KEY, sessionStore);
+    }
+  }
+  clearProtectedStoryCaches(storyId);
+}
+
+function revokeProtectedCoverUrl(url) {
+  if (!url || typeof url !== "string" || !url.startsWith("blob:")) {
+    return;
+  }
+  try {
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    // Ignore stale object URLs.
+  }
+  protectedCoverObjectUrls.delete(url);
+}
+
+function clearProtectedStoryCaches(storyId = "") {
+  if (!storyId) {
+    protectedStoryUnlockCache.clear();
+    protectedStoryUnlockJobs.clear();
+    protectedCoverAssetJobs.clear();
+    protectedCoverAssetCache.forEach((cachedPath) => {
+      revokeProtectedCoverUrl(cachedPath);
+    });
+    protectedCoverAssetCache.clear();
+    return;
+  }
+
+  protectedStoryUnlockCache.delete(storyId);
+  protectedStoryUnlockJobs.delete(storyId);
+
+  const prefix = `${storyId}|`;
+  Array.from(protectedCoverAssetCache.entries()).forEach(([cacheKey, cachedPath]) => {
+    if (!cacheKey.startsWith(prefix)) {
+      return;
+    }
+    revokeProtectedCoverUrl(cachedPath);
+    protectedCoverAssetCache.delete(cacheKey);
+  });
+  Array.from(protectedCoverAssetJobs.keys()).forEach((cacheKey) => {
+    if (cacheKey.startsWith(prefix)) {
+      protectedCoverAssetJobs.delete(cacheKey);
+    }
+  });
+}
+
+function releaseProtectedCoverObjectUrls() {
+  protectedCoverObjectUrls.forEach((url) => {
+    revokeProtectedCoverUrl(url);
+  });
+  protectedCoverObjectUrls.clear();
+}
+
+function loadUnlockTicketStore() {
+  try {
+    const raw = sessionStorage.getItem(PROTECTED_UNLOCK_TICKETS_KEY);
+    if (!raw) {
+      return {};
+    }
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      sessionStorage.removeItem(PROTECTED_UNLOCK_TICKETS_KEY);
+      return {};
+    }
+    return parsed;
+  } catch (error) {
+    try {
+      sessionStorage.removeItem(PROTECTED_UNLOCK_TICKETS_KEY);
+    } catch (removeError) {
+      // Ignore storage failures.
+    }
+    return {};
+  }
+}
+
+function saveUnlockTicketStore(store) {
+  const safeStore = store && typeof store === "object" ? store : {};
+  if (Object.keys(safeStore).length === 0) {
+    sessionStorage.removeItem(PROTECTED_UNLOCK_TICKETS_KEY);
+    return;
+  }
+  sessionStorage.setItem(PROTECTED_UNLOCK_TICKETS_KEY, JSON.stringify(safeStore));
+}
+
+function randomToken(size = 16) {
+  try {
+    const bytes = new Uint8Array(size);
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes)
+      .map((value) => value.toString(16).padStart(2, "0"))
+      .join("");
+  } catch (error) {
+    return `${Date.now().toString(16)}${Math.random().toString(16).slice(2)}`;
+  }
+}
+
+function createProtectedUnlockTicket(storyId, password) {
+  const safeStoryId = String(storyId || "").trim();
+  const safePassword = String(password || "").trim();
+  if (!safeStoryId || !safePassword) {
+    return "";
+  }
+
+  const now = Date.now();
+  const store = loadUnlockTicketStore();
+  Object.entries(store).forEach(([token, payload]) => {
+    const expiresAt =
+      payload && Number.isFinite(payload.expiresAt)
+        ? payload.expiresAt
+        : parseInt(payload?.expiresAt, 10) || 0;
+    if (!expiresAt || expiresAt < now) {
+      delete store[token];
+    }
+  });
+
+  const token = randomToken(20);
+  store[token] = {
+    storyId: safeStoryId,
+    password: safePassword,
+    expiresAt: now + PROTECTED_UNLOCK_TICKET_TTL_MS,
+  };
+  saveUnlockTicketStore(store);
+  return token;
+}
+
+function parseEncryptedPayload(rawText) {
+  if (typeof rawText !== "string" || !rawText.startsWith(ENCRYPTION_PREFIX)) {
+    return null;
+  }
+  const jsonText = rawText.slice(ENCRYPTION_PREFIX.length);
+  if (!jsonText.trim()) {
+    return null;
+  }
+  try {
+    const payload = JSON.parse(jsonText);
+    if (
+      !payload ||
+      typeof payload !== "object" ||
+      typeof payload.salt !== "string" ||
+      typeof payload.iv !== "string" ||
+      typeof payload.data !== "string"
+    ) {
+      return null;
+    }
+    return payload;
+  } catch (error) {
+    return null;
+  }
+}
+
+function fromBase64(base64Text) {
+  const binary = atob(String(base64Text || ""));
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+  return bytes;
+}
+
+function ensureWebCryptoReady() {
+  if (!(window.crypto && window.crypto.subtle)) {
+    throw new Error("Web Crypto API is unavailable.");
+  }
+}
+
+async function deriveEncryptionKey(password, saltBytes, iterations) {
+  ensureWebCryptoReady();
+  const baseKey = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(String(password || "")),
+    { name: "PBKDF2" },
+    false,
+    ["deriveKey"],
+  );
+  return crypto.subtle.deriveKey(
+    {
+      name: "PBKDF2",
+      salt: saltBytes,
+      iterations,
+      hash: "SHA-256",
+    },
+    baseKey,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["decrypt"],
+  );
+}
+
+async function decryptPayloadToBytes(rawText, password) {
+  const payload = parseEncryptedPayload(rawText);
+  if (!payload) {
+    throw new Error("Encrypted payload format is invalid.");
+  }
+  const iterations = Number.isFinite(payload.iter)
+    ? payload.iter
+    : parseInt(payload.iter, 10) || ENCRYPTION_ITERATIONS_FALLBACK;
+  const salt = fromBase64(payload.salt);
+  const iv = fromBase64(payload.iv);
+  const encryptedBytes = fromBase64(payload.data);
+  const key = await deriveEncryptionKey(password, salt, iterations);
+  try {
+    const decrypted = await crypto.subtle.decrypt(
+      { name: "AES-GCM", iv },
+      key,
+      encryptedBytes,
+    );
+    return {
+      bytes: new Uint8Array(decrypted),
+      mime: typeof payload.mime === "string" ? payload.mime : "",
+    };
+  } catch (error) {
+    throw new Error("Incorrect password.");
+  }
+}
+
+async function fetchTextWithFallback(resolvedPath, missingMessage) {
+  const rawPath = String(resolvedPath || "").trim();
+  const normalizedPath = normalizeCatalogPath(rawPath);
+  const fallbackPath =
+    /^file:/i.test(rawPath) ||
+    isLikelyWindowsAbsolutePath(stripQueryAndHash(rawPath.replace(/\\/g, "/")))
+      ? ""
+      : rawPath;
+  const requestPath = normalizedPath || fallbackPath;
+  if (!requestPath) {
+    throw new Error(missingMessage);
+  }
+  try {
+    const response = await fetch(requestPath, { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error(missingMessage);
+    }
+    return response.text();
+  } catch (error) {
+    if (window.location.protocol === "file:") {
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("GET", requestPath, true);
+        xhr.onload = () => {
+          const ok =
+            (xhr.status >= 200 && xhr.status < 300) ||
+            (xhr.status === 0 && xhr.responseText);
+          if (ok) {
+            resolve(xhr.responseText);
+          } else {
+            reject(new Error(missingMessage));
+          }
+        };
+        xhr.onerror = () => reject(new Error(missingMessage));
+        xhr.send();
+      });
+    }
+    throw error;
+  }
+}
+
+async function getProtectedStoryRawText(story) {
+  if (!story || typeof story !== "object") {
+    throw new Error("Protected story is missing.");
+  }
+  if (story.id && protectedStoryRawTextCache.has(story.id)) {
+    return protectedStoryRawTextCache.get(story.id);
+  }
+
+  let rawStoryText = "";
+  if (typeof story.storyText === "string" && story.storyText.trim()) {
+    rawStoryText = story.storyText;
+  } else if (typeof story.story === "string" && story.story.trim()) {
+    const storyPath = normalizeCatalogPath(story.story);
+    if (!storyPath) {
+      throw new Error("Story file missing.");
+    }
+    rawStoryText = await fetchTextWithFallback(storyPath, "Story file missing.");
+  }
+
+  if (!rawStoryText) {
+    throw new Error("Story file missing.");
+  }
+  if (story.id) {
+    protectedStoryRawTextCache.set(story.id, rawStoryText);
+  }
+  return rawStoryText;
+}
+
+async function verifyProtectedStoryPassword(story, candidatePassword) {
+  const password = String(candidatePassword || "").trim();
+  if (!password) {
+    throw new Error("Password is required.");
+  }
+  const rawStoryText = await getProtectedStoryRawText(story);
+  if (!parseEncryptedPayload(rawStoryText)) {
+    throw new Error("Protected story data is invalid.");
+  }
+  await decryptPayloadToBytes(rawStoryText, password);
+  return password;
+}
+
+function updateProtectedBadge(lockBadge, state = "locked") {
+  if (!lockBadge) {
+    return;
+  }
+  lockBadge.classList.remove("locked-badge", "unlocked-badge", "checking-badge");
+  if (state === "unlocked") {
+    lockBadge.classList.add("unlocked-badge");
+    lockBadge.textContent = "Unlocked";
+    return;
+  }
+  if (state === "checking") {
+    lockBadge.classList.add("checking-badge");
+    lockBadge.textContent = "Checking";
+    return;
+  }
+  lockBadge.classList.add("locked-badge");
+  lockBadge.textContent = "Locked";
+}
+
+function setProtectedCardLockedVisual(card, lockBadge) {
+  if (!card) {
+    return;
+  }
+  card.classList.add("story-protected", "story-locked");
+  card.classList.remove("story-unlocked");
+  card.style.backgroundImage = PROTECTED_CARD_LOCKED_BACKGROUND;
+  updateProtectedBadge(lockBadge, "locked");
+}
+
+function setProtectedCardUnlockedVisual(card, lockBadge) {
+  if (!card) {
+    return;
+  }
+  card.classList.add("story-protected", "story-unlocked");
+  card.classList.remove("story-locked");
+  card.style.backgroundImage = PROTECTED_CARD_UNLOCKED_BACKGROUND;
+  updateProtectedBadge(lockBadge, "unlocked");
+}
+
+function getCachedProtectedStoryUnlock(storyId, password) {
+  if (!storyId || !password) {
+    return null;
+  }
+  const cached = protectedStoryUnlockCache.get(storyId);
+  if (!cached || cached.password !== password) {
+    return null;
+  }
+  return cached.valid === true;
+}
+
+function setCachedProtectedStoryUnlock(storyId, password, valid) {
+  if (!storyId || !password) {
+    return;
+  }
+  protectedStoryUnlockCache.set(storyId, {
+    password,
+    valid: valid === true,
+  });
+}
+
+function queueProtectedStoryUnlockValidation(story, password) {
+  if (!story || !story.id || !password) {
+    return Promise.resolve(false);
+  }
+  const existing = protectedStoryUnlockJobs.get(story.id);
+  if (existing && existing.password === password) {
+    return existing.promise;
+  }
+
+  const jobPromise = verifyProtectedStoryPassword(story, password)
+    .then(() => true)
+    .catch(() => false)
+    .finally(() => {
+      const current = protectedStoryUnlockJobs.get(story.id);
+      if (current && current.password === password) {
+        protectedStoryUnlockJobs.delete(story.id);
+      }
+    });
+
+  protectedStoryUnlockJobs.set(story.id, {
+    password,
+    promise: jobPromise,
+  });
+
+  return jobPromise;
+}
+
+function readInlineProtectedMediaPayload(entry, mediaPath) {
+  if (!entry || typeof entry !== "object" || !mediaPath) {
+    return "";
+  }
+  const payloadMap =
+    entry.protectedMediaPayloads &&
+    typeof entry.protectedMediaPayloads === "object" &&
+    !Array.isArray(entry.protectedMediaPayloads)
+      ? entry.protectedMediaPayloads
+      : null;
+  if (!payloadMap) {
+    return "";
+  }
+  const normalizedPath = normalizeCatalogPath(mediaPath);
+  const directValue =
+    typeof payloadMap[mediaPath] === "string" ? payloadMap[mediaPath] : "";
+  if (directValue) {
+    return directValue;
+  }
+  if (normalizedPath && typeof payloadMap[normalizedPath] === "string") {
+    return payloadMap[normalizedPath];
+  }
+  const normalizedLower = String(normalizedPath || mediaPath).toLowerCase();
+  const matchKey = Object.keys(payloadMap).find(
+    (key) => String(key || "").trim().toLowerCase() === normalizedLower,
+  );
+  if (!matchKey) {
+    return "";
+  }
+  const matchedValue = payloadMap[matchKey];
+  return typeof matchedValue === "string" ? matchedValue : "";
+}
+
+async function resolveProtectedCoverAssetPath(story, coverAsset, password) {
+  if (!story || !story.id || !coverAsset || !coverAsset.path || !password) {
+    return "";
+  }
+  const cacheKey = `${story.id}|${coverAsset.path}|${password}`;
+  if (protectedCoverAssetCache.has(cacheKey)) {
+    return protectedCoverAssetCache.get(cacheKey);
+  }
+  if (protectedCoverAssetJobs.has(cacheKey)) {
+    return protectedCoverAssetJobs.get(cacheKey);
+  }
+
+  const task = (async () => {
+    const inlinePayload = readInlineProtectedMediaPayload(story, coverAsset.path);
+    let rawCoverText = inlinePayload;
+    if (!rawCoverText) {
+      if (window.location.protocol === "file:") {
+        protectedCoverAssetCache.set(cacheKey, coverAsset.path);
+        return coverAsset.path;
+      }
+      rawCoverText = await fetchTextWithFallback(
+        coverAsset.path,
+        "Protected cover media is missing.",
+      );
+    }
+    const payload = parseEncryptedPayload(rawCoverText);
+    if (!payload) {
+      protectedCoverAssetCache.set(cacheKey, coverAsset.path);
+      return coverAsset.path;
+    }
+
+    const decrypted = await decryptPayloadToBytes(rawCoverText, password);
+    const mediaKind = coverAsset.type === "video" ? "video" : "image";
+    const mimeType =
+      decrypted.mime || inferMimeTypeFromPath(coverAsset.path, mediaKind);
+    const blob = new Blob([decrypted.bytes], {
+      type: mimeType || inferMimeTypeFromPath(coverAsset.path, mediaKind),
+    });
+    const objectUrl = URL.createObjectURL(blob);
+    protectedCoverObjectUrls.add(objectUrl);
+    protectedCoverAssetCache.set(cacheKey, objectUrl);
+    return objectUrl;
+  })()
+    .catch(() => "")
+    .finally(() => {
+      protectedCoverAssetJobs.delete(cacheKey);
+    });
+
+  protectedCoverAssetJobs.set(cacheKey, task);
+  return task;
+}
+
+function applyProtectedCoverToCard(card, coverAsset, coverToken, resolvedPath) {
+  if (!card || !coverAsset || !resolvedPath) {
+    return;
+  }
+  if (!card.isConnected || card.dataset.coverToken !== coverToken) {
+    return;
+  }
+  if (coverAsset.type === "image") {
+    card.style.backgroundImage = toCssUrl(resolvedPath);
+    return;
+  }
+  getStaticCoverThumbnail(resolvedPath, coverAsset.type).then((thumbPath) => {
+    if (!card.isConnected || card.dataset.coverToken !== coverToken) {
+      return;
+    }
+    if (thumbPath) {
+      card.style.backgroundImage = toCssUrl(thumbPath);
+      return;
+    }
+    card.style.backgroundImage = PROTECTED_CARD_UNLOCKED_BACKGROUND;
+  });
+}
+
+function hydrateProtectedCardUnlockState(
+  card,
+  story,
+  coverAsset,
+  coverToken,
+  lockBadge,
+  handlers = {},
+) {
+  if (!card || !story || !story.id) {
+    return;
+  }
+  const onLocked =
+    handlers && typeof handlers.onLocked === "function"
+      ? handlers.onLocked
+      : () => {};
+  const onUnlocked =
+    handlers && typeof handlers.onUnlocked === "function"
+      ? handlers.onUnlocked
+      : () => {};
+  const onChecking =
+    handlers && typeof handlers.onChecking === "function"
+      ? handlers.onChecking
+      : onLocked;
+
+  setProtectedCardLockedVisual(card, lockBadge);
+  onLocked();
+
+  const rememberedPassword = String(getRememberedStoryPassword(story.id) || "").trim();
+  if (!rememberedPassword) {
+    return;
+  }
+
+  const cachedState = getCachedProtectedStoryUnlock(story.id, rememberedPassword);
+  if (cachedState === true) {
+    setProtectedCardUnlockedVisual(card, lockBadge);
+    onUnlocked();
+    if (coverAsset) {
+      void resolveProtectedCoverAssetPath(story, coverAsset, rememberedPassword).then((resolvedPath) => {
+        if (!resolvedPath) {
+          return;
+        }
+        applyProtectedCoverToCard(card, coverAsset, coverToken, resolvedPath);
+      });
+    } else {
+      card.style.backgroundImage = PROTECTED_CARD_UNLOCKED_BACKGROUND;
+    }
+    return;
+  }
+  if (cachedState === false) {
+    forgetSavedStoryPassword(story.id, { local: true, session: true });
+    onLocked();
+    return;
+  }
+
+  updateProtectedBadge(lockBadge, "checking");
+  onChecking();
+  void queueProtectedStoryUnlockValidation(story, rememberedPassword).then((valid) => {
+    if (!card.isConnected || card.dataset.coverToken !== coverToken) {
+      return;
+    }
+    setCachedProtectedStoryUnlock(story.id, rememberedPassword, valid);
+    if (!valid) {
+      forgetSavedStoryPassword(story.id, { local: true, session: true });
+      setProtectedCardLockedVisual(card, lockBadge);
+      onLocked();
+      return;
+    }
+
+    rememberStoryPasswordInSession(story.id, rememberedPassword);
+    setProtectedCardUnlockedVisual(card, lockBadge);
+    onUnlocked();
+    if (!coverAsset) {
+      card.style.backgroundImage = PROTECTED_CARD_UNLOCKED_BACKGROUND;
+      return;
+    }
+    void resolveProtectedCoverAssetPath(story, coverAsset, rememberedPassword).then((resolvedPath) => {
+      if (!card.isConnected || card.dataset.coverToken !== coverToken) {
+        return;
+      }
+      if (!resolvedPath) {
+        card.style.backgroundImage = PROTECTED_CARD_UNLOCKED_BACKGROUND;
+        return;
+      }
+      applyProtectedCoverToCard(card, coverAsset, coverToken, resolvedPath);
+    });
+  });
+}
+
+function resetUnlockModalVisualState() {
+  if (!unlockModalState.feedback || !unlockModalState.modal || !unlockModalState.password) {
+    return;
+  }
+  unlockModalState.feedback.textContent = "";
+  unlockModalState.feedback.classList.remove("is-error");
+  unlockModalState.modal.classList.remove("unlock-invalid");
+  unlockModalState.password.classList.remove("unlock-invalid");
+}
+
+function showUnlockFailure(message) {
+  if (!unlockModalState.feedback || !unlockModalState.modal || !unlockModalState.password) {
+    return;
+  }
+  unlockModalState.feedback.textContent = message || "Unlock failed. Please try again.";
+  unlockModalState.feedback.classList.add("is-error");
+  unlockModalState.password.value = "";
+  unlockModalState.password.classList.remove("unlock-invalid");
+  unlockModalState.modal.classList.remove("unlock-invalid");
+  void unlockModalState.modal.offsetWidth;
+  unlockModalState.modal.classList.add("unlock-invalid");
+  unlockModalState.password.classList.add("unlock-invalid");
+  if (unlockModalState.password) {
+    unlockModalState.password.focus();
+  }
+  if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+    navigator.vibrate([70, 50, 70]);
+  }
+}
+
+function setUnlockModalBusy(nextBusy) {
+  unlockModalState.busy = nextBusy === true;
+  if (unlockModalState.submitBtn) {
+    unlockModalState.submitBtn.disabled = unlockModalState.busy;
+    unlockModalState.submitBtn.textContent = unlockModalState.busy
+      ? "Checking..."
+      : "Unlock";
+  }
+  if (unlockModalState.cancelBtn) {
+    unlockModalState.cancelBtn.disabled = unlockModalState.busy;
+  }
+  if (unlockModalState.password) {
+    unlockModalState.password.disabled = unlockModalState.busy;
+  }
+  if (unlockModalState.savePassword) {
+    const settings = getProtectedPostSettings();
+    unlockModalState.savePassword.disabled =
+      unlockModalState.busy || settings.autoSavePasswords;
+  }
+}
+
+function closeProtectedUnlockModal() {
+  if (!unlockModalState.overlay) {
+    return;
+  }
+  unlockModalState.overlay.hidden = true;
+  unlockModalState.story = null;
+  setUnlockModalBusy(false);
+  resetUnlockModalVisualState();
+}
+
+async function submitProtectedUnlockModal() {
+  if (unlockModalState.busy || !unlockModalState.story || !unlockModalState.password) {
+    return;
+  }
+
+  const story = unlockModalState.story;
+  const enteredPassword = String(unlockModalState.password.value || "").trim();
+  if (!enteredPassword) {
+    showUnlockFailure("Password is required.");
+    return;
+  }
+
+  const previouslyRemembered = getRememberedStoryPassword(story.id);
+
+  setUnlockModalBusy(true);
+  resetUnlockModalVisualState();
+
+  try {
+    const verifiedPassword = await verifyProtectedStoryPassword(story, enteredPassword);
+    if (previouslyRemembered && previouslyRemembered !== verifiedPassword) {
+      clearProtectedStoryCaches(story.id);
+    }
+    setCachedProtectedStoryUnlock(story.id, verifiedPassword, true);
+    rememberStoryPasswordInSession(story.id, verifiedPassword);
+
+    const protectedSettings = getProtectedPostSettings();
+    const shouldPersist =
+      protectedSettings.autoSavePasswords ||
+      (unlockModalState.savePassword && unlockModalState.savePassword.checked);
+
+    if (shouldPersist) {
+      rememberStoryPasswordInLocal(story.id, verifiedPassword);
+    } else {
+      forgetSavedStoryPassword(story.id, { local: true, session: false });
+    }
+
+    const unlockToken = createProtectedUnlockTicket(story.id, verifiedPassword);
+    closeProtectedUnlockModal();
+    window.location.href = buildViewerStoryUrl(story.id, unlockToken);
+  } catch (error) {
+    if (previouslyRemembered && previouslyRemembered === enteredPassword) {
+      forgetSavedStoryPassword(story.id, { local: true, session: true });
+    }
+    const failureMessage =
+      error && typeof error.message === "string" && error.message.includes("missing")
+        ? "Protected data missing."
+        : "Wrong password. Try again.";
+    showUnlockFailure(failureMessage);
+  } finally {
+    setUnlockModalBusy(false);
+  }
+}
+
+function isUnlockModalOpen() {
+  return !!(unlockModalState.overlay && unlockModalState.overlay.hidden === false);
+}
+
+function openProtectedUnlockModal(story) {
+  if (!story || typeof story !== "object") {
+    return;
+  }
+  if (!unlockModalState.initialized) {
+    initProtectedUnlockModal();
+  }
+  if (!unlockModalState.overlay || !unlockModalState.password) {
+    return;
+  }
+
+  unlockModalState.story = story;
+  const storyTitle =
+    story.title ||
+    (story.reportNumber ? `Report #${story.reportNumber}` : story.id || "Report");
+
+  if (unlockModalState.message) {
+    unlockModalState.message.textContent = `Enter password to open "${storyTitle}".`;
+  }
+
+  const protectedSettings = getProtectedPostSettings();
+  const rememberedPassword = getRememberedStoryPassword(story.id);
+  const hasLocalSavedPassword = !!getLocalSavedStoryPassword(story.id);
+  const hasSessionPassword = !!getSessionSavedStoryPassword(story.id);
+
+  unlockModalState.password.value = rememberedPassword || "";
+  if (unlockModalState.savePassword) {
+    const isAutoSave = protectedSettings.autoSavePasswords;
+    unlockModalState.savePassword.checked = isAutoSave || hasLocalSavedPassword;
+    unlockModalState.savePassword.disabled = isAutoSave;
+  }
+  if (unlockModalState.hint) {
+    if (protectedSettings.autoSavePasswords) {
+      unlockModalState.hint.textContent =
+        "Auto-save is enabled in settings. Correct password will be saved.";
+    } else if (hasLocalSavedPassword) {
+      unlockModalState.hint.textContent =
+        "A saved password was found for this post. Click Unlock to continue.";
+    } else if (hasSessionPassword) {
+      unlockModalState.hint.textContent =
+        "This post is already unlocked for the current session.";
+    } else {
+      unlockModalState.hint.textContent =
+        "Password is only saved when Remember is checked.";
+    }
+  }
+
+  resetUnlockModalVisualState();
+  setUnlockModalBusy(false);
+  unlockModalState.overlay.hidden = false;
+
+  requestAnimationFrame(() => {
+    if (!unlockModalState.password) {
+      return;
+    }
+    unlockModalState.password.focus();
+    unlockModalState.password.setSelectionRange(
+      unlockModalState.password.value.length,
+      unlockModalState.password.value.length,
+    );
+  });
+}
+
+function initProtectedUnlockModal() {
+  if (unlockModalState.initialized) {
+    return;
+  }
+
+  unlockModalState.overlay = document.getElementById("unlock-overlay");
+  unlockModalState.modal = document.getElementById("unlock-modal");
+  unlockModalState.message = document.getElementById("unlock-message");
+  unlockModalState.password = document.getElementById("unlock-password");
+  unlockModalState.savePassword = document.getElementById("unlock-save-password");
+  unlockModalState.hint = document.getElementById("unlock-hint");
+  unlockModalState.feedback = document.getElementById("unlock-feedback");
+  unlockModalState.cancelBtn = document.getElementById("unlock-cancel");
+  unlockModalState.submitBtn = document.getElementById("unlock-submit");
+
+  if (
+    !unlockModalState.overlay ||
+    !unlockModalState.password ||
+    !unlockModalState.submitBtn ||
+    !unlockModalState.cancelBtn
+  ) {
+    return;
+  }
+
+  unlockModalState.submitBtn.addEventListener("click", () => {
+    void submitProtectedUnlockModal();
+  });
+
+  unlockModalState.cancelBtn.addEventListener("click", () => {
+    if (unlockModalState.busy) {
+      return;
+    }
+    closeProtectedUnlockModal();
+  });
+
+  unlockModalState.overlay.addEventListener("click", (event) => {
+    if (unlockModalState.busy) {
+      return;
+    }
+    if (event.target === unlockModalState.overlay) {
+      closeProtectedUnlockModal();
+    }
+  });
+
+  unlockModalState.password.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      void submitProtectedUnlockModal();
+      return;
+    }
+    if (event.key === "Escape" && !unlockModalState.busy) {
+      event.preventDefault();
+      closeProtectedUnlockModal();
+    }
+  });
+
+  unlockModalState.password.addEventListener("input", () => {
+    if (unlockModalState.feedback && unlockModalState.feedback.classList.contains("is-error")) {
+      resetUnlockModalVisualState();
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape" || !isUnlockModalOpen() || unlockModalState.busy) {
+      return;
+    }
+    event.preventDefault();
+    closeProtectedUnlockModal();
+  });
+
+  unlockModalState.initialized = true;
 }
 
 function normalizeSnapshotKey(key) {
@@ -285,6 +1503,7 @@ function normalizeSnapshotKey(key) {
 function getHomepageSettingsSnapshotForDataManager() {
   const sizes = loadFontSizes() || {};
   const skipPrefs = loadSkipPreferences() || {};
+  const protectedPrefs = getProtectedPostSettings();
   const fontSelect = document.getElementById("font-select");
   const customFontInput = document.getElementById("custom-font");
   const colorSettings = loadSettings();
@@ -324,6 +1543,8 @@ function getHomepageSettingsSnapshotForDataManager() {
     cardFontSize: Number(sizes.card) || 13,
     skipAgeVerify: skipPrefs.skipAgeVerify === true,
     skipWelcome: skipPrefs.skipWelcome === true,
+    showProtectedPosts: protectedPrefs.showProtectedPosts === true,
+    autoSaveProtectedPasswords: protectedPrefs.autoSavePasswords === true,
     keybinds: normalizedKeybinds,
     customColors:
       colorSettings && typeof colorSettings === "object"
@@ -374,6 +1595,7 @@ function initDataManagerSettingsEmbedMode() {
     "loader-overlay",
     "help-modal",
     "confirm-overlay",
+    "unlock-overlay",
     "blackout",
     "welcome-overlay",
     "custom-popup-overlay",
@@ -685,7 +1907,9 @@ function savePanelSettings() {
 
 async function loadCatalog() {
   if (Array.isArray(window.REPORT_CATALOG)) {
-    return window.REPORT_CATALOG;
+    const normalizedCache = normalizeCatalogEntries(window.REPORT_CATALOG);
+    window.REPORT_CATALOG = normalizedCache;
+    return normalizedCache;
   }
   try {
     const response = await fetch("database/catalog.json", {
@@ -695,7 +1919,7 @@ async function loadCatalog() {
       throw new Error("Catalog not found");
     }
     const data = await response.json();
-    return Array.isArray(data) ? data : [];
+    return normalizeCatalogEntries(Array.isArray(data) ? data : []);
   } catch (error) {
     return [];
   }
@@ -828,7 +2052,16 @@ function isEditableTarget(target) {
 }
 
 function filterStories(list, favorites, query) {
+  const protectedSettings = getProtectedPostSettings();
   return list.filter((story) => {
+    if (
+      story &&
+      story.storyProtected === true &&
+      protectedSettings.showProtectedPosts !== true
+    ) {
+      return false;
+    }
+
     if (!matchesSearch(story, query)) {
       return false;
     }
@@ -977,6 +2210,30 @@ function storyTitle(story, index) {
     return `The Report #${story.reportNumber}`;
   }
   return `The Report #${index + 1}`;
+}
+
+function storyIdentifierLabel(story, index) {
+  const storyObj = story && typeof story === "object" ? story : {};
+  const rawNumber = storyObj.reportNumber;
+  if (rawNumber !== null && rawNumber !== undefined && `${rawNumber}`.trim()) {
+    return `${rawNumber}`.trim();
+  }
+  if (typeof storyObj.id === "string" && storyObj.id.trim()) {
+    const matchedDigits = storyObj.id.match(/(\d+)/);
+    if (matchedDigits && matchedDigits[1]) {
+      return matchedDigits[1];
+    }
+    return storyObj.id.trim();
+  }
+  return String(index + 1);
+}
+
+function lockedStoryTitle(story, index) {
+  return `🔒 Report #${storyIdentifierLabel(story, index)} Encrypted`;
+}
+
+function lockedStoryDescription() {
+  return "Message is encrypted, need password to unlock";
 }
 
 function applyTheme(theme) {
@@ -1155,6 +2412,33 @@ function getPathExtension(path = "") {
     .toLowerCase()
     .match(/\.([a-z0-9]+)(?:[?#].*)?$/);
   return extMatch ? extMatch[1] : "";
+}
+
+function inferMimeTypeFromPath(path, fallbackType = "image") {
+  const ext = getPathExtension(path);
+  const mimeMap = {
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    png: "image/png",
+    gif: "image/gif",
+    webp: "image/webp",
+    bmp: "image/bmp",
+    avif: "image/avif",
+    heic: "image/heic",
+    heif: "image/heif",
+    mp4: "video/mp4",
+    webm: "video/webm",
+    ogg: "video/ogg",
+    ogv: "video/ogg",
+    mov: "video/quicktime",
+    m4v: "video/x-m4v",
+    avi: "video/x-msvideo",
+    mkv: "video/x-matroska",
+  };
+  if (mimeMap[ext]) {
+    return mimeMap[ext];
+  }
+  return fallbackType === "video" ? "video/mp4" : "image/jpeg";
 }
 
 function toCssUrl(path = "") {
@@ -1365,10 +2649,12 @@ function resolveStoryCoverAsset(story) {
       : null;
   const mediaPath =
     coverMedia && typeof coverMedia.path === "string"
-      ? coverMedia.path.trim()
+      ? normalizeCatalogPath(coverMedia.path)
       : "";
   const fallbackPath =
-    story && typeof story.cover === "string" ? story.cover.trim() : "";
+    story && typeof story.cover === "string"
+      ? normalizeCatalogPath(story.cover)
+      : "";
   const path =
     mediaPath && (!fallbackPath || fallbackPath === mediaPath)
       ? mediaPath
@@ -1441,12 +2727,17 @@ function render() {
     const card = document.createElement("a");
     card.className = "story-card";
     card.href = buildViewerStoryUrl(story.id);
+    const isProtectedStory = story.storyProtected === true;
+    card.dataset.storyId = story.id;
+    card.dataset.protected = isProtectedStory ? "1" : "0";
     const coverAsset = resolveStoryCoverAsset(story);
     const mediaProfile = resolveStoryMediaProfile(story);
     const coverToken = `${story.id}:${index}:${Date.now()}`;
     card.dataset.coverToken = coverToken;
 
-    if (coverAsset) {
+    if (isProtectedStory) {
+      setProtectedCardLockedVisual(card, null);
+    } else if (coverAsset) {
       if (coverAsset.type === "image") {
         card.style.backgroundImage = toCssUrl(coverAsset.path);
       } else {
@@ -1506,6 +2797,14 @@ function render() {
     const content = document.createElement("div");
     content.className = "card-content";
 
+    let lockStateBadge = null;
+    if (isProtectedStory) {
+      lockStateBadge = document.createElement("div");
+      lockStateBadge.className = "badge lock-state-badge locked-badge";
+      lockStateBadge.textContent = "Locked";
+      content.appendChild(lockStateBadge);
+    }
+
     // Show "New" badge for stories that haven't been opened yet (no bookmark)
     const bookmark = getBookmark(story.id);
     if (!bookmark) {
@@ -1528,19 +2827,29 @@ function render() {
 
     const title = document.createElement("h2");
     title.className = "card-title";
-    title.textContent = storyTitle(story, index);
 
     const desc = document.createElement("p");
     desc.className = "card-desc";
-    desc.textContent = story.description || story.id;
 
     content.appendChild(title);
     content.appendChild(desc);
 
-    if (story.tags && story.tags.length > 0) {
-      const tagRow = document.createElement("div");
-      tagRow.className = "tag-row";
-      story.tags.forEach((tag) => {
+    const tagRow = document.createElement("div");
+    tagRow.className = "tag-row";
+    content.appendChild(tagRow);
+
+    const storyTags = Array.isArray(story.tags) ? story.tags : [];
+    const unlockedTitleText = storyTitle(story, index);
+    const unlockedDescText = story.description || story.id;
+
+    function renderUnlockedTags() {
+      tagRow.innerHTML = "";
+      if (storyTags.length === 0) {
+        tagRow.hidden = true;
+        return;
+      }
+      tagRow.hidden = false;
+      storyTags.forEach((tag) => {
         const pill = document.createElement("button");
         pill.className = "tag";
         pill.type = "button";
@@ -1551,10 +2860,10 @@ function render() {
           createRipple(event);
           const currentSearch = searchInput.value.trim();
           // Check if tag already exists in search
-          const existingTags = currentSearch.split(",").map(t => t.trim()).filter(t => t);
+          const existingTags = currentSearch.split(",").map((t) => t.trim()).filter((t) => t);
           if (!existingTags.includes(tag)) {
             if (currentSearch) {
-              searchInput.value = currentSearch + ", " + tag;
+              searchInput.value = `${currentSearch}, ${tag}`;
             } else {
               searchInput.value = tag;
             }
@@ -1564,7 +2873,37 @@ function render() {
         });
         tagRow.appendChild(pill);
       });
-      content.appendChild(tagRow);
+    }
+
+    function renderLockedTags() {
+      tagRow.innerHTML = "";
+      const lockCount = Math.max(1, storyTags.length);
+      tagRow.hidden = false;
+      for (let tagIndex = 0; tagIndex < lockCount; tagIndex += 1) {
+        const lockPill = document.createElement("span");
+        lockPill.className = "tag locked-tag";
+        lockPill.textContent = "🔒";
+        lockPill.setAttribute("aria-hidden", "true");
+        tagRow.appendChild(lockPill);
+      }
+    }
+
+    function applyUnlockedStoryContent() {
+      title.textContent = unlockedTitleText;
+      desc.textContent = unlockedDescText;
+      renderUnlockedTags();
+    }
+
+    function applyLockedStoryContent() {
+      title.textContent = lockedStoryTitle(story, index);
+      desc.textContent = lockedStoryDescription();
+      renderLockedTags();
+    }
+
+    if (isProtectedStory) {
+      applyLockedStoryContent();
+    } else {
+      applyUnlockedStoryContent();
     }
 
     // Add cursor tracking for card shine effect
@@ -1575,6 +2914,29 @@ function render() {
       card.style.setProperty("--card-cursor-x", `${x}%`);
       card.style.setProperty("--card-cursor-y", `${y}%`);
     });
+
+    if (isProtectedStory) {
+      card.addEventListener("click", (event) => {
+        if (event.target && event.target.closest("button")) {
+          return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        openProtectedUnlockModal(story);
+      });
+      hydrateProtectedCardUnlockState(
+        card,
+        story,
+        coverAsset,
+        coverToken,
+        lockStateBadge,
+        {
+          onLocked: applyLockedStoryContent,
+          onUnlocked: applyUnlockedStoryContent,
+          onChecking: applyLockedStoryContent,
+        },
+      );
+    }
 
     // Append buttons: favorite (star) on the right, pin beside it
     card.appendChild(favoriteBtn);
@@ -1719,6 +3081,17 @@ sortButtons.forEach((button) => {
 
 window.addEventListener("storage", (event) => {
   if (!event.key) {
+    return;
+  }
+  if (event.key === PROTECTED_POST_SETTINGS_KEY) {
+    protectedPostSettingsCache = null;
+    clearProtectedStoryCaches();
+    render();
+    return;
+  }
+  if (event.key === PROTECTED_LOCAL_PASSWORDS_KEY) {
+    clearProtectedStoryCaches();
+    render();
     return;
   }
   if (
@@ -2022,6 +3395,7 @@ async function startLoadingScreen() {
 
 // Keep init as the entry point but change flow
 async function init() {
+  initProtectedUnlockModal();
   startApp();
   
   // Modal tabs initialization (was inside DOMContentLoaded)
@@ -2068,6 +3442,10 @@ if (document.readyState === 'loading') {
   // DOM already ready, call init now
   init();
 }
+
+window.addEventListener("beforeunload", () => {
+  releaseProtectedCoverObjectUrls();
+});
 
 if (themeToggle) {
   themeToggle.addEventListener("click", () => {
@@ -3095,8 +4473,11 @@ function initStartupScreens() {
 function initInputSettings() {
   const skipAgeToggle = document.getElementById('skip-age-verify');
   const skipWelcomeToggle = document.getElementById('skip-welcome');
+  const showProtectedToggle = document.getElementById('show-protected-posts');
+  const autoSaveProtectedPasswordsToggle = document.getElementById('auto-save-protected-passwords');
   
   const prefs = loadSkipPreferences();
+  const protectedSettings = getProtectedPostSettings();
   
   if (skipAgeToggle) {
     skipAgeToggle.checked = prefs.skipAgeVerify;
@@ -3104,6 +4485,15 @@ function initInputSettings() {
   
   if (skipWelcomeToggle) {
     skipWelcomeToggle.checked = prefs.skipWelcome;
+  }
+
+  if (showProtectedToggle) {
+    showProtectedToggle.checked = protectedSettings.showProtectedPosts === true;
+  }
+
+  if (autoSaveProtectedPasswordsToggle) {
+    autoSaveProtectedPasswordsToggle.checked =
+      protectedSettings.autoSavePasswords === true;
   }
 
   if (inputSettingsInitialized) {
@@ -3124,6 +4514,23 @@ function initInputSettings() {
       const newPrefs = loadSkipPreferences();
       newPrefs.skipWelcome = skipWelcomeToggle.checked;
       saveSkipPreferences(newPrefs);
+    });
+  }
+
+  if (showProtectedToggle) {
+    showProtectedToggle.addEventListener('change', () => {
+      updateProtectedPostSettings({
+        showProtectedPosts: showProtectedToggle.checked,
+      });
+      render();
+    });
+  }
+
+  if (autoSaveProtectedPasswordsToggle) {
+    autoSaveProtectedPasswordsToggle.addEventListener('change', () => {
+      updateProtectedPostSettings({
+        autoSavePasswords: autoSaveProtectedPasswordsToggle.checked,
+      });
     });
   }
 }
@@ -3287,6 +4694,16 @@ function resetAllSettings() {
   
   // Remove skip preferences (age verify and welcome screen)
   localStorage.removeItem('skipPreferences');
+
+  // Remove protected-post settings and remembered passwords
+  localStorage.removeItem(PROTECTED_POST_SETTINGS_KEY);
+  localStorage.removeItem(PROTECTED_LOCAL_PASSWORDS_KEY);
+  sessionStorage.removeItem(PROTECTED_SESSION_PASSWORDS_KEY);
+  sessionStorage.removeItem(PROTECTED_UNLOCK_TICKETS_KEY);
+  protectedPostSettingsCache = null;
+  clearProtectedStoryCaches();
+  releaseProtectedCoverObjectUrls();
+  closeProtectedUnlockModal();
   
   // Re-apply defaults
   applyColors();
@@ -3652,6 +5069,10 @@ const KeyboardNavigation = {
       return;
     }
 
+    if (isUnlockModalOpen()) {
+      return;
+    }
+
     // Don't handle if in editable field (except search which we handle specially)
     if (this.isEditableTarget(event.target) && event.target.id !== 'search-input') {
       return;
@@ -3996,8 +5417,7 @@ const KeyboardNavigation = {
     if (this.mode === 'cards' && this.focusedCardIndex >= 0) {
       const card = this.cards[this.focusedCardIndex];
       if (card) {
-        // Navigate to the story
-        window.location.href = card.href;
+        card.click();
       }
     } else if (this.mode === 'controls' && this.focusedControlIndex >= 0) {
       const control = this.controls[this.focusedControlIndex];
@@ -4846,7 +6266,8 @@ const SecretStats = {
             // Ignore clicks on modals/popups
             if (e.target.closest('.modal-panel') || 
                 e.target.closest('.draggable-panel') ||
-                e.target.closest('#confirm-overlay')) {
+                e.target.closest('#confirm-overlay') ||
+                e.target.closest('#unlock-overlay')) {
                 return;
             }
             

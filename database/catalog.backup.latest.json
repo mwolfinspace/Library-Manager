@@ -37,8 +37,9 @@
     ],
     "story": "story/r20260210-185456.md",
     "createdAt": "2026-02-10T18:54:56.3998700+07:00",
-    "updatedAt": "2026-02-18T06:50:36.521Z",
-    "displayOrder": 0
+    "updatedAt": "2026-02-22T06:17:00.666Z",
+    "displayOrder": 0,
+    "storyProtected": false
   },
   {
     "id": "r20260212-081642",
@@ -67,8 +68,9 @@
     ],
     "story": "story/r20260212-081642.md",
     "createdAt": "2026-02-12T01:16:42.777Z",
-    "updatedAt": "2026-02-18T06:37:10.105Z",
-    "displayOrder": 1
+    "updatedAt": "2026-02-18T08:22:34.619Z",
+    "displayOrder": 1,
+    "storyProtected": false
   },
   {
     "id": "r20260212-083042",
@@ -95,8 +97,9 @@
     ],
     "story": "story/r20260212-083042.md",
     "createdAt": "2026-02-12T01:30:42.072Z",
-    "updatedAt": "2026-02-18T06:37:10.106Z",
-    "displayOrder": 2
+    "updatedAt": "2026-02-22T06:17:01.734Z",
+    "displayOrder": 2,
+    "storyProtected": false
   },
   {
     "id": "r20260211-001017",
@@ -123,8 +126,9 @@
     ],
     "story": "story/r20260211-001017.md",
     "createdAt": "2026-02-10T17:10:17.861Z",
-    "updatedAt": "2026-02-18T06:37:10.103Z",
-    "displayOrder": 3
+    "updatedAt": "2026-02-22T06:08:26.309Z",
+    "displayOrder": 3,
+    "storyProtected": true
   },
   {
     "id": "r20260211-001405",
@@ -154,8 +158,9 @@
     ],
     "story": "story/r20260211-001405.md",
     "createdAt": "2026-02-10T17:14:05.747Z",
-    "updatedAt": "2026-02-18T06:37:10.103Z",
-    "displayOrder": 4
+    "updatedAt": "2026-02-18T08:21:41.549Z",
+    "displayOrder": 4,
+    "storyProtected": false
   },
   {
     "id": "r20260211-113938",
@@ -184,8 +189,9 @@
     ],
     "story": "story/r20260211-113938.md",
     "createdAt": "2026-02-11T04:39:38.195Z",
-    "updatedAt": "2026-02-18T06:37:10.103Z",
-    "displayOrder": 5
+    "updatedAt": "2026-02-18T08:21:41.549Z",
+    "displayOrder": 5,
+    "storyProtected": false
   },
   {
     "id": "r20260211-142057",
@@ -212,8 +218,9 @@
     ],
     "story": "story/r20260211-142057.md",
     "createdAt": "2026-02-11T07:20:57.786Z",
-    "updatedAt": "2026-02-18T06:37:10.103Z",
-    "displayOrder": 6
+    "updatedAt": "2026-02-18T08:21:41.550Z",
+    "displayOrder": 6,
+    "storyProtected": false
   },
   {
     "id": "r20260211-143637",
@@ -241,8 +248,9 @@
     ],
     "story": "story/r20260211-143637.md",
     "createdAt": "2026-02-11T07:36:37.976Z",
-    "updatedAt": "2026-02-18T06:37:10.104Z",
-    "displayOrder": 7
+    "updatedAt": "2026-02-18T08:21:41.550Z",
+    "displayOrder": 7,
+    "storyProtected": false
   },
   {
     "id": "r20260211-144945",
@@ -268,8 +276,9 @@
     ],
     "story": "story/r20260211-144945.md",
     "createdAt": "2026-02-11T07:49:45.544Z",
-    "updatedAt": "2026-02-18T06:37:10.104Z",
-    "displayOrder": 8
+    "updatedAt": "2026-02-18T08:21:41.550Z",
+    "displayOrder": 8,
+    "storyProtected": false
   },
   {
     "id": "r20260212-082326",
@@ -296,8 +305,9 @@
     ],
     "story": "story/r20260212-082326.md",
     "createdAt": "2026-02-12T01:23:26.567Z",
-    "updatedAt": "2026-02-18T06:37:10.105Z",
-    "displayOrder": 9
+    "updatedAt": "2026-02-18T08:21:41.551Z",
+    "displayOrder": 9,
+    "storyProtected": false
   },
   {
     "id": "r20260214-142221",
@@ -329,33 +339,8 @@
     ],
     "story": "story/r20260214-142221.md",
     "createdAt": "2026-02-14T07:22:21.836Z",
-    "updatedAt": "2026-02-18T06:37:10.106Z",
-    "displayOrder": 10
-  },
-  {
-    "id": "r20260214-142730",
-    "reportNumber": 12,
-    "title": "Testing Video",
-    "description": "A small testing video",
-    "tags": [
-      "video",
-      "testing"
-    ],
-    "cover": "media-scr/r20260214-142730_001.mp4",
-    "coverMedia": null,
-    "coverPosition": "50% 50%",
-    "coverPositions": {
-      "grid": "50% 50%",
-      "list": "50% 50%",
-      "compact": "50% 50%",
-      "spotlight": "50% 50%"
-    },
-    "images": [
-      "media-scr/r20260214-142730_001.mp4"
-    ],
-    "story": "story/r20260214-142730.md",
-    "createdAt": "2026-02-14T07:27:31.161Z",
-    "updatedAt": "2026-02-18T06:37:10.106Z",
-    "displayOrder": 11
+    "updatedAt": "2026-02-18T08:21:41.551Z",
+    "displayOrder": 10,
+    "storyProtected": false
   }
 ]

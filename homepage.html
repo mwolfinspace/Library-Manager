@@ -517,6 +517,77 @@
                             </p>
                         </div>
 
+                        <!-- Protected Posts -->
+                        <div
+                            class="settings-section"
+                            style="
+                                margin-top: 24px;
+                                border-top: 1px solid rgba(98, 247, 255, 0.1);
+                                padding-top: 20px;
+                            "
+                        >
+                            <h4
+                                style="
+                                    margin-bottom: 12px;
+                                    color: var(--accent);
+                                "
+                            >
+                                🔐 Protected Posts
+                            </h4>
+                            <p
+                                class="settings-description"
+                                style="
+                                    font-size: 12px;
+                                    color: var(--muted);
+                                    margin-bottom: 16px;
+                                "
+                            >
+                                Control visibility for locked reports and password memory behavior.
+                            </p>
+
+                            <div class="toggle-list">
+                                <label class="toggle-item">
+                                    <div class="toggle-info">
+                                        <span class="toggle-icon">🕶️</span>
+                                        <div class="toggle-text">
+                                            <strong>Show Locked / Protected Posts</strong>
+                                            <span class="toggle-desc"
+                                                >Show protected posts in the gallery. OFF hides all protected posts.</span
+                                            >
+                                        </div>
+                                    </div>
+                                    <div class="toggle-switch">
+                                        <input
+                                            type="checkbox"
+                                            id="show-protected-posts"
+                                            class="toggle-input"
+                                        />
+                                        <span class="toggle-slider"></span>
+                                    </div>
+                                </label>
+
+                                <label class="toggle-item">
+                                    <div class="toggle-info">
+                                        <span class="toggle-icon">💾</span>
+                                        <div class="toggle-text">
+                                            <strong>Auto Save Correct Passwords</strong>
+                                            <span class="toggle-desc"
+                                                >Automatically save correct passwords per post in local storage.</span
+                                            >
+                                        </div>
+                                    </div>
+                                    <div class="toggle-switch">
+                                        <input
+                                            type="checkbox"
+                                            id="auto-save-protected-passwords"
+                                            class="toggle-input"
+                                        />
+                                        <span class="toggle-slider"></span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
                         <!-- Database Import/Export -->
                         <div
                             class="settings-section"
@@ -1444,6 +1515,58 @@
                         class="confirm-btn confirm-btn-danger"
                     >
                         Reset
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Protected Story Unlock -->
+        <div id="unlock-overlay" class="unlock-overlay" hidden>
+            <div
+                class="unlock-modal"
+                id="unlock-modal"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="unlock-title"
+                aria-describedby="unlock-message"
+            >
+                <div class="unlock-header">
+                    <span class="unlock-icon">🔐</span>
+                    <h3 id="unlock-title" class="unlock-title">Unlock Protected Report</h3>
+                </div>
+                <p id="unlock-message" class="unlock-message">
+                    Enter password to open this protected report.
+                </p>
+                <label class="unlock-field" for="unlock-password">
+                    Password
+                    <input
+                        type="password"
+                        id="unlock-password"
+                        class="unlock-password-input"
+                        autocomplete="current-password"
+                        placeholder="Enter report password"
+                    />
+                </label>
+                <label class="unlock-remember">
+                    <input type="checkbox" id="unlock-save-password" />
+                    Remember correct password for this post
+                </label>
+                <p id="unlock-hint" class="unlock-hint"></p>
+                <p id="unlock-feedback" class="unlock-feedback" aria-live="polite"></p>
+                <div class="unlock-actions">
+                    <button
+                        type="button"
+                        id="unlock-cancel"
+                        class="unlock-btn unlock-btn-secondary"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        id="unlock-submit"
+                        class="unlock-btn unlock-btn-primary"
+                    >
+                        Unlock
                     </button>
                 </div>
             </div>

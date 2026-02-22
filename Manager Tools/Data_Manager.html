@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Xedryk's Lab System - Data Manager</title>
-    <link rel="stylesheet" href="../css/fonts.css">
     <link rel="stylesheet" href="css/data_manager.css" />
 </head>
 <body>
@@ -78,6 +77,14 @@
                             <label>
                                 Report Number
                                 <input type="number" id="report-number" min="1" placeholder="Auto">
+                            </label>
+
+                            <label>
+                                Story Password
+                                <div class="password-input-row">
+                                    <input type="text" id="report-password" placeholder="Empty = no encryption">
+                                    <button type="button" class="ghost password-clear-btn" id="report-password-clear" aria-label="Clear password">Clear</button>
+                                </div>
                             </label>
 
                             <label>

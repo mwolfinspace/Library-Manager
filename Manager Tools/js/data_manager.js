@@ -18,6 +18,8 @@
         const statusBarLibrary = document.getElementById('status-bar-library');
         const storyForm = document.getElementById('story-form');
         const reportNumberInput = document.getElementById('report-number');
+        const reportPasswordInput = document.getElementById('report-password');
+        const reportPasswordClearBtn = document.getElementById('report-password-clear');
         const reportTitleInput = document.getElementById('report-title');
         const reportDescriptionInput = document.getElementById('report-description');
         const reportTagsInput = document.getElementById('report-tags');
@@ -133,6 +135,8 @@
             'Create, update, or remove reports.',
             'This manager writes the catalog, moves images into the correct folder, and rebuilds the library database.',
             'Leave Report Number empty to auto-assign the next available number.',
+            'Type a Story Password to encrypt story/media. Leave it empty to save plain files.',
+            'Saved protected-story passwords are kept in Manager Tools/decrypt/story-passwords.json.',
             'Use "Scan Files" to rebuild from disk, "Fix Missing Files" to repair links, and "Save Story" to update entries.'
         ].join('\n');
         const COVER_PRESET_POINTS = {
@@ -194,6 +198,18 @@
         };
         const SUPPORTED_IMAGE_CONVERT_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'webp', 'bmp', 'tif', 'tiff', 'heic', 'heif', 'avif']);
         const SUPPORTED_VIDEO_CONVERT_EXTENSIONS = new Set(['mp4', 'webm', 'ogg', 'mov', 'm4v', 'avi', 'mkv', 'ogv']);
+        const ENCRYPTION_PREFIX = 'XEDRYK_ENC_V1:';
+        const ENCRYPTION_ALGO = 'AES-GCM';
+        const ENCRYPTION_KEY_BITS = 256;
+        const ENCRYPTION_SALT_BYTES = 16;
+        const ENCRYPTION_IV_BYTES = 12;
+        const ENCRYPTION_ITERATIONS = 210000;
+        const STORY_PASSWORD_VAULT_FILE = 'story-passwords.json';
+        const STORY_PASSWORD_VAULT_ROOT_DIR = 'Manager Tools';
+        const STORY_PASSWORD_VAULT_SUB_DIR = 'decrypt';
+        const LEGACY_STORY_PASSWORD_VAULT_DIR = 'database';
+        const LEGACY_STORY_PASSWORD_VAULT_FILES = ['save-password.json', 'story-password.json'];
+        const STORY_PASSWORD_VAULT_VERSION = 1;
 
         function toFiniteNumber(value, fallback) {
             const parsed = Number(value);
@@ -211,6 +227,502 @@
                 return false;
             }
             return fallback;
+        }
+
+        function normalizePasswordValue(value) {
+            return String(value || '').trim();
+        }
+
+        function hasPasswordValue(value) {
+            return normalizePasswordValue(value).length > 0;
+        }
+
+        function getStoryPasswordInputValue() {
+            return reportPasswordInput ? reportPasswordInput.value : '';
+        }
+
+        function updateReportPasswordClearButtonState() {
+            if (!reportPasswordClearBtn || !reportPasswordInput) {
+                return;
+            }
+            reportPasswordClearBtn.disabled = !normalizePasswordValue(reportPasswordInput.value);
+        }
+
+        function normalizeStoryPasswordVault(input) {
+            const source = (input && typeof input === 'object' && !Array.isArray(input))
+                ? ((input.stories && typeof input.stories === 'object' && !Array.isArray(input.stories))
+                    ? input.stories
+                    : input)
+                : {};
+            const normalized = {};
+            Object.entries(source).forEach(([storyId, password]) => {
+                const normalizedStoryId = String(storyId || '').trim();
+                const normalizedPassword = normalizePasswordValue(password);
+                if (!normalizedStoryId || !normalizedPassword) {
+                    return;
+                }
+                normalized[normalizedStoryId] = normalizedPassword;
+            });
+            return normalized;
+        }
+
+        function buildStoryPasswordVaultPayload(passwordMap = {}) {
+            const normalizedMap = normalizeStoryPasswordVault(passwordMap);
+            return {
+                version: STORY_PASSWORD_VAULT_VERSION,
+                updatedAt: new Date().toISOString(),
+                stories: normalizedMap,
+            };
+        }
+
+        function getSavedStoryPassword(storyId) {
+            const normalizedStoryId = String(storyId || '').trim();
+            if (!normalizedStoryId) {
+                return '';
+            }
+            return normalizePasswordValue(storyPasswordVault[normalizedStoryId]);
+        }
+
+        async function getStoryPasswordVaultDir(create = true) {
+            if (!state.rootHandle) {
+                return null;
+            }
+            const managerToolsDir = await state.rootHandle.getDirectoryHandle(
+                STORY_PASSWORD_VAULT_ROOT_DIR,
+                { create }
+            );
+            return managerToolsDir.getDirectoryHandle(STORY_PASSWORD_VAULT_SUB_DIR, { create });
+        }
+
+        async function removeFileIfExists(dirHandle, fileName) {
+            if (!dirHandle) {
+                return false;
+            }
+            try {
+                await dirHandle.removeEntry(fileName);
+                return true;
+            } catch (error) {
+                return false;
+            }
+        }
+
+        function storyPasswordMapsEqual(left = {}, right = {}) {
+            const leftMap = normalizeStoryPasswordVault(left);
+            const rightMap = normalizeStoryPasswordVault(right);
+            const leftKeys = Object.keys(leftMap);
+            const rightKeys = Object.keys(rightMap);
+            if (leftKeys.length !== rightKeys.length) {
+                return false;
+            }
+            return leftKeys.every(key => rightMap[key] === leftMap[key]);
+        }
+
+        async function getLegacyStoryPasswordVaultSources() {
+            if (!state.rootHandle) {
+                return [];
+            }
+            const sources = [];
+            const seen = new Set();
+            const pushSource = (dirHandle, dirLabel, fileName) => {
+                if (!dirHandle || !fileName) {
+                    return;
+                }
+                const key = `${dirLabel}:${fileName}`;
+                if (seen.has(key)) {
+                    return;
+                }
+                seen.add(key);
+                sources.push({ dirHandle, dirLabel, fileName });
+            };
+
+            LEGACY_STORY_PASSWORD_VAULT_FILES.forEach(fileName => {
+                pushSource(state.rootHandle, '.', fileName);
+            });
+
+            let legacyDir = null;
+            try {
+                legacyDir = await state.rootHandle.getDirectoryHandle(LEGACY_STORY_PASSWORD_VAULT_DIR);
+            } catch (error) {
+                legacyDir = null;
+            }
+            if (!legacyDir) {
+                return sources;
+            }
+
+            pushSource(legacyDir, LEGACY_STORY_PASSWORD_VAULT_DIR, STORY_PASSWORD_VAULT_FILE);
+            LEGACY_STORY_PASSWORD_VAULT_FILES.forEach(fileName => {
+                pushSource(legacyDir, LEGACY_STORY_PASSWORD_VAULT_DIR, fileName);
+            });
+
+            return sources;
+        }
+
+        async function migrateLegacyStoryPasswordVault(vaultDir, { removeLegacyFiles = true } = {}) {
+            if (!state.rootHandle || !vaultDir) {
+                return {
+                    merged: false,
+                    legacyFilesFound: 0,
+                    legacyFilesRemoved: 0,
+                    importedStories: 0,
+                    stories: {},
+                };
+            }
+
+            const currentRawVault = await readJsonFile(vaultDir, STORY_PASSWORD_VAULT_FILE);
+            const currentStories = normalizeStoryPasswordVault(currentRawVault);
+            const sources = await getLegacyStoryPasswordVaultSources();
+            const legacyStories = {};
+            let legacyFilesFound = 0;
+
+            for (const source of sources) {
+                const rawVault = await readJsonFile(source.dirHandle, source.fileName);
+                if (!rawVault) {
+                    continue;
+                }
+                legacyFilesFound += 1;
+                const normalizedLegacyStories = normalizeStoryPasswordVault(rawVault);
+                Object.entries(normalizedLegacyStories).forEach(([storyId, password]) => {
+                    if (!Object.prototype.hasOwnProperty.call(legacyStories, storyId)) {
+                        legacyStories[storyId] = password;
+                    }
+                });
+            }
+
+            const mergedStories = {
+                ...legacyStories,
+                ...currentStories,
+            };
+            const merged = !storyPasswordMapsEqual(currentStories, mergedStories);
+            if (merged || (!currentRawVault && Object.keys(mergedStories).length > 0)) {
+                const payload = buildStoryPasswordVaultPayload(mergedStories);
+                await writeFile(vaultDir, STORY_PASSWORD_VAULT_FILE, JSON.stringify(payload, null, 2));
+            }
+
+            let legacyFilesRemoved = 0;
+            if (removeLegacyFiles) {
+                for (const source of sources) {
+                    const removed = await removeFileIfExists(source.dirHandle, source.fileName);
+                    if (removed) {
+                        legacyFilesRemoved += 1;
+                    }
+                }
+            }
+
+            return {
+                merged,
+                legacyFilesFound,
+                legacyFilesRemoved,
+                importedStories: Math.max(0, Object.keys(mergedStories).length - Object.keys(currentStories).length),
+                stories: mergedStories,
+            };
+        }
+
+        async function writeStoryPasswordVault() {
+            if (!state.rootHandle) {
+                return;
+            }
+            const vaultDir = await getStoryPasswordVaultDir(true);
+            if (!vaultDir) {
+                return;
+            }
+            const payload = buildStoryPasswordVaultPayload(storyPasswordVault);
+            storyPasswordVault = normalizeStoryPasswordVault(payload.stories);
+            await writeFile(vaultDir, STORY_PASSWORD_VAULT_FILE, JSON.stringify(payload, null, 2));
+        }
+
+        async function loadStoryPasswordVault({ createIfMissing = false } = {}) {
+            if (!state.rootHandle) {
+                storyPasswordVault = {};
+                return storyPasswordVault;
+            }
+            const vaultDir = await getStoryPasswordVaultDir(true);
+            if (!vaultDir) {
+                storyPasswordVault = {};
+                return storyPasswordVault;
+            }
+            const migration = await migrateLegacyStoryPasswordVault(vaultDir, { removeLegacyFiles: true });
+            const rawVault = await readJsonFile(vaultDir, STORY_PASSWORD_VAULT_FILE);
+            storyPasswordVault = normalizeStoryPasswordVault(rawVault || migration.stories);
+            if (createIfMissing && !rawVault) {
+                await writeStoryPasswordVault();
+            }
+            return storyPasswordVault;
+        }
+
+        async function setSavedStoryPassword(storyId, password) {
+            const normalizedStoryId = String(storyId || '').trim();
+            const normalizedPassword = normalizePasswordValue(password);
+            if (!normalizedStoryId || !normalizedPassword) {
+                return;
+            }
+            if (storyPasswordVault[normalizedStoryId] === normalizedPassword) {
+                return;
+            }
+            storyPasswordVault[normalizedStoryId] = normalizedPassword;
+            await writeStoryPasswordVault();
+        }
+
+        async function clearSavedStoryPassword(storyId) {
+            const normalizedStoryId = String(storyId || '').trim();
+            if (!normalizedStoryId || !Object.prototype.hasOwnProperty.call(storyPasswordVault, normalizedStoryId)) {
+                return;
+            }
+            delete storyPasswordVault[normalizedStoryId];
+            await writeStoryPasswordVault();
+        }
+
+        async function clearSavedStoryPasswords(storyIds = []) {
+            const ids = Array.isArray(storyIds) ? storyIds : [storyIds];
+            let changed = false;
+            ids.forEach(storyId => {
+                const normalizedStoryId = String(storyId || '').trim();
+                if (!normalizedStoryId) {
+                    return;
+                }
+                if (Object.prototype.hasOwnProperty.call(storyPasswordVault, normalizedStoryId)) {
+                    delete storyPasswordVault[normalizedStoryId];
+                    changed = true;
+                }
+            });
+            if (changed) {
+                await writeStoryPasswordVault();
+            }
+        }
+
+        async function syncSavedStoryPassword(storyId, password) {
+            const normalizedPassword = normalizePasswordValue(password);
+            if (normalizedPassword) {
+                await setSavedStoryPassword(storyId, normalizedPassword);
+                return;
+            }
+            await clearSavedStoryPassword(storyId);
+        }
+
+        async function pruneSavedStoryPasswords(validStoryIds = []) {
+            const validSet = new Set(
+                (Array.isArray(validStoryIds) ? validStoryIds : [])
+                    .map(storyId => String(storyId || '').trim())
+                    .filter(Boolean)
+            );
+            let changed = false;
+            Object.keys(storyPasswordVault).forEach(storyId => {
+                if (!validSet.has(storyId)) {
+                    delete storyPasswordVault[storyId];
+                    changed = true;
+                }
+            });
+            if (changed) {
+                await writeStoryPasswordVault();
+            }
+        }
+
+        function toBase64(bytes) {
+            const view = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes || []);
+            let binary = '';
+            const chunkSize = 0x8000;
+            for (let i = 0; i < view.length; i += chunkSize) {
+                binary += String.fromCharCode(...view.subarray(i, i + chunkSize));
+            }
+            return btoa(binary);
+        }
+
+        function fromBase64(base64Text) {
+            const binary = atob(String(base64Text || ''));
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i += 1) {
+                bytes[i] = binary.charCodeAt(i);
+            }
+            return bytes;
+        }
+
+        function isWebCryptoReady() {
+            return !!(window.crypto && window.crypto.subtle);
+        }
+
+        function ensureWebCryptoReady() {
+            if (!isWebCryptoReady()) {
+                throw new Error('Web Crypto API is unavailable. Use the latest Chrome/Edge.');
+            }
+        }
+
+        function buildEncryptedPayload(rawPayload) {
+            return `${ENCRYPTION_PREFIX}${JSON.stringify(rawPayload)}`;
+        }
+
+        function parseEncryptedPayload(rawText) {
+            if (typeof rawText !== 'string' || !rawText.startsWith(ENCRYPTION_PREFIX)) {
+                return null;
+            }
+            const jsonText = rawText.slice(ENCRYPTION_PREFIX.length);
+            if (!jsonText.trim()) {
+                return null;
+            }
+            try {
+                const payload = JSON.parse(jsonText);
+                if (!payload || typeof payload !== 'object') {
+                    return null;
+                }
+                if (
+                    typeof payload.salt !== 'string' ||
+                    typeof payload.iv !== 'string' ||
+                    typeof payload.data !== 'string'
+                ) {
+                    return null;
+                }
+                return payload;
+            } catch (error) {
+                return null;
+            }
+        }
+
+        function inferMimeTypeFromExtension(extension = '') {
+            const ext = String(extension || '').toLowerCase().replace(/^\./, '');
+            if (!ext) {
+                return 'application/octet-stream';
+            }
+            const map = {
+                jpg: 'image/jpeg',
+                jpeg: 'image/jpeg',
+                png: 'image/png',
+                gif: 'image/gif',
+                webp: 'image/webp',
+                bmp: 'image/bmp',
+                svg: 'image/svg+xml',
+                avif: 'image/avif',
+                heic: 'image/heic',
+                heif: 'image/heif',
+                mp4: 'video/mp4',
+                webm: 'video/webm',
+                ogg: 'video/ogg',
+                ogv: 'video/ogg',
+                mov: 'video/quicktime',
+                m4v: 'video/x-m4v',
+                avi: 'video/x-msvideo',
+                mkv: 'video/x-matroska',
+                md: 'text/markdown',
+                txt: 'text/plain',
+            };
+            return map[ext] || 'application/octet-stream';
+        }
+
+        async function deriveEncryptionKey(password, saltBytes, iterations = ENCRYPTION_ITERATIONS) {
+            ensureWebCryptoReady();
+            const passphrase = normalizePasswordValue(password);
+            if (!passphrase) {
+                throw new Error('Password is required for encryption.');
+            }
+            const baseKey = await crypto.subtle.importKey(
+                'raw',
+                new TextEncoder().encode(passphrase),
+                { name: 'PBKDF2' },
+                false,
+                ['deriveKey']
+            );
+            return crypto.subtle.deriveKey(
+                {
+                    name: 'PBKDF2',
+                    salt: saltBytes,
+                    iterations,
+                    hash: 'SHA-256',
+                },
+                baseKey,
+                { name: ENCRYPTION_ALGO, length: ENCRYPTION_KEY_BITS },
+                false,
+                ['encrypt', 'decrypt']
+            );
+        }
+
+        async function encryptBytesToPayload(plainBytes, password, mimeType = 'application/octet-stream') {
+            ensureWebCryptoReady();
+            const bytes = plainBytes instanceof Uint8Array ? plainBytes : new Uint8Array(plainBytes || []);
+            const salt = crypto.getRandomValues(new Uint8Array(ENCRYPTION_SALT_BYTES));
+            const iv = crypto.getRandomValues(new Uint8Array(ENCRYPTION_IV_BYTES));
+            const key = await deriveEncryptionKey(password, salt, ENCRYPTION_ITERATIONS);
+            const encrypted = await crypto.subtle.encrypt(
+                { name: ENCRYPTION_ALGO, iv },
+                key,
+                bytes
+            );
+            return buildEncryptedPayload({
+                v: 1,
+                alg: ENCRYPTION_ALGO,
+                kdf: 'PBKDF2-SHA256',
+                iter: ENCRYPTION_ITERATIONS,
+                salt: toBase64(salt),
+                iv: toBase64(iv),
+                data: toBase64(new Uint8Array(encrypted)),
+                mime: mimeType || 'application/octet-stream',
+            });
+        }
+
+        async function decryptPayloadToBytes(rawText, password) {
+            ensureWebCryptoReady();
+            const payload = parseEncryptedPayload(rawText);
+            if (!payload) {
+                throw new Error('Encrypted payload format is invalid.');
+            }
+            const iterations = Number.isFinite(payload.iter)
+                ? payload.iter
+                : parseInt(payload.iter, 10) || ENCRYPTION_ITERATIONS;
+            const salt = fromBase64(payload.salt);
+            const iv = fromBase64(payload.iv);
+            const encryptedBytes = fromBase64(payload.data);
+            const key = await deriveEncryptionKey(password, salt, iterations);
+            try {
+                const decrypted = await crypto.subtle.decrypt(
+                    { name: ENCRYPTION_ALGO, iv },
+                    key,
+                    encryptedBytes
+                );
+                return {
+                    bytes: new Uint8Array(decrypted),
+                    mime: typeof payload.mime === 'string' ? payload.mime : '',
+                };
+            } catch (error) {
+                throw new Error('Incorrect password for encrypted story.');
+            }
+        }
+
+        async function encryptStoryMarkdown(markdown, password) {
+            const payload = await encryptBytesToPayload(
+                new TextEncoder().encode(String(markdown || '')),
+                password,
+                'text/markdown; charset=utf-8'
+            );
+            return payload;
+        }
+
+        async function decryptStoryMarkdown(rawText, password) {
+            const decrypted = await decryptPayloadToBytes(rawText, password);
+            return new TextDecoder().decode(decrypted.bytes);
+        }
+
+        function isEntryProtected(entry) {
+            return !!(entry && entry.storyProtected === true);
+        }
+
+        function buildStoryCryptoContext({ encryptPassword = '', decryptPassword = '' } = {}) {
+            const normalizedEncrypt = normalizePasswordValue(encryptPassword);
+            const normalizedDecrypt = normalizePasswordValue(decryptPassword || normalizedEncrypt);
+            return {
+                encryptEnabled: hasPasswordValue(normalizedEncrypt),
+                encryptPassword: normalizedEncrypt,
+                decryptPassword: normalizedDecrypt,
+            };
+        }
+
+        function setStoryEditorLocked(locked) {
+            if (!storyTextInput) {
+                return;
+            }
+            storyTextInput.disabled = !!locked;
+            storyTextInput.placeholder = locked
+                ? 'Enter password to unlock this protected story...'
+                : 'Write the story here...';
+            if (locked) {
+                storyTextInput.value = '';
+                clearUndoHistory();
+            }
         }
 
         function normalizeBindingMap(bindings) {
@@ -466,6 +978,9 @@
         let mediaIdCounter = 0;
         let imageCardHeight = 148;
         let pendingReplaceMediaId = null;
+        let activeStoryPassword = '';
+        let storyPasswordVault = {};
+        let passwordUnlockTimer = 0;
         const mediaObjectUrls = new Map();
         let imageManagerRefreshQueued = false;
         let imageManagerRefreshFrameId = 0;
@@ -1425,6 +1940,25 @@
                 });
             }
             return '';
+        }
+
+        function resetMediaPreviewState({ clearLibraryCache = false } = {}) {
+            workingMediaItems.forEach(item => {
+                if (!item) {
+                    return;
+                }
+                item.previewUrl = '';
+                item.previewMissing = false;
+                item.previewPending = false;
+            });
+            if (externalCoverMedia) {
+                externalCoverMedia.previewUrl = '';
+                externalCoverMedia.previewMissing = false;
+                externalCoverMedia.previewPending = false;
+            }
+            if (clearLibraryCache) {
+                clearLibraryPreviewAssetUrls();
+            }
         }
 
         function releaseUnusedMediaUrls() {
@@ -2561,7 +3095,11 @@
                     ? entry.id.trim()
                     : `story_${index + 1}`;
                 const images = Array.isArray(entry.images)
-                    ? entry.images.filter(path => typeof path === 'string' && path.trim())
+                    ? entry.images
+                        .map(path => (typeof path === 'string'
+                            ? normalizeCatalogPath(path, { allowExternal: false })
+                            : ''))
+                        .filter(Boolean)
                     : [];
                 const normalizedImages = images.filter(path => {
                     const name = getFileName(path);
@@ -2570,7 +3108,7 @@
 
                 let coverMedia = null;
                 if (entry.coverMedia && typeof entry.coverMedia === 'object' && typeof entry.coverMedia.path === 'string') {
-                    const path = entry.coverMedia.path.trim();
+                    const path = normalizeCatalogPath(entry.coverMedia.path, { allowExternal: false });
                     const mediaType = detectCoverMediaType(path, entry.coverMedia.type || '');
                     if (path && (mediaType === 'gif' || mediaType === 'video' || mediaType === 'image')) {
                         coverMedia = { path, type: mediaType };
@@ -2578,7 +3116,7 @@
                 }
 
                 if (!coverMedia && typeof entry.cover === 'string') {
-                    const coverPath = entry.cover.trim();
+                    const coverPath = normalizeCatalogPath(entry.cover, { allowExternal: false });
                     const coverName = getFileName(coverPath);
                     if (new RegExp(`^${escapeRegExp(id)}_cover\\.`, 'i').test(coverName)) {
                         const mediaType = detectCoverMediaType(coverPath, '');
@@ -2588,7 +3126,9 @@
                     }
                 }
 
-                let cover = typeof entry.cover === 'string' ? entry.cover.trim() : '';
+                let cover = typeof entry.cover === 'string'
+                    ? normalizeCatalogPath(entry.cover, { allowExternal: false })
+                    : '';
                 if (!cover) {
                     cover = coverMedia ? coverMedia.path : (normalizedImages[0] || '');
                 }
@@ -2599,6 +3139,9 @@
                 const fallbackCoverPosition = formatCoverPositionValue(normalizeCoverPosition(entry.coverPosition || '50% 50%'));
                 const coverPositions = normalizeCoverPositionMap(entry.coverPositions, fallbackCoverPosition);
                 const coverPosition = coverPositions.grid || fallbackCoverPosition;
+                const storyPath = typeof entry.story === 'string'
+                    ? normalizeCatalogPath(entry.story, { allowExternal: false })
+                    : '';
 
                 return {
                     ...entry,
@@ -2614,9 +3157,8 @@
                     coverPosition,
                     coverPositions,
                     images: normalizedImages,
-                    story: typeof entry.story === 'string' && entry.story.trim()
-                        ? entry.story.trim()
-                        : `story/${id}.md`,
+                    story: storyPath || `story/${id}.md`,
+                    storyProtected: entry.storyProtected === true,
                 };
             });
         }
@@ -2752,17 +3294,122 @@
             }
         }
 
+        function stripQueryAndHash(path) {
+            return String(path || '').split('#')[0].split('?')[0];
+        }
+
+        function isLikelyWindowsAbsolutePath(path) {
+            return /^[a-zA-Z]:\//.test(path) || /^\/[a-zA-Z]:\//.test(path);
+        }
+
+        function canonicalizeProjectRelativePath(path) {
+            const relative = String(path || '').replace(/^\/+/, '').trim();
+            if (!relative) {
+                return '';
+            }
+            const separatorIndex = relative.indexOf('/');
+            const head = separatorIndex >= 0
+                ? relative.slice(0, separatorIndex).toLowerCase()
+                : relative.toLowerCase();
+            const tail = separatorIndex >= 0 ? relative.slice(separatorIndex + 1) : '';
+            if (head === 'media-scr' || head === 'story' || head === 'database') {
+                return tail ? `${head}/${tail}` : head;
+            }
+            return relative;
+        }
+
+        function extractProjectRelativePath(rawPath) {
+            const normalized = String(rawPath || '').replace(/\\/g, '/').trim();
+            if (!normalized) {
+                return '';
+            }
+
+            const cleanPath = stripQueryAndHash(normalized);
+            const lowerPath = cleanPath.toLowerCase();
+            const markers = ['/media-scr/', '/story/', '/database/', 'media-scr/', 'story/', 'database/'];
+            for (const marker of markers) {
+                const markerIndex = lowerPath.lastIndexOf(marker);
+                if (markerIndex >= 0) {
+                    const offset = marker.startsWith('/') ? markerIndex + 1 : markerIndex;
+                    return canonicalizeProjectRelativePath(cleanPath.slice(offset));
+                }
+            }
+
+            const relativePath = canonicalizeProjectRelativePath(cleanPath.replace(/^\/+/, ''));
+            if (
+                relativePath.startsWith('media-scr/')
+                || relativePath.startsWith('story/')
+                || relativePath.startsWith('database/')
+            ) {
+                return relativePath;
+            }
+
+            return '';
+        }
+
+        function normalizeCatalogPath(rawPath, { allowExternal = true } = {}) {
+            if (typeof rawPath !== 'string') {
+                return '';
+            }
+            const trimmed = rawPath.trim();
+            if (!trimmed) {
+                return '';
+            }
+            if (/^(?:blob:|data:)/i.test(trimmed)) {
+                return trimmed;
+            }
+            if (/^https?:/i.test(trimmed)) {
+                return allowExternal ? trimmed : '';
+            }
+
+            if (/^file:/i.test(trimmed)) {
+                try {
+                    const fileUrl = new URL(trimmed);
+                    const fromUrl = extractProjectRelativePath(
+                        decodeURIComponent(fileUrl.pathname || '')
+                    );
+                    if (fromUrl) {
+                        return fromUrl;
+                    }
+                } catch (error) {
+                    // Ignore malformed file URLs and continue with string normalization.
+                }
+                return '';
+            }
+
+            const slashPath = trimmed.replace(/\\/g, '/');
+            const extracted = extractProjectRelativePath(slashPath);
+            if (extracted) {
+                return extracted;
+            }
+
+            if (isLikelyWindowsAbsolutePath(stripQueryAndHash(slashPath))) {
+                return '';
+            }
+
+            if (slashPath.startsWith('/')) {
+                return stripQueryAndHash(slashPath).replace(/^\/+/, '');
+            }
+
+            return slashPath;
+        }
+
         function getFileName(path) {
             if (!path) return '';
-            const normalized = path.replace(/\\/g, '/');
-            return normalized.split('/').pop();
+            const normalized = stripQueryAndHash(path).replace(/\\/g, '/');
+            const tail = normalized.split('/').pop() || '';
+            try {
+                return decodeURIComponent(tail);
+            } catch (error) {
+                return tail;
+            }
         }
 
         function normalizeRelativePath(path) {
             if (!path) return '';
-            return String(path)
-                .trim()
-                .replace(/\\/g, '/')
+            const normalizedPath = normalizeCatalogPath(String(path), { allowExternal: false })
+                || String(path).trim().replace(/\\/g, '/');
+            return normalizedPath
                 .replace(/^\.\//, '')
                 .replace(/^\/+/, '')
                 .replace(/\/{2,}/g, '/');
@@ -2796,7 +3443,7 @@
             }
             try {
                 const url = new URL(raw);
-                return url.protocol === 'file:' || url.protocol === 'http:' || url.protocol === 'https:';
+                return url.protocol === 'http:' || url.protocol === 'https:';
             } catch (error) {
                 return false;
             }
@@ -2938,25 +3585,50 @@
             });
         }
 
+        async function createLibraryPreviewObjectUrl(file, sourcePath = '') {
+            if (!file) {
+                return '';
+            }
+
+            const prefixText = await file.slice(0, ENCRYPTION_PREFIX.length).text();
+            if (!prefixText.startsWith(ENCRYPTION_PREFIX)) {
+                return URL.createObjectURL(file);
+            }
+
+            const typedPassword = reportPasswordInput
+                ? normalizePasswordValue(reportPasswordInput.value)
+                : '';
+            const decryptPassword = normalizePasswordValue(activeStoryPassword || typedPassword);
+            if (!decryptPassword) {
+                return '';
+            }
+
+            try {
+                const rawText = await file.text();
+                const decrypted = await decryptPayloadToBytes(rawText, decryptPassword);
+                const fallbackMime = inferMimeTypeFromExtension(getFileExtension(sourcePath || file.name));
+                const mimeType = decrypted.mime || fallbackMime || 'application/octet-stream';
+                const blob = new Blob([decrypted.bytes], { type: mimeType });
+                return URL.createObjectURL(blob);
+            } catch (error) {
+                return '';
+            }
+        }
+
         async function resolveLibraryPreviewAssetUrl(path = '') {
             const rawPath = String(path || '').trim();
             if (!rawPath) {
                 return '';
             }
 
-            if (isDirectAssetUrl(rawPath)) {
-                return rawPath;
-            }
-            if (/^[a-zA-Z]:[\\/]/.test(rawPath)) {
-                try {
-                    const filePath = rawPath.replace(/\\/g, '/');
-                    return new URL(`file:///${filePath}`).href;
-                } catch (error) {
-                    // continue with relative-path resolution
-                }
+            const normalizedPath = normalizeCatalogPath(rawPath);
+            const lookupPath = normalizedPath || rawPath;
+
+            if (isDirectAssetUrl(lookupPath)) {
+                return lookupPath;
             }
 
-            const candidates = buildLibraryPathCandidates(rawPath);
+            const candidates = buildLibraryPathCandidates(lookupPath);
             for (const candidate of candidates) {
                 if (libraryPreviewAssetUrlCache.has(candidate)) {
                     return libraryPreviewAssetUrlCache.get(candidate) || '';
@@ -2966,14 +3638,17 @@
             for (const candidate of candidates) {
                 const file = await getLibraryFileFromRelativePath(candidate);
                 if (file) {
-                    const objectUrl = URL.createObjectURL(file);
+                    const objectUrl = await createLibraryPreviewObjectUrl(file, candidate);
+                    if (!objectUrl) {
+                        continue;
+                    }
                     cacheLibraryPreviewUrl(candidates, objectUrl);
                     cacheLibraryPreviewUrl(candidate, objectUrl);
                     return objectUrl;
                 }
             }
 
-            const fileName = getFileName(rawPath);
+            const fileName = getFileName(lookupPath);
             if (!fileName) {
                 return '';
             }
@@ -2992,7 +3667,10 @@
             if (!discoveredFile) {
                 return '';
             }
-            const discoveredUrl = URL.createObjectURL(discoveredFile);
+            const discoveredUrl = await createLibraryPreviewObjectUrl(discoveredFile, discoveredPath);
+            if (!discoveredUrl) {
+                return '';
+            }
             cacheLibraryPreviewUrl([discoveredPath, ...candidates], discoveredUrl);
             return discoveredUrl;
         }
@@ -3334,6 +4012,8 @@
                 await writeFile(databaseDir, 'settings.json', JSON.stringify(initialSettings, null, 2));
                 syncSettingsToLocalStorage(initialSettings);
             }
+
+            await loadStoryPasswordVault({ createIfMissing: true });
         }
 
         async function getFontsDir() {
@@ -3492,6 +4172,8 @@
             if (settingsData) {
                 syncSettingsToLocalStorage(settingsData);
             }
+            await loadStoryPasswordVault({ createIfMissing: true });
+            await pruneSavedStoryPasswords(state.stories.map(story => story.id));
             renderStoryList();
             renderImageManager();
             void refreshLibraryStats();
@@ -3509,6 +4191,7 @@
             const databaseDir = await getDatabaseDir();
             const storyDir = await getStoryDir();
             const imageDir = await getImageDir();
+            await loadStoryPasswordVault({ createIfMissing: true });
             const existingCatalog = normalizeCatalog(await readJsonFile(databaseDir, 'catalog.json'));
             const existingMap = new Map(existingCatalog.map(entry => [entry.id, entry]));
             const hasExistingOrder = hasDisplayOrder(existingCatalog);
@@ -3604,11 +4287,13 @@
                     createdAt,
                     updatedAt,
                     displayOrder,
+                    storyProtected: existing?.storyProtected === true,
                 });
             }
 
             state.stories = rebuilt;
             sortStories();
+            await pruneSavedStoryPasswords(rebuilt.map(story => story.id));
             await writeCatalog(state.stories);
             renderStoryList();
             renderImageManager();
@@ -3620,16 +4305,25 @@
         async function writeCatalog(catalog) {
             const databaseDir = await getDatabaseDir();
             const jsonCatalog = catalog.map(entry => {
-                const { storyText, ...rest } = entry;
+                const { storyText, protectedMediaPayloads, ...rest } = entry;
                 return rest;
             });
             const catalogJson = JSON.stringify(jsonCatalog, null, 2);
 
             const storyDir = await getStoryDir();
+            const imageDir = await getImageDir();
             const catalogWithText = [];
             for (const entry of catalog) {
                 const storyText = entry.storyText || await readTextFile(storyDir, `${entry.id}.md`);
-                catalogWithText.push({ ...entry, storyText });
+                const mediaPayloads = await buildProtectedMediaPayloadsForCatalog(entry, imageDir);
+                const catalogEntry = {
+                    ...entry,
+                    storyText,
+                };
+                if (mediaPayloads && Object.keys(mediaPayloads).length > 0) {
+                    catalogEntry.protectedMediaPayloads = mediaPayloads;
+                }
+                catalogWithText.push(catalogEntry);
             }
             const rawSettings = (await readJsonFile(databaseDir, 'settings.json')) || {};
             const viewerSettings = extractViewerSettings(rawSettings);
@@ -3638,6 +4332,76 @@
 
             await writeFile(databaseDir, 'catalog.json', catalogJson);
             await writeFile(databaseDir, 'catalog.js', catalogJs);
+        }
+
+        function collectProtectedStoryMediaPaths(entry) {
+            if (!entry || typeof entry !== 'object') {
+                return [];
+            }
+            const paths = new Set();
+            const addPath = (rawPath = '') => {
+                const normalized = normalizeCatalogPath(rawPath, { allowExternal: false });
+                if (!normalized) {
+                    return;
+                }
+                paths.add(normalized);
+            };
+
+            if (Array.isArray(entry.images)) {
+                entry.images.forEach(addPath);
+            }
+            if (Array.isArray(entry.videos)) {
+                entry.videos.forEach(addPath);
+            } else if (typeof entry.video === 'string') {
+                addPath(entry.video);
+            }
+            if (entry.coverMedia && typeof entry.coverMedia === 'object' && typeof entry.coverMedia.path === 'string') {
+                addPath(entry.coverMedia.path);
+            } else if (typeof entry.cover === 'string') {
+                addPath(entry.cover);
+            }
+
+            return Array.from(paths);
+        }
+
+        async function buildProtectedMediaPayloadsForCatalog(entry, imageDir) {
+            if (!entry || entry.storyProtected !== true || !imageDir) {
+                return null;
+            }
+            const mediaPaths = collectProtectedStoryMediaPaths(entry);
+            if (mediaPaths.length === 0) {
+                return null;
+            }
+
+            const payloads = {};
+            for (const mediaPath of mediaPaths) {
+                const fileName = getFileName(mediaPath);
+                if (!fileName) {
+                    continue;
+                }
+                let file;
+                try {
+                    const handle = await imageDir.getFileHandle(fileName);
+                    file = await handle.getFile();
+                } catch (error) {
+                    continue;
+                }
+                try {
+                    const prefixText = await file.slice(0, ENCRYPTION_PREFIX.length).text();
+                    if (!prefixText.startsWith(ENCRYPTION_PREFIX)) {
+                        continue;
+                    }
+                    const rawText = await file.text();
+                    if (!rawText.startsWith(ENCRYPTION_PREFIX)) {
+                        continue;
+                    }
+                    payloads[mediaPath] = rawText;
+                } catch (error) {
+                    // Ignore unreadable media payloads; homepage/viewer will fallback to file path.
+                }
+            }
+
+            return Object.keys(payloads).length > 0 ? payloads : null;
         }
 
         async function writeCatalogSafetyBackup() {
@@ -3743,11 +4507,25 @@
                         
                         if (storyMarkdown) {
                             try {
+                                const typedPassword = normalizePasswordValue(getStoryPasswordInputValue());
+                                const decryptPassword = normalizePasswordValue(activeStoryPassword || typedPassword);
+                                const preserveProtectionPassword = currentStory.storyProtected ? decryptPassword : '';
+                                const storyCrypto = buildStoryCryptoContext({
+                                    encryptPassword: typedPassword || preserveProtectionPassword,
+                                    decryptPassword,
+                                });
+                                if (currentStory.storyProtected && !storyCrypto.decryptPassword) {
+                                    setStatus('Auto-save skipped: enter password to unlock this protected story.');
+                                    return;
+                                }
                                 // Save the story
                                 const id = state.selectedId;
                                 const storyFile = `${id}.md`;
                                 const storyDir = await getStoryDir();
-                                await writeFile(storyDir, storyFile, storyMarkdown);
+                                const storyContents = storyCrypto.encryptEnabled
+                                    ? await encryptStoryMarkdown(storyMarkdown, storyCrypto.encryptPassword)
+                                    : storyMarkdown;
+                                await writeFile(storyDir, storyFile, storyContents);
                                 
                                 // Update catalog entry
                                 const existingIndex = state.stories.findIndex(item => item.id === id);
@@ -3757,9 +4535,15 @@
                                         title,
                                         description,
                                         tags,
+                                        storyProtected: storyCrypto.encryptEnabled,
                                         updatedAt: new Date().toISOString(),
                                     };
                                 }
+                                activeStoryPassword = storyCrypto.encryptEnabled ? storyCrypto.encryptPassword : '';
+                                await syncSavedStoryPassword(
+                                    id,
+                                    storyCrypto.encryptEnabled ? storyCrypto.encryptPassword : ''
+                                );
                                 
                                 await writeCatalog(state.stories);
                                 setStatus(`Auto-saved ${title}.`);
@@ -3899,7 +4683,7 @@
                 // Make info area clickable
                 info.style.cursor = 'pointer';
                 const title = document.createElement('strong');
-                title.textContent = story.title || `The Report #${story.reportNumber || ''}`;
+                title.textContent = `${isEntryProtected(story) ? '🔒 ' : ''}${story.title || `The Report #${story.reportNumber || ''}`}`;
                 const meta = document.createElement('div');
                 meta.className = 'story-meta';
                 meta.textContent = story.description || story.id;
@@ -3983,6 +4767,39 @@
             setStatus('Story order updated.');
         }
 
+        async function tryUnlockSelectedProtectedStory(passwordValue, { savePassword = true } = {}) {
+            if (!state.rootHandle || !state.selectedEntry || !state.selectedId || !isEntryProtected(state.selectedEntry)) {
+                return false;
+            }
+            const password = normalizePasswordValue(passwordValue);
+            if (!password) {
+                activeStoryPassword = '';
+                setStoryEditorLocked(true);
+                setStatus(`"${state.selectedEntry.title || state.selectedEntry.id}" is protected. Enter password to unlock.`);
+                return false;
+            }
+            const storyDir = await getStoryDir();
+            const rawStory = await readTextFile(storyDir, `${state.selectedId}.md`);
+            if (!rawStory) {
+                throw new Error('Protected story file is missing.');
+            }
+            const payload = parseEncryptedPayload(rawStory);
+            const markdown = payload
+                ? await decryptStoryMarkdown(rawStory, password)
+                : rawStory;
+            activeStoryPassword = password;
+            setStoryEditorLocked(false);
+            storyTextInput.value = markdown;
+            initUndoHistory(markdown);
+            resetMediaPreviewState({ clearLibraryCache: true });
+            renderImageManager();
+            if (savePassword) {
+                await setSavedStoryPassword(state.selectedId, password);
+            }
+            setStatus(`Unlocked ${state.selectedEntry.title || state.selectedEntry.id}.`);
+            return true;
+        }
+
         async function editStory(id) {
             if (!state.rootHandle) {
                 setStatus('Choose a library folder first.');
@@ -3996,8 +4813,19 @@
 
             state.selectedId = id;
             state.selectedEntry = story;
+            clearLibraryPreviewAssetUrls();
+            const storyIsProtected = isEntryProtected(story);
+            if (!storyIsProtected) {
+                await clearSavedStoryPassword(id);
+            }
+            const savedStoryPassword = storyIsProtected ? getSavedStoryPassword(id) : '';
 
             reportNumberInput.value = story.reportNumber || '';
+            if (reportPasswordInput) {
+                reportPasswordInput.value = savedStoryPassword;
+            }
+            updateReportPasswordClearButtonState();
+            activeStoryPassword = '';
             reportTitleInput.value = story.title || '';
             reportDescriptionInput.value = story.description || '';
             reportTagsInput.value = (story.tags || []).join(', ');
@@ -4066,10 +4894,28 @@
             applyCoverPosition();
 
             const storyDir = await getStoryDir();
-            storyTextInput.value = await readTextFile(storyDir, `${id}.md`);
-            
-            // Initialize undo history for this story
-            initUndoHistory(storyTextInput.value);
+            const rawStoryText = await readTextFile(storyDir, `${id}.md`);
+            if (storyIsProtected) {
+                setStoryEditorLocked(true);
+                if (savedStoryPassword) {
+                    try {
+                        await tryUnlockSelectedProtectedStory(savedStoryPassword, { savePassword: false });
+                    } catch (error) {
+                        await clearSavedStoryPassword(id);
+                        if (reportPasswordInput) {
+                            reportPasswordInput.value = '';
+                        }
+                        updateReportPasswordClearButtonState();
+                        setStoryEditorLocked(true);
+                        const message = error && error.message ? error.message : 'Unable to unlock story.';
+                        setStatus(`Saved password is invalid for ${story.title || story.id}. ${message}`);
+                    }
+                }
+            } else {
+                setStoryEditorLocked(false);
+                storyTextInput.value = rawStoryText;
+                initUndoHistory(storyTextInput.value);
+            }
 
             storyFileInput.value = '';
             imageManagerInput.value = '';
@@ -4079,12 +4925,30 @@
             coverMediaInput.value = '';
             renderImageManager();
 
-            setStatus(`Editing ${story.title || story.id}.`);
+            if (storyIsProtected) {
+                if (activeStoryPassword) {
+                    setStatus(`Editing ${story.title || story.id}. Password loaded from this library.`);
+                } else {
+                    setStatus(`Editing ${story.title || story.id}. Enter password to unlock.`);
+                }
+            } else {
+                setStatus(`Editing ${story.title || story.id}.`);
+            }
             saveRecentStory(story);
         }
 
         function resetForm() {
             storyForm.reset();
+            if (reportPasswordInput) {
+                reportPasswordInput.value = '';
+            }
+            updateReportPasswordClearButtonState();
+            activeStoryPassword = '';
+            if (passwordUnlockTimer) {
+                clearTimeout(passwordUnlockTimer);
+                passwordUnlockTimer = 0;
+            }
+            setStoryEditorLocked(false);
             reportTitleInput.value = '';
             reportDescriptionInput.value = '';
             reportTagsInput.value = '';
@@ -4187,6 +5051,12 @@
             const coverPositionValue = coverPositionsByLayout.grid || activeModePositionValue;
             coverPositionInput.value = coverPositionValue;
             const storyMarkdown = storyTextInput.value.trim();
+            const typedPassword = normalizePasswordValue(getStoryPasswordInputValue());
+            const decryptPassword = normalizePasswordValue(activeStoryPassword || typedPassword);
+            const storyCrypto = buildStoryCryptoContext({
+                encryptPassword: typedPassword,
+                decryptPassword,
+            });
 
             if (!storyMarkdown) {
                 setStatus('Story text is required.');
@@ -4197,14 +5067,22 @@
                 setStatus('Add at least one story media item or homepage cover.');
                 return;
             }
+            if (
+                state.selectedEntry &&
+                state.selectedEntry.storyProtected &&
+                !storyCrypto.decryptPassword
+            ) {
+                setStatus('Enter the current password to edit this protected story.');
+                return;
+            }
             try {
                 await writeCatalogSafetyBackup();
 
-                const persistedImages = await persistStoryImages(id, workingMediaItems);
+                const persistedImages = await persistStoryImages(id, workingMediaItems, storyCrypto);
                 const imagePaths = persistedImages.paths;
                 const pathByItemId = persistedImages.pathByItemId;
                 const shouldUseExternalCover = !!(coverSelection && coverSelection.kind === 'external' && externalCoverMedia);
-                const coverMedia = await persistCoverMedia(id, shouldUseExternalCover ? externalCoverMedia : null);
+                const coverMedia = await persistCoverMedia(id, shouldUseExternalCover ? externalCoverMedia : null, storyCrypto);
 
                 if (imagePaths.length === 0 && !(coverMedia && coverMedia.path)) {
                     throw new Error('Story must include at least one story media item or homepage cover.');
@@ -4235,7 +5113,10 @@
 
                 const storyFile = `${id}.md`;
                 const storyDir = await getStoryDir();
-                await writeFile(storyDir, storyFile, storyMarkdown);
+                const storyFileContents = storyCrypto.encryptEnabled
+                    ? await encryptStoryMarkdown(storyMarkdown, storyCrypto.encryptPassword)
+                    : storyMarkdown;
+                await writeFile(storyDir, storyFile, storyFileContents);
 
                 const entry = {
                     id,
@@ -4252,6 +5133,7 @@
                     createdAt,
                     updatedAt,
                     displayOrder,
+                    storyProtected: storyCrypto.encryptEnabled,
                 };
 
                 const existingIndex = state.stories.findIndex(item => item.id === id);
@@ -4260,6 +5142,10 @@
                 } else {
                     state.stories.push(entry);
                 }
+                await syncSavedStoryPassword(
+                    id,
+                    storyCrypto.encryptEnabled ? storyCrypto.encryptPassword : ''
+                );
 
                 sortStories();
                 await writeCatalog(state.stories);
@@ -4267,6 +5153,7 @@
                 setStatus(`Saved ${title}.`);
                 await loadLibrary();
                 saveRecentStory(entry);
+                activeStoryPassword = storyCrypto.encryptEnabled ? storyCrypto.encryptPassword : '';
                 resetForm();
                 setStatus(`Saved ${title}. Ready for next story.`);
             } catch (error) {
@@ -4277,7 +5164,55 @@
             }
         }
 
-        async function persistStoryImages(id, mediaItems) {
+        async function resolveMediaSourceData(file, extension = '', storyCrypto = null) {
+            if (!file) {
+                throw new Error('Media source is missing.');
+            }
+            const fallbackMime = file.type || inferMimeTypeFromExtension(extension || getFileExtension(file.name));
+            const prefixText = await file.slice(0, ENCRYPTION_PREFIX.length).text();
+            if (!prefixText.startsWith(ENCRYPTION_PREFIX)) {
+                return {
+                    bytes: new Uint8Array(await file.arrayBuffer()),
+                    mimeType: fallbackMime,
+                };
+            }
+            const rawText = await file.text();
+            const encryptedPayload = parseEncryptedPayload(rawText);
+            if (!encryptedPayload) {
+                return {
+                    bytes: new Uint8Array(await file.arrayBuffer()),
+                    mimeType: fallbackMime,
+                };
+            }
+
+            const decryptPassword = normalizePasswordValue(storyCrypto && storyCrypto.decryptPassword);
+            if (!decryptPassword) {
+                throw new Error('Password is required to edit existing protected media.');
+            }
+            const decrypted = await decryptPayloadToBytes(rawText, decryptPassword);
+            return {
+                bytes: decrypted.bytes,
+                mimeType: decrypted.mime || fallbackMime,
+            };
+        }
+
+        async function encodeMediaForWrite(plainBytes, mimeType, storyCrypto = null) {
+            if (storyCrypto && storyCrypto.encryptEnabled) {
+                const password = normalizePasswordValue(storyCrypto.encryptPassword);
+                if (!password) {
+                    throw new Error('Password is required to encrypt media.');
+                }
+                const encryptedPayload = await encryptBytesToPayload(
+                    plainBytes,
+                    password,
+                    mimeType || 'application/octet-stream'
+                );
+                return encryptedPayload;
+            }
+            return plainBytes;
+        }
+
+        async function persistStoryImages(id, mediaItems, storyCrypto = null) {
             const imageDir = await getImageDir();
             const ordered = Array.isArray(mediaItems) ? mediaItems : [];
             const sources = [];
@@ -4330,10 +5265,12 @@
                 for (let index = 0; index < sources.length; index += 1) {
                     const source = sources[index];
                     const extension = /^[a-z0-9]+$/i.test(source.extension) ? source.extension.toLowerCase() : 'jpg';
+                    const sourceData = await resolveMediaSourceData(source.file, extension, storyCrypto);
+                    const encodedContent = await encodeMediaForWrite(sourceData.bytes, sourceData.mimeType, storyCrypto);
                     const tempName = `${id}__tmp_${tempToken}_${String(index + 1).padStart(3, '0')}.${extension}`;
                     const tempHandle = await imageDir.getFileHandle(tempName, { create: true });
                     const tempWritable = await tempHandle.createWritable();
-                    await tempWritable.write(await source.file.arrayBuffer());
+                    await tempWritable.write(encodedContent);
                     await tempWritable.close();
                     tempNames.push(tempName);
                 }
@@ -4377,7 +5314,7 @@
             return { paths, pathByItemId };
         }
 
-        async function persistCoverMedia(id, media) {
+        async function persistCoverMedia(id, media, storyCrypto = null) {
             const imageDir = await getImageDir();
             let sourceFile = null;
             let mediaType = '';
@@ -4425,11 +5362,13 @@
                 : (mediaType === 'video' ? 'mp4' : (mediaType === 'gif' ? 'gif' : 'jpg'));
             const fileName = `${id}_cover.${safeExtension}`;
             const tempName = `${id}__tmp_cover_${Date.now()}.${safeExtension}`;
+            const sourceData = await resolveMediaSourceData(sourceFile, safeExtension, storyCrypto);
+            const encodedContent = await encodeMediaForWrite(sourceData.bytes, sourceData.mimeType, storyCrypto);
 
             try {
                 const tempHandle = await imageDir.getFileHandle(tempName, { create: true });
                 const tempWritable = await tempHandle.createWritable();
-                await tempWritable.write(await sourceFile.arrayBuffer());
+                await tempWritable.write(encodedContent);
                 await tempWritable.close();
 
                 const tempFile = await tempHandle.getFile();
@@ -4503,6 +5442,7 @@
             }
 
             state.stories = state.stories.filter(item => !idsToRemove.includes(item.id));
+            await clearSavedStoryPasswords(idsToRemove);
             await writeCatalog(state.stories);
 
             selectedStoryIds.clear();
@@ -4526,6 +5466,9 @@
             await writeCatalogSafetyBackup();
             const storyDir = await getStoryDir();
             const imageDir = await getImageDir();
+            const vaultDir = await getStoryPasswordVaultDir(true);
+            const passwordMigration = await migrateLegacyStoryPasswordVault(vaultDir, { removeLegacyFiles: true });
+            storyPasswordVault = normalizeStoryPasswordVault(passwordMigration.stories);
 
             let fixedCount = 0;
             let removedCount = 0;
@@ -4537,7 +5480,7 @@
                 try {
 
                     const storyFileName = `${entry.id}.md`;
-                    const storyExists = await fileExists(storyDir, storyFileName);
+                    let storyExists = await fileExists(storyDir, storyFileName);
                     if (!storyExists) {
                         const locate = await themedConfirm(`Story file missing for "${title}". Locate a file now?`, {
                             title: 'Missing Story File',
@@ -4560,6 +5503,7 @@
                                     const text = await file.text();
                                     await writeFile(storyDir, storyFileName, text);
                                     entry.story = `story/${storyFileName}`;
+                                    storyExists = true;
                                     fixedCount += 1;
                                 }
                             } catch (error) {
@@ -4578,6 +5522,19 @@
                                 removedCount += 1;
                                 continue;
                             }
+                        }
+                    }
+                    const canonicalStoryPath = `story/${storyFileName}`;
+                    if (entry.story !== canonicalStoryPath) {
+                        entry.story = canonicalStoryPath;
+                        fixedCount += 1;
+                    }
+                    if (storyExists) {
+                        const rawStoryText = await readTextFile(storyDir, storyFileName);
+                        const nextProtected = !!parseEncryptedPayload(rawStoryText);
+                        if (entry.storyProtected !== nextProtected) {
+                            entry.storyProtected = nextProtected;
+                            fixedCount += 1;
                         }
                     }
 
@@ -4706,13 +5663,24 @@
                 }
             }
 
+            await pruneSavedStoryPasswords(state.stories.map(story => story.id));
             await writeCatalog(state.stories);
             renderStoryList();
+            const passwordSummaryParts = [];
+            if (passwordMigration.importedStories > 0) {
+                passwordSummaryParts.push(`imported ${passwordMigration.importedStories} saved password(s)`);
+            }
+            if (passwordMigration.legacyFilesRemoved > 0) {
+                passwordSummaryParts.push(`removed ${passwordMigration.legacyFilesRemoved} legacy password file(s)`);
+            }
+            const passwordSummary = passwordSummaryParts.length > 0
+                ? ` Password vault: ${passwordSummaryParts.join(', ')}.`
+                : '';
             if (errorCount > 0) {
-                setStatus(`Fix completed. Repaired ${fixedCount} file(s), removed ${removedCount}, failed ${errorCount}.`);
+                setStatus(`Fix completed. Repaired ${fixedCount} file(s), removed ${removedCount}, failed ${errorCount}.${passwordSummary}`);
                 showToast(`Fix Missing finished with ${errorCount} error(s).`, 'warning');
             } else {
-                setStatus(`Fix completed. Repaired ${fixedCount} file(s), removed ${removedCount} missing reference(s).`);
+                setStatus(`Fix completed. Repaired ${fixedCount} file(s), removed ${removedCount} missing reference(s).${passwordSummary}`);
             }
         }
 
@@ -4852,6 +5820,73 @@
             });
             storyTextInput.addEventListener('mouseleave', () => {
                 requestAnimationFrame(refreshTextZoneActiveState);
+            });
+        }
+
+        if (reportPasswordClearBtn && reportPasswordInput) {
+            reportPasswordClearBtn.addEventListener('click', () => {
+                if (passwordUnlockTimer) {
+                    clearTimeout(passwordUnlockTimer);
+                    passwordUnlockTimer = 0;
+                }
+                reportPasswordInput.value = '';
+                updateReportPasswordClearButtonState();
+                reportPasswordInput.focus();
+
+                const selectedProtectedStory = state.selectedEntry && isEntryProtected(state.selectedEntry);
+                if (!selectedProtectedStory) {
+                    return;
+                }
+
+                if (activeStoryPassword) {
+                    setStatus(`Password cleared. Save "${state.selectedEntry.title || state.selectedEntry.id}" to remove protection.`);
+                    return;
+                }
+
+                setStoryEditorLocked(true);
+                setStatus(`"${state.selectedEntry.title || state.selectedEntry.id}" is protected. Enter password to unlock.`);
+            });
+        }
+
+        if (reportPasswordInput) {
+            reportPasswordInput.addEventListener('input', () => {
+                updateReportPasswordClearButtonState();
+                if (!state.selectedEntry || !isEntryProtected(state.selectedEntry)) {
+                    return;
+                }
+
+                const nextPassword = normalizePasswordValue(reportPasswordInput.value);
+                if (passwordUnlockTimer) {
+                    clearTimeout(passwordUnlockTimer);
+                    passwordUnlockTimer = 0;
+                }
+
+                if (activeStoryPassword) {
+                    // Keep the current decrypted session active while user edits/replaces the password field.
+                    return;
+                }
+
+                if (!nextPassword) {
+                    setStoryEditorLocked(true);
+                    return;
+                }
+
+                passwordUnlockTimer = window.setTimeout(() => {
+                    passwordUnlockTimer = 0;
+                    void tryUnlockSelectedProtectedStory(nextPassword).catch(error => {
+                        void (async () => {
+                            const message = error && error.message ? error.message : 'Unable to unlock story.';
+                            if (state.selectedId) {
+                                const savedPassword = getSavedStoryPassword(state.selectedId);
+                                if (savedPassword && savedPassword === nextPassword) {
+                                    await clearSavedStoryPassword(state.selectedId);
+                                }
+                            }
+                            setStoryEditorLocked(true);
+                            setStatus(message);
+                        })();
+                    });
+                }, 220);
             });
         }
 
@@ -5156,6 +6191,8 @@
         renderImageManager();
         storySearchQuery = storySearchInput ? (storySearchInput.value || '') : '';
         refreshStorySearchUi();
+        updateReportPasswordClearButtonState();
+        setStoryEditorLocked(false);
         refreshTextZoneActiveState();
         window.addEventListener('beforeunload', () => {
             releaseAllMediaUrls();
