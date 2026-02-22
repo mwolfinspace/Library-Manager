@@ -111,6 +111,7 @@
         const RECENT_HANDLE_STORE = 'handles';
         const RECENT_HANDLE_ID = 'library';
         const RECENT_RELOCATE_HANDLE_ID = 'relocate-start';
+        const DECRYPT_ROOT_HANDLE_ID = 'decrypt-root';
         const HOMEPAGE_ENTRY_CANDIDATES = ['homepage.html', 'index.html'];
         const VIEWER_ENTRY_CANDIDATES = ['view/viewer.html', 'viewer.html'];
         const libraryPreviewAssetUrlCache = new Map();
@@ -136,7 +137,7 @@
             'This manager writes the catalog, moves images into the correct folder, and rebuilds the library database.',
             'Leave Report Number empty to auto-assign the next available number.',
             'Type a Story Password to encrypt story/media. Leave it empty to save plain files.',
-            'Saved protected-story passwords are kept in Manager Tools/decrypt/story-passwords.json.',
+            'Saved protected-story passwords are kept in decrypt/story-passwords.json inside the same folder as Data_Manager.html.',
             'Use "Scan Files" to rebuild from disk, "Fix Missing Files" to repair links, and "Save Story" to update entries.'
         ].join('\n');
         const COVER_PRESET_POINTS = {
@@ -205,8 +206,8 @@
         const ENCRYPTION_IV_BYTES = 12;
         const ENCRYPTION_ITERATIONS = 210000;
         const STORY_PASSWORD_VAULT_FILE = 'story-passwords.json';
-        const STORY_PASSWORD_VAULT_ROOT_DIR = 'Manager Tools';
         const STORY_PASSWORD_VAULT_SUB_DIR = 'decrypt';
+        const DATA_MANAGER_FILE_NAME = 'Data_Manager.html';
         const LEGACY_STORY_PASSWORD_VAULT_DIR = 'database';
         const LEGACY_STORY_PASSWORD_VAULT_FILES = ['save-password.json', 'story-password.json'];
         const STORY_PASSWORD_VAULT_VERSION = 1;
@@ -283,15 +284,95 @@
             return normalizePasswordValue(storyPasswordVault[normalizedStoryId]);
         }
 
-        async function getStoryPasswordVaultDir(create = true) {
-            if (!state.rootHandle) {
+        async function ensureHandleReadWritePermission(handle, { interactive = false } = {}) {
+            if (!handle) {
+                return false;
+            }
+            let permission = 'denied';
+            try {
+                permission = await handle.queryPermission({ mode: 'readwrite' });
+            } catch (error) {
+                permission = 'denied';
+            }
+            if (permission !== 'granted' && interactive) {
+                try {
+                    permission = await handle.requestPermission({ mode: 'readwrite' });
+                } catch (error) {
+                    permission = 'denied';
+                }
+            }
+            return permission === 'granted';
+        }
+
+        async function pickDecryptRootHandle() {
+            const pickedHandle = await window.showDirectoryPicker({
+                id: 'data-manager-decrypt-root',
+            });
+            if (!pickedHandle) {
                 return null;
             }
-            const managerToolsDir = await state.rootHandle.getDirectoryHandle(
-                STORY_PASSWORD_VAULT_ROOT_DIR,
-                { create }
-            );
-            return managerToolsDir.getDirectoryHandle(STORY_PASSWORD_VAULT_SUB_DIR, { create });
+            try {
+                await pickedHandle.getFileHandle(DATA_MANAGER_FILE_NAME);
+            } catch (error) {
+                setStatus(`Choose the folder that contains ${DATA_MANAGER_FILE_NAME}.`);
+                showToast(`Select the Data Manager folder (${DATA_MANAGER_FILE_NAME}).`, 'warning');
+                return null;
+            }
+            return pickedHandle;
+        }
+
+        async function ensureDecryptRootHandle({ interactive = false } = {}) {
+            if (decryptRootHandle) {
+                const hasPermission = await ensureHandleReadWritePermission(decryptRootHandle, { interactive });
+                if (hasPermission) {
+                    return decryptRootHandle;
+                }
+            }
+
+            if (!decryptRootHandle) {
+                decryptRootHandle = await loadDecryptRootHandle();
+            }
+            if (decryptRootHandle) {
+                const hasPermission = await ensureHandleReadWritePermission(decryptRootHandle, { interactive });
+                if (hasPermission) {
+                    return decryptRootHandle;
+                }
+            }
+
+            if (!interactive) {
+                return null;
+            }
+
+            let pickedHandle = null;
+            try {
+                pickedHandle = await pickDecryptRootHandle();
+            } catch (error) {
+                if (error && error.name === 'AbortError') {
+                    return null;
+                }
+                throw error;
+            }
+            if (!pickedHandle) {
+                return null;
+            }
+
+            const hasPermission = await ensureHandleReadWritePermission(pickedHandle, { interactive: true });
+            if (!hasPermission) {
+                setStatus('Permission denied for Data Manager folder.');
+                return null;
+            }
+
+            decryptRootHandle = pickedHandle;
+            await saveDecryptRootHandle(decryptRootHandle);
+            return decryptRootHandle;
+        }
+
+        async function getStoryPasswordVaultDir(create = true, { interactive = false } = {}) {
+            const rootHandle = await ensureDecryptRootHandle({ interactive });
+            if (!rootHandle) {
+                return null;
+            }
+            return rootHandle.getDirectoryHandle(STORY_PASSWORD_VAULT_SUB_DIR, { create });
         }
 
         async function removeFileIfExists(dirHandle, fileName) {
@@ -421,8 +502,9 @@
             if (!state.rootHandle) {
                 return;
             }
-            const vaultDir = await getStoryPasswordVaultDir(true);
+            const vaultDir = await getStoryPasswordVaultDir(true, { interactive: true });
             if (!vaultDir) {
+                setStatus(`Select the Data Manager folder (${DATA_MANAGER_FILE_NAME}) to save story passwords.`);
                 return;
             }
             const payload = buildStoryPasswordVaultPayload(storyPasswordVault);
@@ -435,7 +517,7 @@
                 storyPasswordVault = {};
                 return storyPasswordVault;
             }
-            const vaultDir = await getStoryPasswordVaultDir(true);
+            const vaultDir = await getStoryPasswordVaultDir(createIfMissing, { interactive: false });
             if (!vaultDir) {
                 storyPasswordVault = {};
                 return storyPasswordVault;
@@ -978,6 +1060,7 @@
         let mediaIdCounter = 0;
         let imageCardHeight = 148;
         let pendingReplaceMediaId = null;
+        let decryptRootHandle = null;
         let activeStoryPassword = '';
         let storyPasswordVault = {};
         let passwordUnlockTimer = 0;
@@ -1319,6 +1402,14 @@
             return loadStoredHandle(RECENT_HANDLE_ID);
         }
 
+        async function saveDecryptRootHandle(handle) {
+            await saveStoredHandle(DECRYPT_ROOT_HANDLE_ID, handle);
+        }
+
+        async function loadDecryptRootHandle() {
+            return loadStoredHandle(DECRYPT_ROOT_HANDLE_ID);
+        }
+
         async function saveRelocateStartHandle(handle) {
             await saveStoredHandle(RECENT_RELOCATE_HANDLE_ID, handle);
         }
@@ -1532,6 +1623,9 @@
             }
 
             state.rootHandle = handle;
+            if (!auto) {
+                await ensureDecryptRootHandle({ interactive: true });
+            }
             clearLibraryPreviewCaches();
             releaseAllMediaUrls();
             await ensureStructure();
@@ -3231,6 +3325,7 @@
 
             try {
                 state.rootHandle = await window.showDirectoryPicker();
+                await ensureDecryptRootHandle({ interactive: true });
                 clearLibraryPreviewCaches();
                 releaseAllMediaUrls();
                 await ensureStructure();
@@ -4196,6 +4291,32 @@
             const existingMap = new Map(existingCatalog.map(entry => [entry.id, entry]));
             const hasExistingOrder = hasDisplayOrder(existingCatalog);
             let nextDisplayOrder = hasExistingOrder ? getNextDisplayOrder(existingCatalog) : 0;
+            const tempCleanup = {
+                removed: 0,
+                failed: 0,
+            };
+
+            for await (const [name, handle] of imageDir.entries()) {
+                if (handle.kind !== 'file' || !/__tmp_/i.test(name)) {
+                    continue;
+                }
+                let fileSize = -1;
+                try {
+                    const file = await handle.getFile();
+                    fileSize = Number(file.size) || 0;
+                } catch (error) {
+                    fileSize = -1;
+                }
+                if (fileSize !== 0) {
+                    continue;
+                }
+                try {
+                    await imageDir.removeEntry(name);
+                    tempCleanup.removed += 1;
+                } catch (error) {
+                    tempCleanup.failed += 1;
+                }
+            }
 
             const validExt = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg', '.avif', '.mp4', '.webm', '.mov', '.m4v', '.ogg', '.ogv', '.avi'];
             const coverExt = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg', '.avif', '.mp4', '.webm', '.mov', '.m4v', '.ogg', '.ogv', '.avi'];
@@ -4298,7 +4419,10 @@
             renderStoryList();
             renderImageManager();
             void refreshLibraryStats();
-            setStatus(`Scanned library and rebuilt ${state.stories.length} stories.`);
+            const cleanupSummary = tempCleanup.removed > 0 || tempCleanup.failed > 0
+                ? ` Removed ${tempCleanup.removed} empty temp file(s)${tempCleanup.failed > 0 ? `, failed ${tempCleanup.failed}` : ''}.`
+                : '';
+            setStatus(`Scanned library and rebuilt ${state.stories.length} stories.${cleanupSummary}`);
             saveRecentFolder(state.rootHandle);
         }
 
@@ -5466,7 +5590,7 @@
             await writeCatalogSafetyBackup();
             const storyDir = await getStoryDir();
             const imageDir = await getImageDir();
-            const vaultDir = await getStoryPasswordVaultDir(true);
+            const vaultDir = await getStoryPasswordVaultDir(true, { interactive: true });
             const passwordMigration = await migrateLegacyStoryPasswordVault(vaultDir, { removeLegacyFiles: true });
             storyPasswordVault = normalizeStoryPasswordVault(passwordMigration.stories);
 
