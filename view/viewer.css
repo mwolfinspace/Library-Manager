@@ -2674,7 +2674,7 @@ body[data-theme="light"] .range-value {
 .control-item {
     display: flex;
     gap: 12px;
-    align-items: flex-start;
+    align-items: center;
     padding: 12px 14px;
     background: rgba(98, 247, 255, 0.05);
     border-radius: 12px;
