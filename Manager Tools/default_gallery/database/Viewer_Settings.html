@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Viewer Settings</title>
+    <link rel="stylesheet" href="viewer_settings.css" />
+</head>
+<body>
+    <h1>Viewer Settings</h1>
+    <p class="subtitle">Customize your reading experience</p>
+
+    <div class="settings-tabs" role="tablist">
+        <button class="tab-btn active" data-tab="v-appearance" type="button" role="tab">🎨 Appearance</button>
+        <button class="tab-btn" data-tab="v-reading" type="button" role="tab">📖 Reading</button>
+        <button class="tab-btn" data-tab="v-input" type="button" role="tab">⌨️ Input</button>
+        <button class="tab-btn" data-tab="v-shortcuts" type="button" role="tab">⌨️ Shortcuts</button>
+    </div>
+
+    <!-- Appearance Tab -->
+    <div class="tab-panel active" data-tab-panel="v-appearance">
+        <div class="settings-section">
+            <h4>Theme</h4>
+            <select id="v-theme-select" class="font-select">
+                <option value="dark">🌙 Dark</option>
+                <option value="light">☀️ Light</option>
+            </select>
+        </div>
+        <div class="settings-section">
+            <h4>Story Font</h4>
+            <select id="v-font-family" class="font-select"></select>
+            <label class="custom-font-label">Custom Font<input type="text" id="v-custom-font" placeholder="e.g. 'Fira Code', monospace"></label>
+        </div>
+    </div>
+
+    <!-- Reading Tab -->
+    <div class="tab-panel" data-tab-panel="v-reading" hidden>
+        <div class="settings-section">
+            <h4>Font Size</h4>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <input type="range" id="v-font-size" min="14" max="26" step="1" style="flex: 1;">
+                <span class="range-value" id="v-font-size-value">18px</span>
+            </div>
+        </div>
+        <div class="settings-section">
+            <h4>Line Spacing</h4>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <input type="range" id="v-line-spacing" min="1.2" max="2.2" step="0.1" style="flex: 1;">
+                <span class="range-value" id="v-line-spacing-value">1.6</span>
+            </div>
+        </div>
+        <div class="settings-section">
+            <h4>Scroll Step</h4>
+            <select id="v-scroll-step" class="font-select">
+                <option value="20">20 px</option>
+                <option value="40">40 px</option>
+                <option value="60">60 px</option>
+                <option value="80">80 px</option>
+            </select>
+        </div>
+        <div class="settings-section">
+            <h4>Zoom Step</h4>
+            <select id="v-zoom-step" class="font-select">
+                <option value="0.05">0.05</option>
+                <option value="0.1">0.1</option>
+                <option value="0.2">0.2</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Input Tab -->
+    <div class="tab-panel" data-tab-panel="v-input" hidden>
+        <div class="settings-section">
+            <h4>Keyboard Mode</h4>
+            <select id="v-keyboard-mode" class="font-select">
+                <option value="default">Default</option>
+                <option value="left">One-Hand Left</option>
+                <option value="right">One-Hand Right</option>
+            </select>
+        </div>
+        <div class="settings-section">
+            <h4>Options</h4>
+            <div class="toggle-list">
+                <label class="toggle-item">
+                    <div class="toggle-info">
+                        <span class="toggle-text"><strong>Enable Pan Keys (WASD / Arrows)</strong></span>
+                    </div>
+                    <div class="toggle-switch"><input type="checkbox" id="v-pan-keys" class="toggle-input"><span class="toggle-slider"></span></div>
+                </label>
+                <label class="toggle-item">
+                    <div class="toggle-info">
+                        <span class="toggle-text"><strong>Remember Zoom Per Story</strong></span>
+                    </div>
+                    <div class="toggle-switch"><input type="checkbox" id="v-remember-zoom" class="toggle-input"><span class="toggle-slider"></span></div>
+                </label>
+                <label class="toggle-item">
+                    <div class="toggle-info">
+                        <span class="toggle-text"><strong>Remember View Across All Stories</strong></span>
+                    </div>
+                    <div class="toggle-switch"><input type="checkbox" id="v-remember-view-all" class="toggle-input"><span class="toggle-slider"></span></div>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shortcuts Tab -->
+    <div class="tab-panel" data-tab-panel="v-shortcuts" hidden>
+        <div class="settings-section">
+            <h4>Default Keyboard Shortcuts</h4>
+            <p style="font-size: 11px; color: var(--ink-muted); margin-bottom: 12px;">
+                These are the default keyboard shortcuts. Customize shortcuts in Data Manager.
+            </p>
+            <div class="keybind-list">
+                <div class="keybind-row">
+                    <span class="keybind-row-label">Previous Image</span>
+                    <div class="keybind-row-keys"><span class="keybind-key">←</span></div>
+                </div>
+                <div class="keybind-row">
+                    <span class="keybind-row-label">Next Image</span>
+                    <div class="keybind-row-keys"><span class="keybind-key">→</span></div>
+                </div>
+                <div class="keybind-row">
+                    <span class="keybind-row-label">Zoom Out</span>
+                    <div class="keybind-row-keys"><span class="keybind-key">-</span></div>
+                </div>
+                <div class="keybind-row">
+                    <span class="keybind-row-label">Zoom In</span>
+                    <div class="keybind-row-keys"><span class="keybind-key">=</span></div>
+                </div>
+                <div class="keybind-row">
+                    <span class="keybind-row-label">Fit to View</span>
+                    <div class="keybind-row-keys"><span class="keybind-key">0</span></div>
+                </div>
+                <div class="keybind-row">
+                    <span class="keybind-row-label">Decrease Font</span>
+                    <div class="keybind-row-keys"><span class="keybind-key">[</span></div>
+                </div>
+                <div class="keybind-row">
+                    <span class="keybind-row-label">Increase Font</span>
+                    <div class="keybind-row-keys"><span class="keybind-key">]</span></div>
+                </div>
+                <div class="keybind-row">
+                    <span class="keybind-row-label">Scroll Down</span>
+                    <div class="keybind-row-keys"><span class="keybind-key">{</span></div>
+                </div>
+                <div class="keybind-row">
+                    <span class="keybind-row-label">Scroll Up</span>
+                    <div class="keybind-row-keys"><span class="keybind-key">}</span></div>
+                </div>
+                <div class="keybind-row">
+                    <span class="keybind-row-label">Toggle Favorite</span>
+                    <div class="keybind-row-keys"><span class="keybind-key">F</span></div>
+                </div>
+                <div class="keybind-row">
+                    <span class="keybind-row-label">Toggle Bookmark</span>
+                    <div class="keybind-row-keys"><span class="keybind-key">B</span></div>
+                </div>
+                <div class="keybind-row">
+                    <span class="keybind-row-label">Toggle Theme</span>
+                    <div class="keybind-row-keys"><span class="keybind-key">T</span></div>
+                </div>
+                <div class="keybind-row">
+                    <span class="keybind-row-label">Toggle Settings</span>
+                    <div class="keybind-row-keys"><span class="keybind-key">?</span></div>
+                </div>
+                <div class="keybind-row">
+                    <span class="keybind-row-label">Blackout Mode</span>
+                    <div class="keybind-row-keys"><span class="keybind-key">Space</span></div>
+                </div>
+            </div>
+            <p class="keybind-note">
+                💡 Tip: Hold Shift + Arrow keys for panning in image viewer.
+            </p>
+        </div>
+        <div class="settings-section">
+            <h4>Keyboard Modes</h4>
+            <div style="font-size: 12px; color: var(--ink-muted);">
+                <p><strong>Default:</strong> Standard two-hand keyboard control</p>
+                <p><strong>One-Hand Left:</strong> Optimized for left-hand only use</p>
+                <p><strong>One-Hand Right:</strong> Optimized for right-hand only use</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="current-settings" id="current-settings">
+        <h4>Current Settings</h4>
+        <div class="settings-display" id="settings-display">
+            <p class="loading">Loading...</p>
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <button id="save-btn" type="button">💾 Save Settings</button>
+        <button class="ghost" id="close-btn" type="button">Close</button>
+    </div>
+
+    <div class="status-msg" id="status-msg"></div>
+
+    <script src="viewer_settings.js"></script>
+</body>
+</html>

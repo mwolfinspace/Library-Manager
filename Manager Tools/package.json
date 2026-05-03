@@ -1,0 +1,65 @@
+{
+  "name": "xedryk-data-manager",
+  "productName": "Xedryk Data Manager",
+  "version": "1.0.0",
+  "description": "Windows-only Electron shell for Xedryk's Lab System Data Manager.",
+  "private": true,
+  "main": "main.js",
+  "license": "UNLICENSED",
+  "os": [
+    "win32"
+  ],
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir --win",
+    "dist": "electron-builder --win",
+    "dist:portable": "electron-builder --win portable"
+  },
+  "devDependencies": {
+    "electron": "^30.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.xedryk.datamanager",
+    "productName": "Xedryk Data Manager",
+    "directories": {
+      "buildResources": "build",
+      "output": "dist"
+    },
+    "files": [
+      "Data_Manager.html",
+      "app.ico",
+      "build/**/*",
+      "css/**/*",
+      "default_gallery/**/*",
+      "icons/**/*",
+      "js/**/*",
+      "library_template/**/*",
+      "vendor/**/*",
+      "main.js",
+      "package.json",
+      "preload.js"
+    ],
+    "asarUnpack": [
+      "default_gallery/**/*",
+      "build/**/*"
+    ],
+    "win": {
+      "icon": "build/icon.ico",
+      "signAndEditExecutable": false,
+      "executableName": "Xedryk Data Manager",
+      "target": [
+        {
+          "target": "dir",
+          "arch": ["x64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
+    },
+    "afterPack": "./scripts/afterPack.js"
+  }
+}

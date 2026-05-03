@@ -1,0 +1,1728 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Xedryk Archive - Part 01</title>
+        <link rel="icon" href="database/favicon.png" />
+        <script>
+            (function () {
+                var LIGHT_COLORS = {
+                    ink: "#0b1220",
+                    muted: "rgba(11, 18, 32, 0.65)",
+                    bg: "#eef3f9",
+                    "bg-2": "#f8fbff",
+                    panel: "rgba(255, 255, 255, 0.88)",
+                    accent: "#0aa6c7",
+                    "accent-2": "#3b5bff",
+                    card: "rgba(255, 255, 255, 0.92)",
+                    shadow: "rgba(12, 22, 38, 0.2)",
+                    grid: "rgba(10, 166, 199, 0.15)",
+                    code: "rgba(10, 166, 199, 0.24)",
+                    "code-glow": "rgba(59, 91, 255, 0.45)",
+                    btn: "rgba(255, 255, 255, 0.9)",
+                    "btn-border": "rgba(11, 18, 32, 0.2)",
+                    "card-overlay": "linear-gradient(180deg, rgba(239, 243, 249, 0.1) 0%, rgba(239, 243, 249, 0.4) 100%)",
+                    "card-overlay-list": "linear-gradient(90deg, rgba(238, 243, 249, 0.5) 0%, rgba(238, 243, 249, 0.25) 55%, rgba(238, 243, 249, 0.05) 100%)",
+                    "cursor-glow": "rgba(59, 91, 255, 0.18)",
+                    "tag-bg": "rgba(10, 166, 199, 0.15)",
+                    "tag-bg-hover": "rgba(10, 166, 199, 0.25)"
+                };
+
+                function readJson(key) {
+                    try {
+                        var raw = localStorage.getItem(key);
+                        return raw ? JSON.parse(raw) : null;
+                    } catch (error) {
+                        return null;
+                    }
+                }
+
+                var theme = localStorage.getItem("homepageTheme");
+                var db = readJson("xedryk_database");
+                if (!theme && db && db.settings && db.settings.theme) {
+                    theme = db.settings.theme;
+                }
+                if (theme !== "light" && theme !== "dark") {
+                    theme = "dark";
+                }
+
+                document.documentElement.dataset.theme = theme;
+                if (theme === "light") {
+                    Object.keys(LIGHT_COLORS).forEach(function (key) {
+                        document.documentElement.style.setProperty(
+                            "--" + key,
+                            LIGHT_COLORS[key]
+                        );
+                    });
+                }
+                window.__XEDRYK_BOOT_THEME__ = theme;
+            })();
+        </script>
+        <link rel="stylesheet" href="css/homepage.css" />
+        <link rel="stylesheet" href="css/fonts.css" />
+    </head>
+    <body data-theme="dark">
+        <script>
+            document.body.dataset.theme =
+                window.__XEDRYK_BOOT_THEME__ ||
+                document.documentElement.dataset.theme ||
+                "dark";
+        </script>
+        <!-- Age Verification Screen (shows FIRST, very lightweight) -->
+        <div
+            id="age-verify-overlay"
+            class="age-verify-overlay"
+            data-age-verify="true"
+        >
+            <div class="age-verify-content">
+                <div class="age-verify-icon">🔞</div>
+                <h2 class="age-verify-title">Age Verification Required</h2>
+                <p class="age-verify-message">
+                    This archive contains mature content.<br />
+                    You must be 18 years or older to access.
+                </p>
+                <p class="age-verify-question">Are you over 18?</p>
+                <div class="age-verify-actions">
+                    <button
+                        type="button"
+                        id="age-yes"
+                        class="age-btn age-btn-yes"
+                        onclick="handleAgeYes(event)"
+                    >
+                        <span class="age-btn-icon">✓</span>
+                        <span>Yes, I'm 18+</span>
+                    </button>
+                    <button
+                        type="button"
+                        id="age-no"
+                        class="age-btn age-btn-no"
+                        onclick="handleAgeNo(event)"
+                    >
+                        <span class="age-btn-icon">✕</span>
+                        <span>No, I'm under 18</span>
+                    </button>
+                </div>
+                <p class="age-verify-note">
+                    By clicking "Yes", you confirm that you are of legal age to
+                    view this content.
+                </p>
+                <p class="age-verify-bypass">
+                    Press <strong>Y</strong> to bypass if stuck
+                </p>
+            </div>
+        </div>
+
+        <!-- Global inline handlers for age verification -->
+        <script src="js/homepage-age-verify.js"></script>
+        <!-- Loading Screen (shows AFTER age verification passes) -->
+        <div id="loader-overlay" class="loader-overlay" hidden>
+            <div class="loader-content">
+                <div class="loader-logo">XEDRYK ARCHIVE</div>
+                <div class="progress-bar-container">
+                    <div id="progress-bar" class="progress-bar"></div>
+                </div>
+                <div id="loading-status" class="loading-status">
+                    Initializing...
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Page Content (hidden until loading completes) -->
+        <div class="page" hidden>
+            <header class="hero">
+                <div class="hero-left">
+                    <p class="eyebrow">Xedryk's Archive</p>
+                    <h1>Legacy Report</h1>
+                </div>
+                <div class="hero-right">
+                    <div class="search-panel">
+                        <div class="search-row">
+                            <label for="search-input">Search</label>
+                            <div class="search-box">
+                                <input
+                                    id="search-input"
+                                    type="search"
+                                    placeholder="Title, tag, or description"
+                                />
+                            </div>
+                            <div class="filters">
+                                <button
+                                    class="filter-btn active"
+                                    data-filter="all"
+                                    title="All"
+                                >
+                                    All
+                                </button>
+                                <button
+                                    class="filter-btn"
+                                    data-filter="favorites"
+                                    title="Favorites"
+                                >
+                                    ⭐
+                                </button>
+                                <button
+                                    class="filter-btn"
+                                    data-filter="bookmarks"
+                                    title="Pinned"
+                                >
+                                    📌
+                                </button>
+                                <button
+                                    class="filter-btn"
+                                    data-filter="gif"
+                                    title="GIF posts"
+                                >
+                                    GIF
+                                </button>
+                                <button
+                                    class="filter-btn"
+                                    data-filter="video"
+                                    title="Video posts"
+                                >
+                                    🎬
+                                </button>
+                            </div>
+                            <button
+                                id="theme-toggle"
+                                type="button"
+                                class="theme-toggle"
+                                aria-label="Toggle theme"
+                            >
+                                🌙
+                            </button>
+                            <button
+                                id="settings-btn"
+                                type="button"
+                                class="help-btn"
+                                aria-label="Settings"
+                            >
+                                ⚙️
+                            </button>
+                            <button
+                                id="help-btn"
+                                type="button"
+                                class="help-btn"
+                                aria-label="About this archive"
+                            >
+                                ❓
+                            </button>
+                        </div>
+                        <div class="controls-row">
+                            <div class="layout-toggle">
+                                <span class="layout-label">Layout</span>
+                                <button
+                                    class="layout-btn active"
+                                    data-layout="grid"
+                                    type="button"
+                                    title="Grid"
+                                    aria-label="Grid layout"
+                                >
+                                    ▦
+                                </button>
+                                <button
+                                    class="layout-btn"
+                                    data-layout="list"
+                                    type="button"
+                                    title="List"
+                                    aria-label="List layout"
+                                >
+                                    ☰
+                                </button>
+                                <button
+                                    class="layout-btn"
+                                    data-layout="compact"
+                                    type="button"
+                                    title="Compact"
+                                    aria-label="Compact layout"
+                                >
+                                    ▤
+                                </button>
+                                <button
+                                    class="layout-btn"
+                                    data-layout="spotlight"
+                                    type="button"
+                                    title="Spotlight"
+                                    aria-label="Spotlight layout"
+                                >
+                                    ⬚
+                                </button>
+                            </div>
+                            <div class="sort-toggle">
+                                <span class="sort-label">Sort by</span>
+                                <button
+                                    class="sort-btn active"
+                                    data-sort="default"
+                                    type="button"
+                                    title="Default"
+                                >
+                                    Default
+                                </button>
+                                <button
+                                    class="sort-btn"
+                                    data-sort="title"
+                                    type="button"
+                                    title="Title"
+                                >
+                                    Title
+                                </button>
+                                <button
+                                    class="sort-btn"
+                                    data-sort="recent"
+                                    type="button"
+                                    title="Most Recent"
+                                >
+                                    Recent
+                                </button>
+                                <button
+                                    class="sort-btn"
+                                    data-sort="priority"
+                                    type="button"
+                                    title="Priority"
+                                >
+                                    Priority
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <section class="grid" id="story-grid" data-layout="grid"></section>
+
+            <p class="empty-state" id="empty-state">
+                No reports available. Pin ⭐/📌 some reports to make them appear
+                here.
+            </p>
+        </div>
+
+        <div id="blackout" class="blackout" hidden>
+            <div class="blackout-content" aria-live="polite">
+                <div class="blackout-binary" id="blackout-time">00:00:00</div>
+                <div class="blackout-search-container">
+                    <input
+                        type="text"
+                        id="blackout-search-input"
+                        class="blackout-search-input"
+                        placeholder="Search Google..."
+                        autocomplete="off"
+                    />
+                    <button
+                        type="button"
+                        id="blackout-search-btn"
+                        class="blackout-search-btn"
+                        aria-label="Search"
+                    >
+                        🔍
+                    </button>
+                </div>
+                <div class="blackout-text" id="blackout-resume-text">
+                    Press <span id="blackout-resume-key">spacebar</span> again
+                    to resume
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Popup - Loaded from external file -->
+        <div class="draggable-panel" id="settings-panel" hidden>
+            <div class="settings-header">
+                <h3>⚙️ Settings</h3>
+                <button
+                    class="settings-close"
+                    id="settings-close"
+                    type="button"
+                    aria-label="Close settings"
+                >
+                    ✕
+                </button>
+            </div>
+            <div class="settings-tabs" role="tablist">
+                <button
+                    class="tab-btn active"
+                    data-tab="font"
+                    type="button"
+                    role="tab"
+                    aria-selected="true"
+                >
+                    📝 Font
+                </button>
+                <button
+                    class="tab-btn"
+                    data-tab="color"
+                    type="button"
+                    role="tab"
+                    aria-selected="false"
+                >
+                    🎨 Color
+                </button>
+                <button
+                    class="tab-btn"
+                    data-tab="data"
+                    type="button"
+                    role="tab"
+                    aria-selected="false"
+                >
+                    💾 Data
+                </button>
+                <button
+                    class="tab-btn"
+                    data-tab="shortcuts"
+                    type="button"
+                    role="tab"
+                    aria-selected="false"
+                >
+                    ⌨️ Shortcuts
+                </button>
+            </div>
+            <div class="settings-content" id="settings-content">
+                <!-- Font Tab -->
+                <div
+                    class="tab-panel active"
+                    data-tab-panel="font"
+                    role="tabpanel"
+                >
+                    <div class="settings-section">
+                        <h4>Font Family</h4>
+                        <select id="font-select" class="font-select"></select>
+                        <label class="full custom-font-label">
+                            Custom Font
+                            <input
+                                type="text"
+                                id="custom-font"
+                                placeholder="e.g. 'Fira Code', monospace"
+                            />
+                        </label>
+                    </div>
+
+                    <div class="settings-section">
+                        <h4>Font Sizes</h4>
+                        <div class="font-size-grid">
+                            <label>
+                                Base Size
+                                <input
+                                    type="range"
+                                    id="base-font-size"
+                                    min="10"
+                                    max="24"
+                                    step="1"
+                                    value="14"
+                                />
+                                <span class="range-value">14px</span>
+                            </label>
+                            <label>
+                                Headers
+                                <input
+                                    type="range"
+                                    id="header-font-size"
+                                    min="16"
+                                    max="48"
+                                    step="2"
+                                    value="26"
+                                />
+                                <span class="range-value">26px</span>
+                            </label>
+                            <label>
+                                Buttons
+                                <input
+                                    type="range"
+                                    id="button-font-size"
+                                    min="10"
+                                    max="20"
+                                    step="1"
+                                    value="12"
+                                />
+                                <span class="range-value">12px</span>
+                            </label>
+                            <label>
+                                Cards
+                                <input
+                                    type="range"
+                                    id="card-font-size"
+                                    min="10"
+                                    max="24"
+                                    step="1"
+                                    value="13"
+                                />
+                                <span class="range-value">13px</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <button id="reset-fonts" class="settings-reset-btn">
+                            Reset Fonts to Default
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Color Tab -->
+                <div
+                    class="tab-panel"
+                    data-tab-panel="color"
+                    id="color-tab-panel"
+                    role="tabpanel"
+                    hidden
+                >
+                    <div class="settings-section color-section">
+                        <h4>Color Variables</h4>
+                        <div class="color-compare-layout">
+                            <div class="color-group" data-theme-group="dark">
+                                <h5 class="color-group-title">🌙 Dark Theme</h5>
+                                <div
+                                    class="color-grid"
+                                    id="color-grid-dark"
+                                ></div>
+                            </div>
+                            <div class="color-group" data-theme-group="light">
+                                <h5 class="color-group-title">
+                                    ☀️ Light Theme
+                                </h5>
+                                <div
+                                    class="color-grid"
+                                    id="color-grid-light"
+                                ></div>
+                            </div>
+                        </div>
+                        <p class="color-compare-hint">
+                            Click or focus any color in a column to preview that
+                            theme instantly.
+                        </p>
+                    </div>
+
+                    <div class="settings-section">
+                        <button id="reset-colors" class="settings-reset-btn">
+                            Reset Colors to Default
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Data Tab -->
+                <div
+                    class="tab-panel"
+                    data-tab-panel="data"
+                    role="tabpanel"
+                    hidden
+                >
+                    <div class="settings-section">
+                        <h4>Startup Screens</h4>
+                        <p
+                            class="settings-description"
+                            style="
+                                font-size: 12px;
+                                color: var(--muted);
+                                margin-bottom: 16px;
+                            "
+                        >
+                            Control which screens appear when loading the
+                            archive. These settings are saved to your browser.
+                        </p>
+
+                        <div class="toggle-list">
+                            <label class="toggle-item">
+                                <div class="toggle-info">
+                                    <span class="toggle-icon">🔞</span>
+                                    <div class="toggle-text">
+                                        <strong>Skip Age Verification</strong>
+                                        <span class="toggle-desc"
+                                            >Skip the 18+ check on every page
+                                            reload. Verification will NOT appear
+                                            after refreshing (F5).</span
+                                        >
+                                    </div>
+                                </div>
+                                <div class="toggle-switch">
+                                    <input
+                                        type="checkbox"
+                                        id="skip-age-verify"
+                                        class="toggle-input"
+                                    />
+                                    <span class="toggle-slider"></span>
+                                </div>
+                            </label>
+
+                            <label class="toggle-item">
+                                <div class="toggle-info">
+                                    <span class="toggle-icon">♪</span>
+                                    <div class="toggle-text">
+                                        <strong>Interface Sounds</strong>
+                                        <span class="toggle-desc"
+                                            >Enable lightweight Web Audio sounds
+                                            for hover, click, and typing.</span
+                                        >
+                                    </div>
+                                </div>
+                                <div class="toggle-switch">
+                                    <input
+                                        type="checkbox"
+                                        id="ui-sfx-enabled"
+                                        class="toggle-input"
+                                    />
+                                    <span class="toggle-slider"></span>
+                                </div>
+                            </label>
+
+                            <label class="toggle-item">
+                                <div class="toggle-info">
+                                    <span class="toggle-icon">👋</span>
+                                    <div class="toggle-text">
+                                        <strong>Skip Welcome Screen</strong>
+                                        <span class="toggle-desc"
+                                            >Don't show the welcome guide for
+                                            new users</span
+                                        >
+                                    </div>
+                                </div>
+                                <div class="toggle-switch">
+                                    <input
+                                        type="checkbox"
+                                        id="skip-welcome"
+                                        class="toggle-input"
+                                    />
+                                    <span class="toggle-slider"></span>
+                                </div>
+                            </label>
+                        </div>
+
+                        <div
+                            class="settings-note"
+                            style="
+                                margin-top: 20px;
+                                padding: 12px;
+                                background: rgba(98, 247, 255, 0.05);
+                                border-radius: 8px;
+                                border: 1px solid rgba(98, 247, 255, 0.1);
+                            "
+                        >
+                            <p
+                                style="
+                                    font-size: 11px;
+                                    color: var(--muted);
+                                    margin: 0;
+                                "
+                            >
+                                💡 <strong>Tip:</strong> Age verification shows
+                                on every F5 reload by default. Toggle ON to
+                                permanently skip it. Use "Reset All Settings" to
+                                make it appear again.
+                            </p>
+                        </div>
+
+                        <!-- Protected Posts -->
+                        <div
+                            class="settings-section"
+                            style="
+                                margin-top: 24px;
+                                border-top: 1px solid rgba(98, 247, 255, 0.1);
+                                padding-top: 20px;
+                            "
+                        >
+                            <h4
+                                style="
+                                    margin-bottom: 12px;
+                                    color: var(--accent);
+                                "
+                            >
+                                🔐 Protected Posts
+                            </h4>
+                            <p
+                                class="settings-description"
+                                style="
+                                    font-size: 12px;
+                                    color: var(--muted);
+                                    margin-bottom: 16px;
+                                "
+                            >
+                                Control visibility for locked reports and
+                                password memory behavior.
+                            </p>
+
+                            <div class="toggle-list">
+                                <label class="toggle-item">
+                                    <div class="toggle-info">
+                                        <span class="toggle-icon">🕶️</span>
+                                        <div class="toggle-text">
+                                            <strong
+                                                >Show Locked / Protected
+                                                Posts</strong
+                                            >
+                                            <span class="toggle-desc"
+                                                >Show protected posts in the
+                                                gallery. OFF hides all protected
+                                                posts.</span
+                                            >
+                                        </div>
+                                    </div>
+                                    <div class="toggle-switch">
+                                        <input
+                                            type="checkbox"
+                                            id="show-protected-posts"
+                                            class="toggle-input"
+                                        />
+                                        <span class="toggle-slider"></span>
+                                    </div>
+                                </label>
+
+                                <label class="toggle-item">
+                                    <div class="toggle-info">
+                                        <span class="toggle-icon">💾</span>
+                                        <div class="toggle-text">
+                                            <strong
+                                                >Auto Save Correct
+                                                Passwords</strong
+                                            >
+                                            <span class="toggle-desc"
+                                                >Automatically save correct
+                                                passwords per post in local
+                                                storage.</span
+                                            >
+                                        </div>
+                                    </div>
+                                    <div class="toggle-switch">
+                                        <input
+                                            type="checkbox"
+                                            id="auto-save-protected-passwords"
+                                            class="toggle-input"
+                                        />
+                                        <span class="toggle-slider"></span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Database Import/Export -->
+                        <div
+                            class="settings-section"
+                            style="
+                                margin-top: 24px;
+                                border-top: 1px solid rgba(98, 247, 255, 0.1);
+                                padding-top: 20px;
+                            "
+                        >
+                            <h4
+                                style="
+                                    margin-bottom: 12px;
+                                    color: var(--accent);
+                                "
+                            >
+                                💾 Database Import/Export
+                            </h4>
+                            <p
+                                class="settings-description"
+                                style="
+                                    font-size: 12px;
+                                    color: var(--muted);
+                                    margin-bottom: 16px;
+                                "
+                            >
+                                Export all your settings, favorites, pins, and
+                                reading progress to a file. Import on another
+                                computer to restore everything.
+                            </p>
+                            <div
+                                class="import-export-buttons"
+                                style="
+                                    display: flex;
+                                    gap: 12px;
+                                    flex-wrap: wrap;
+                                "
+                            >
+                                <button
+                                    type="button"
+                                    id="db-export-btn"
+                                    class="settings-btn-primary"
+                                    style="
+                                        background: var(--accent);
+                                        color: #000;
+                                        border: none;
+                                        padding: 10px 20px;
+                                        border-radius: 6px;
+                                        cursor: pointer;
+                                        font-weight: 600;
+                                    "
+                                >
+                                    📤 Export Settings
+                                </button>
+                                <label
+                                    type="button"
+                                    class="settings-btn-secondary"
+                                    style="
+                                        background: transparent;
+                                        color: var(--accent);
+                                        border: 1px solid var(--accent);
+                                        padding: 10px 20px;
+                                        border-radius: 6px;
+                                        cursor: pointer;
+                                        font-weight: 600;
+                                        display: inline-block;
+                                    "
+                                >
+                                    📥 Import Settings
+                                    <input
+                                        type="file"
+                                        id="db-import-input"
+                                        accept=".json"
+                                        style="display: none"
+                                    />
+                                </label>
+                            </div>
+                            <p
+                                id="db-import-status"
+                                style="
+                                    font-size: 11px;
+                                    color: var(--muted);
+                                    margin-top: 12px;
+                                "
+                            ></p>
+                        </div>
+
+                        <!-- Reset Data Section -->
+                        <div
+                            class="settings-section"
+                            style="
+                                margin-top: 24px;
+                                border-top: 1px solid rgba(98, 247, 255, 0.1);
+                                padding-top: 20px;
+                            "
+                        >
+                            <h4
+                                style="
+                                    margin-bottom: 12px;
+                                    color: var(--accent);
+                                "
+                            >
+                                🗑️ Reset Data
+                            </h4>
+                            <p
+                                class="settings-description"
+                                style="
+                                    font-size: 12px;
+                                    color: var(--muted);
+                                    margin-bottom: 16px;
+                                "
+                            >
+                                ⚠️ These actions cannot be undone. Use with
+                                caution.
+                            </p>
+                            <div class="reset-grid">
+                                <div class="reset-item">
+                                    <button
+                                        type="button"
+                                        class="reset-btn"
+                                        data-reset="pin-favorite"
+                                    >
+                                        <span class="reset-btn-icon">⭐📌</span>
+                                        <span class="reset-btn-text"
+                                            >Reset Pin + Favorite</span
+                                        >
+                                    </button>
+                                    <div class="reset-desc">
+                                        Remove all pinned and favorited stories.
+                                        Recent timestamps remain intact.
+                                    </div>
+                                </div>
+                                <div class="reset-item">
+                                    <button
+                                        type="button"
+                                        class="reset-btn"
+                                        data-reset="pin"
+                                    >
+                                        <span class="reset-btn-icon">📌</span>
+                                        <span class="reset-btn-text"
+                                            >Reset Pin Only</span
+                                        >
+                                    </button>
+                                    <div class="reset-desc">
+                                        Remove all pinned stories only.
+                                        Favorites and timestamps preserved.
+                                    </div>
+                                </div>
+                                <div class="reset-item">
+                                    <button
+                                        type="button"
+                                        class="reset-btn"
+                                        data-reset="favorite"
+                                    >
+                                        <span class="reset-btn-icon">⭐</span>
+                                        <span class="reset-btn-text"
+                                            >Reset Favorite Only</span
+                                        >
+                                    </button>
+                                    <div class="reset-desc">
+                                        Remove all favorited stories only. Pins
+                                        and timestamps preserved.
+                                    </div>
+                                </div>
+                                <div class="reset-item">
+                                    <button
+                                        type="button"
+                                        class="reset-btn reset-btn-danger"
+                                        data-reset="reading"
+                                    >
+                                        <span class="reset-btn-icon">📖</span>
+                                        <span class="reset-btn-text"
+                                            >Reset Reading Status</span
+                                        >
+                                    </button>
+                                    <div class="reset-desc">
+                                        Remove all pins, favorites, and
+                                        timestamps. All posts become new/unread.
+                                    </div>
+                                </div>
+                                <div class="reset-item">
+                                    <button
+                                        type="button"
+                                        class="reset-btn reset-btn-danger"
+                                        data-reset="settings"
+                                    >
+                                        <span class="reset-btn-icon">⚙️</span>
+                                        <span class="reset-btn-text"
+                                            >Reset All Settings</span
+                                        >
+                                    </button>
+                                    <div class="reset-desc">
+                                        Reset colors, fonts, sizes, and all
+                                        per-report settings to default.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Shortcuts Tab -->
+                <div
+                    class="tab-panel"
+                    data-tab-panel="shortcuts"
+                    role="tabpanel"
+                    hidden
+                >
+                    <div class="settings-section">
+                        <h4>Keyboard Shortcuts</h4>
+                        <p
+                            class="shortcuts-instructions"
+                            style="
+                                font-size: 12px;
+                                color: var(--muted);
+                                margin-bottom: 16px;
+                            "
+                        >
+                            Click <strong>Assign</strong> then press a key to
+                            bind. Press <strong>Backspace</strong> to clear.
+                            Press <strong>Esc</strong> to cancel.
+                        </p>
+                        <div class="keybind-list" id="keybind-list">
+                            <!-- Keybinds will be rendered here by JavaScript -->
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <button id="reset-keybinds" class="settings-reset-btn">
+                            Reset Keybinds to Default
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-backdrop" id="help-modal" aria-hidden="true">
+            <div
+                class="modal-panel"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="help-title"
+            >
+                <div class="modal-header">
+                    <h2 id="help-title">🚀 NEURAL INTERFACE HELP</h2>
+                    <button
+                        class="modal-close"
+                        id="help-close"
+                        type="button"
+                        aria-label="Close"
+                    >
+                        ✕
+                    </button>
+                </div>
+
+                <div class="modal-tabs">
+                    <button
+                        class="modal-tab active"
+                        data-tab="help"
+                        type="button"
+                    >
+                        🎮 OPERATIONS
+                    </button>
+                    <button class="modal-tab" data-tab="secret" type="button">
+                        🤫 SECRET
+                    </button>
+                    <button class="modal-tab" data-tab="about" type="button">
+                        🐉 CREATOR
+                    </button>
+                </div>
+
+                <div class="modal-body" id="help-body">
+                    <!-- SECRET Statistics Tab -->
+                    <div
+                        class="modal-tab-content secret-tab"
+                        data-content="secret"
+                    >
+                        <div class="secret-header-row">
+                            <span class="secret-icon-sm">🤫</span>
+                            <span class="secret-title-text">Secret Stats</span>
+                            <span class="secret-version">v1.0</span>
+                            <button
+                                type="button"
+                                id="reset-stats"
+                                class="stats-reset-btn-inline"
+                                title="Reset all secret stats"
+                            >
+                                🗑️
+                            </button>
+                        </div>
+
+                        <!-- Stats Grid - Compact with tooltips -->
+                        <div class="stats-grid-inline" id="stats-grid">
+                            <div
+                                class="stat-inline"
+                                title="Total time on archive"
+                            >
+                                <span class="stat-inline-icon">⏱️</span>
+                                <span
+                                    class="stat-inline-value"
+                                    id="stat-total-time"
+                                    >--:--:--</span
+                                >
+                            </div>
+                            <div
+                                class="stat-inline"
+                                title="Days since first visit"
+                            >
+                                <span class="stat-inline-icon">📅</span>
+                                <span
+                                    class="stat-inline-value"
+                                    id="stat-days-since"
+                                    >0d</span
+                                >
+                            </div>
+                            <div class="stat-inline" title="Total mouse clicks">
+                                <span class="stat-inline-icon">🖱️</span>
+                                <span
+                                    class="stat-inline-value"
+                                    id="stat-total-clicks"
+                                    >0</span
+                                >
+                            </div>
+                            <div class="stat-inline" title="Keyboard presses">
+                                <span class="stat-inline-icon">⌨️</span>
+                                <span
+                                    class="stat-inline-value"
+                                    id="stat-keypresses"
+                                    >0</span
+                                >
+                            </div>
+                            <div class="stat-inline" title="Reports opened">
+                                <span class="stat-inline-icon">📖</span>
+                                <span
+                                    class="stat-inline-value"
+                                    id="stat-reports-opened"
+                                    >0</span
+                                >
+                            </div>
+                            <div class="stat-inline" title="Pins/Unpins">
+                                <span class="stat-inline-icon">⭐</span>
+                                <span class="stat-inline-value" id="stat-pins"
+                                    >0</span
+                                >
+                            </div>
+                            <div class="stat-inline" title="Searches performed">
+                                <span class="stat-inline-icon">🔍</span>
+                                <span
+                                    class="stat-inline-value"
+                                    id="stat-searches"
+                                    >0</span
+                                >
+                            </div>
+                            <div class="stat-inline" title="Dark mode uses">
+                                <span class="stat-inline-icon">🌙</span>
+                                <span
+                                    class="stat-inline-value"
+                                    id="stat-dark-uses"
+                                    >0</span
+                                >
+                            </div>
+                        </div>
+
+                        <!-- Quick Pills Inline with tooltips -->
+                        <div class="quick-pills-inline">
+                            <div
+                                class="pill-inline"
+                                title="Fastest click recorded"
+                            >
+                                <span class="pill-inline-icon">🚀</span>
+                                <span
+                                    class="pill-inline-value"
+                                    id="stat-fastest-click"
+                                    >--ms</span
+                                >
+                            </div>
+                            <div
+                                class="pill-inline"
+                                title="Longest session duration"
+                            >
+                                <span class="pill-inline-icon">💤</span>
+                                <span
+                                    class="pill-inline-value"
+                                    id="stat-longest-session"
+                                    >--</span
+                                >
+                            </div>
+                            <div
+                                class="pill-inline"
+                                title="Click accuracy rate"
+                            >
+                                <span class="pill-inline-icon">🎯</span>
+                                <span
+                                    class="pill-inline-value"
+                                    id="stat-accuracy"
+                                    >--%</span
+                                >
+                            </div>
+                            <div
+                                class="pill-inline"
+                                title="Current streak (days)"
+                            >
+                                <span class="pill-inline-icon">🔥</span>
+                                <span class="pill-inline-value" id="stat-streak"
+                                    >0d</span
+                                >
+                            </div>
+                        </div>
+
+                        <!-- Top Reports -->
+                        <div class="top-section-inline">
+                            <h3 class="top-title-inline">🏆 Top Reports</h3>
+                            <div class="top-list-inline" id="top-reports">
+                                <div class="top-empty-inline">
+                                    No data yet...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-tab-content active" data-content="help">
+                        <!-- Keyboard Shortcuts Section - Pill Design -->
+                        <div class="help-section">
+                            <h3>🎮 Keyboard Navigation</h3>
+
+                            <!-- Direct Shortcuts - Dynamically Rendered -->
+                            <div
+                                class="shortcuts-category"
+                                id="help-direct-shortcuts"
+                            >
+                                <!-- Rendered by JavaScript -->
+                            </div>
+
+                            <!-- Card Navigation - Dynamically Rendered -->
+                            <div class="shortcuts-category" id="help-card-nav">
+                                <!-- Rendered by JavaScript -->
+                            </div>
+
+                            <!-- Control Navigation - Dynamically Rendered -->
+                            <div
+                                class="shortcuts-category"
+                                id="help-control-nav"
+                            >
+                                <!-- Rendered by JavaScript -->
+                            </div>
+
+                            <div class="shortcuts-category">
+                                <h4>🔍 Search Box Special</h4>
+                                <div class="shortcuts-pill-grid">
+                                    <div class="shortcut-pill">
+                                        <span class="shortcut-pill-key"
+                                            >ENTER</span
+                                        >
+                                        <span class="shortcut-pill-desc"
+                                            >Focus search (when control
+                                            selected)</span
+                                        >
+                                    </div>
+                                    <div class="shortcut-pill">
+                                        <span class="shortcut-pill-key"
+                                            >ESC</span
+                                        >
+                                        <span class="shortcut-pill-desc"
+                                            >Unfocus search / Return to
+                                            cards</span
+                                        >
+                                    </div>
+                                    <div class="shortcut-pill">
+                                        <span class="shortcut-pill-key"
+                                            >Type</span
+                                        >
+                                        <span class="shortcut-pill-desc"
+                                            >Normal typing when focused</span
+                                        >
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="shortcuts-category">
+                                <h4>⚡ Global Shortcuts</h4>
+                                <div class="shortcuts-pill-grid">
+                                    <div class="shortcut-pill">
+                                        <span class="shortcut-pill-key"
+                                            >ESC</span
+                                        >
+                                        <span class="shortcut-pill-desc"
+                                            >Unfocus / Close modals</span
+                                        >
+                                    </div>
+                                    <div class="shortcut-pill">
+                                        <span class="shortcut-pill-key"
+                                            >SPACEBAR</span
+                                        >
+                                        <span class="shortcut-pill-desc"
+                                            >Blackout mode</span
+                                        >
+                                    </div>
+                                    <div class="shortcut-pill">
+                                        <span class="shortcut-pill-key"
+                                            >F11</span
+                                        >
+                                        <span class="shortcut-pill-desc"
+                                            >Fullscreen</span
+                                        >
+                                    </div>
+                                </div>
+                            </div>
+
+                            <p
+                                style="
+                                    font-size: 11px;
+                                    color: var(--muted);
+                                    margin-top: 12px;
+                                    padding: 8px;
+                                    background: rgba(98, 247, 255, 0.05);
+                                    border-radius: 8px;
+                                "
+                            >
+                                💡 <strong>Tip:</strong> Direct shortcuts work
+                                anytime unless a popup (Settings/Help) is open
+                                or you're typing in the search box.
+                            </p>
+                        </div>
+
+                        <!-- Search Guide Section -->
+                        <div class="help-section">
+                            <h3>🔍 Search Guide</h3>
+                            <div class="search-guide-pills">
+                                <div class="search-guide-pill">
+                                    <span class="search-query-pill"
+                                        >tag1 tag2</span
+                                    >
+                                    <span class="search-desc-pill"
+                                        >Stories with either tag1 OR tag2</span
+                                    >
+                                </div>
+                                <div class="search-guide-pill">
+                                    <span class="search-query-pill"
+                                        >+tag1 +tag2</span
+                                    >
+                                    <span class="search-desc-pill"
+                                        >Stories with BOTH tags (required)</span
+                                    >
+                                </div>
+                                <div class="search-guide-pill">
+                                    <span class="search-query-pill">-tag1</span>
+                                    <span class="search-desc-pill"
+                                        >Exclude stories with tag1</span
+                                    >
+                                </div>
+                                <div class="search-guide-pill">
+                                    <span class="search-query-pill"
+                                        >tag1 | tag2</span
+                                    >
+                                    <span class="search-desc-pill"
+                                        >Stories with tag1 OR tag2 (pipe
+                                        separator)</span
+                                    >
+                                </div>
+                                <div class="search-guide-pill">
+                                    <span class="search-query-pill"
+                                        >action +sci-fi -romance</span
+                                    >
+                                    <span class="search-desc-pill"
+                                        >Action that is sci-fi but NOT
+                                        romance</span
+                                    >
+                                </div>
+                            </div>
+                            <p class="search-tip-pill">
+                                💡 Click tags on story cards to auto-add them to
+                                search
+                            </p>
+                        </div>
+
+                        <div class="help-section">
+                            <h3>🎮 System Controls</h3>
+                            <div class="control-grid">
+                                <div class="control-item">
+                                    <div class="control-icon">🔍</div>
+                                    <div class="control-desc">
+                                        <strong>Search:</strong> Filter reports
+                                        by title, description, or tags. Supports
+                                        fuzzy matching and OR/AND operators.
+                                    </div>
+                                </div>
+                                <div class="control-item">
+                                    <div class="control-icon">📊</div>
+                                    <div class="control-desc">
+                                        <strong>Filters:</strong> Toggle between
+                                        All (🌐), Favorites (⭐), or Pinned (📌)
+                                        views.
+                                    </div>
+                                </div>
+                                <div class="control-item">
+                                    <div class="control-icon">🖥️</div>
+                                    <div class="control-desc">
+                                        <strong>Layouts:</strong> Grid (▦), List
+                                        (☰), Compact (▤), or Spotlight (⬚)
+                                        modes.
+                                    </div>
+                                </div>
+                                <div class="control-item">
+                                    <div class="control-icon">🔄</div>
+                                    <div class="control-desc">
+                                        <strong>Sort:</strong> By Default,
+                                        Title, Recent, or Priority (Fav > Pin >
+                                        Normal).
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="help-section">
+                            <h3>🎨 Customization</h3>
+                            <div class="customization-grid">
+                                <div class="custom-item">
+                                    <div class="custom-icon">⚙️</div>
+                                    <div class="custom-desc">
+                                        <strong>Settings:</strong> Draggable
+                                        panel for fonts, colors, and keyboard
+                                        shortcuts. All changes persist locally.
+                                    </div>
+                                </div>
+                                <div class="custom-item">
+                                    <div class="custom-icon">🎨</div>
+                                    <div class="custom-desc">
+                                        <strong>Colors:</strong> Customize all
+                                        UI elements - text, backgrounds,
+                                        accents, and gradients.
+                                    </div>
+                                </div>
+                                <div class="custom-item">
+                                    <div class="custom-icon">📱</div>
+                                    <div class="custom-desc">
+                                        <strong>Theme:</strong> Toggle Dark (🌙)
+                                        / Light (☀️) mode. Preference is saved.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="help-section">
+                            <h3>🔧 Features</h3>
+                            <ul class="advanced-list">
+                                <li>
+                                    <strong>🔞 Age Verification:</strong> 18+
+                                    age check on first visit. Can be disabled in
+                                    Settings → Data tab.
+                                </li>
+                                <li>
+                                    <strong>👋 Welcome Screen:</strong> Guide
+                                    for new users showing help button and search
+                                    bar. Can be disabled in Settings → Data tab.
+                                </li>
+                                <li>
+                                    <strong>📌 Pin System:</strong> Pin reports
+                                    for quick access. Pinned items get priority
+                                    sorting.
+                                </li>
+                                <li>
+                                    <strong>🔖 Bookmarks:</strong> Auto-saves
+                                    reading position. Resume where you left off.
+                                </li>
+                                <li>
+                                    <strong>⭐ Favorites:</strong> Star reports
+                                    for filtering and top priority.
+                                </li>
+                                <li>
+                                    <strong>💾 Backup & Restore:</strong> Export
+                                    all settings, favorites, pins, bookmarks,
+                                    and theme colors. Import on another device
+                                    to restore.
+                                </li>
+                                <li>
+                                    <strong>🔍 Real-time Search:</strong>
+                                    Instant filtering with tag support.
+                                </li>
+                                <li>
+                                    <strong>📐 Responsive:</strong> Auto-adjusts
+                                    layout for any screen size.
+                                </li>
+                                <li>
+                                    <strong>⚙️ Settings Panel:</strong>
+                                    Draggable panel with Font, Color, Data, and
+                                    Shortcuts tabs.
+                                </li>
+                                <li>
+                                    <strong>🎨 Customization:</strong> Full
+                                    control over fonts, colors, and keyboard
+                                    shortcuts.
+                                </li>
+                                <li>
+                                    <strong>🗑️ Reset Options:</strong> Multiple
+                                    reset levels from pins/favorites to complete
+                                    fresh start (see Settings → Data tab).
+                                </li>
+                            </ul>
+                            <p
+                                style="
+                                    font-size: 11px;
+                                    color: var(--muted);
+                                    margin-top: 12px;
+                                    padding: 8px;
+                                    background: rgba(98, 247, 255, 0.05);
+                                    border-radius: 8px;
+                                "
+                            >
+                                💡 <strong>Tip:</strong> Use "Reset All
+                                Settings" when preparing the archive for a new
+                                user. This will clear all preferences and show
+                                age verification + welcome screen on next load.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="modal-tab-content" data-content="about">
+                        <div class="about-container">
+                            <div class="about-header">
+                                <h2 class="about-title">
+                                    🐉 Xedryk The Dragon
+                                </h2>
+                                <p class="about-subtitle">
+                                    A dark dragon travels between worlds.
+                                </p>
+                            </div>
+
+                            <div class="about-grid">
+                                <div class="about-avatar">
+                                    <a
+                                        href="https://xedryk.github.io/"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        title="Visit my digital lair"
+                                        class="avatar-link"
+                                    >
+                                        <img
+                                            src="database/About_xedryk.png"
+                                            alt="Xedryk's Digital Avatar - The Dragon in Cyber Form"
+                                            class="avatar-image"
+                                        />
+                                    </a>
+                                </div>
+
+                                <div class="about-details">
+                                    <div class="bio-section">
+                                        <h3 class="bio-title">
+                                            📜 Core Identity Protocol
+                                        </h3>
+                                        <div class="bio-content">
+                                            <p>
+                                                <strong>Born:</strong> 1994 |
+                                                <strong>Type:</strong> INFJ-A
+                                            </p>
+                                            <p>
+                                                <strong>Location:</strong>
+                                                Bentre, Vietnam 🇻🇳
+                                            </p>
+                                            <p>
+                                                <strong>Status:</strong> Dragon
+                                                🐉 | Math Teacher 🧮 | Mature
+                                                Artist 🎨 | Hobbyist Programmer
+                                                💻
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div class="message-section">
+                                        <h3 class="message-title">
+                                            💖 Transmission Message
+                                        </h3>
+                                        <div class="message-content">
+                                            <p>Greetings, traveler! 🌟</p>
+                                            <p>
+                                                You've entered my digital
+                                                archive - a collection of
+                                                thoughts, creations, and
+                                                experiences from across the
+                                                multiverse. This portal serves
+                                                as a bridge between my various
+                                                dimensions of existence.
+                                            </p>
+                                            <p>
+                                                Thanks for visiting my archive
+                                                💖! Hope you enjoy exploring my
+                                                work here. Each piece contains a
+                                                fragment of my soul, encoded in
+                                                digital form.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="about-links">
+                                <div class="link-section">
+                                    <h3 class="link-title">
+                                        🔗 Neural Network Connections
+                                    </h3>
+                                    <div class="link-grid">
+                                        <a
+                                            href="https://trello.com/b/o2BYkbyh"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            class="link-btn commission"
+                                            title="Current commission availability and status"
+                                        >
+                                            <span class="link-icon">📋</span>
+                                            <span class="link-text"
+                                                >COMMISSION STATUS</span
+                                            >
+                                            <span class="link-badge"
+                                                >TRELLO</span
+                                            >
+                                        </a>
+
+                                        <a
+                                            href="https://www.furaffinity.net/user/1234hdpa"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            class="link-btn furaffinity"
+                                            title="My Fur Affinity profile and gallery"
+                                        >
+                                            <span class="link-icon">🐾</span>
+                                            <span class="link-text"
+                                                >FURAFFINITY</span
+                                            >
+                                            <span class="link-badge"
+                                                >1234hdpa</span
+                                            >
+                                        </a>
+
+                                        <a
+                                            href="https://xedryk.github.io/"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            class="link-btn website"
+                                            title="My main website and digital hub"
+                                        >
+                                            <span class="link-icon">🌐</span>
+                                            <span class="link-text"
+                                                >DIGITAL LAIR</span
+                                            >
+                                            <span class="link-badge">HQ</span>
+                                        </a>
+
+                                        <a
+                                            href="https://paypal.me/mwolfinspace?locale.x=en_US&country.x=VN"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            class="link-btn donate"
+                                            title="Support my work with a coffee donation"
+                                        >
+                                            <span class="link-icon">☕</span>
+                                            <span class="link-text"
+                                                >BUY ME COFFEE</span
+                                            >
+                                            <span class="link-badge">❤️</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="about-footer">
+                                <p class="footer-message">
+                                    All connections encrypted with dragon-scale
+                                    security protocols 🔐🐉
+                                </p>
+                                <div class="social-icons">
+                                    <span
+                                        class="social-icon"
+                                        title="Dragon Fire Certified"
+                                        >🔥</span
+                                    >
+                                    <span
+                                        class="social-icon"
+                                        title="Quantum Encrypted"
+                                        >🔐</span
+                                    >
+                                    <span
+                                        class="social-icon"
+                                        title="Neural Interface Ready"
+                                        >🧠</span
+                                    >
+                                    <span
+                                        class="social-icon"
+                                        title="Multidimensional"
+                                        >🌌</span
+                                    >
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Custom Confirmation Popup -->
+        <div id="confirm-overlay" class="confirm-overlay" hidden>
+            <div
+                class="confirm-modal"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="confirm-title"
+            >
+                <div class="confirm-header">
+                    <span class="confirm-icon">⚠️</span>
+                    <h3 id="confirm-title" class="confirm-title">
+                        Confirm Reset
+                    </h3>
+                </div>
+                <p id="confirm-message" class="confirm-message">
+                    Are you sure you want to proceed?
+                </p>
+                <div class="confirm-actions">
+                    <button
+                        type="button"
+                        id="confirm-cancel"
+                        class="confirm-btn confirm-btn-secondary"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        id="confirm-ok"
+                        class="confirm-btn confirm-btn-danger"
+                    >
+                        Reset
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Protected Story Unlock -->
+        <div id="unlock-overlay" class="unlock-overlay" hidden>
+            <div
+                class="unlock-modal"
+                id="unlock-modal"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="unlock-title"
+                aria-describedby="unlock-message"
+            >
+                <div class="unlock-header">
+                    <span class="unlock-icon">🔐</span>
+                    <h3 id="unlock-title" class="unlock-title">
+                        Unlock Protected Report
+                    </h3>
+                </div>
+                <p id="unlock-message" class="unlock-message">
+                    Enter password to open this report.
+                </p>
+                <label class="unlock-field" for="unlock-password">
+                    Password
+                    <input
+                        type="password"
+                        id="unlock-password"
+                        class="unlock-password-input"
+                        autocomplete="current-password"
+                        placeholder="Enter report password"
+                    />
+                </label>
+                <label class="unlock-remember">
+                    <input type="checkbox" id="unlock-save-password" />
+                    Remember correct password for this post
+                </label>
+                <p id="unlock-hint" class="unlock-hint"></p>
+                <p
+                    id="unlock-feedback"
+                    class="unlock-feedback"
+                    aria-live="polite"
+                ></p>
+                <div class="unlock-actions">
+                    <button
+                        type="button"
+                        id="unlock-cancel"
+                        class="unlock-btn unlock-btn-secondary"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        id="unlock-submit"
+                        class="unlock-btn unlock-btn-primary"
+                    >
+                        Unlock
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Welcome Screen -->
+        <div id="welcome-overlay" class="welcome-overlay" hidden>
+            <div class="welcome-content">
+                <div class="welcome-icon">👋</div>
+                <h2 class="welcome-title">Welcome to Xedryk Archive</h2>
+                <p class="welcome-message">
+                    Thank you for visiting! Here's a quick guide to get you
+                    started:
+                </p>
+                <div class="welcome-features">
+                    <div class="welcome-feature">
+                        <span class="welcome-feature-icon">❓</span>
+                        <div class="welcome-feature-text">
+                            <strong>Help Button</strong> - Press this for
+                            keyboard shortcuts, search tips, and all features
+                            guide
+                        </div>
+                    </div>
+                    <div class="welcome-feature">
+                        <span class="welcome-feature-icon">🔍</span>
+                        <div class="welcome-feature-text">
+                            <strong>Search Bar</strong> - Find reports by title,
+                            tags, or description. Supports advanced operators!
+                        </div>
+                    </div>
+                    <div class="welcome-feature">
+                        <span class="welcome-feature-icon">⚙️</span>
+                        <div class="welcome-feature-text">
+                            <strong>Settings</strong> - Customize fonts, colors,
+                            and keyboard shortcuts
+                        </div>
+                    </div>
+                </div>
+                <button type="button" id="welcome-ok" class="welcome-ok-btn">
+                    <span>Got it! Let's explore</span>
+                    <span class="welcome-ok-icon">🚀</span>
+                </button>
+            </div>
+        </div>
+
+        <script src="database/fonts.js"></script>
+        <script src="database/settings.js"></script>
+        <script src="database/catalog.js"></script>
+        <script src="js/ui-sfx.js"></script>
+        <script src="js/homepage.js"></script>
+    </body>
+</html>

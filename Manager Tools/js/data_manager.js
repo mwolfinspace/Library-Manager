@@ -1,23 +1,43 @@
         const chooseFolderBtn = document.getElementById('choose-folder');
+        const buildLibraryBtn = document.getElementById('build-library');
         const openRecentBtn = document.getElementById('open-recent');
         const scanLibraryBtn = document.getElementById('scan-library');
         const reloadCatalogBtn = document.getElementById('reload-catalog');
         const updateFontsBtn = document.getElementById('update-fonts');
         const fixMissingBtn = document.getElementById('fix-missing');
         const openHomepageBtn = document.getElementById('open-homepage');
+        const revealLibraryBtn = document.getElementById('reveal-library');
         const helpBtn = document.getElementById('help-btn');
         const helpModal = document.getElementById('help-modal');
         const helpClose = document.getElementById('help-close');
         const helpOk = document.getElementById('help-ok');
         const helpBody = document.getElementById('help-body');
+        const libraryBuilderOverlay = document.getElementById('library-builder-overlay');
+        const libraryBuilderForm = document.getElementById('library-builder-form');
+        const libraryBuilderPathInput = document.getElementById('library-builder-path');
+        const libraryBuilderPickPathBtn = document.getElementById('library-builder-pick-path');
+        const libraryBuilderFolderInput = document.getElementById('library-builder-folder-name');
+        const libraryBuilderNameInput = document.getElementById('library-builder-name');
+        const libraryBuilderNote = document.getElementById('library-builder-note');
+        const libraryBuilderCloseBtn = document.getElementById('library-builder-close');
+        const libraryBuilderCancelBtn = document.getElementById('library-builder-cancel');
+        const libraryBuilderSubmitBtn = document.getElementById('library-builder-submit');
         const autoScanToggle = document.getElementById('auto-scan');
         const statusEl = document.getElementById('status');
         const recentInfoEl = document.getElementById('recent-info');
         const statusBarText = document.getElementById('status-bar-text');
         const statusBarRecent = document.getElementById('status-bar-recent');
         const statusBarLibrary = document.getElementById('status-bar-library');
+        const appTitlebar = document.getElementById('app-titlebar');
+        const appTitlebarText = document.getElementById('app-titlebar-text');
+        const windowMinimizeBtn = document.getElementById('window-minimize');
+        const windowMaximizeBtn = document.getElementById('window-maximize');
+        const windowMaximizeGlyph = document.getElementById('window-maximize-glyph');
+        const windowCloseBtn = document.getElementById('window-close');
         const storyForm = document.getElementById('story-form');
         const reportNumberInput = document.getElementById('report-number');
+        const reportNumberDecBtn = document.getElementById('report-number-dec');
+        const reportNumberIncBtn = document.getElementById('report-number-inc');
         const reportPasswordInput = document.getElementById('report-password');
         const reportPasswordClearBtn = document.getElementById('report-password-clear');
         const reportTitleInput = document.getElementById('report-title');
@@ -41,6 +61,9 @@
         const cardHeightIncBtn = document.getElementById('card-height-inc');
         const cardHeightValue = document.getElementById('card-height-value');
         const markdownToolbar = document.getElementById('markdown-toolbar');
+        const markdownToolbarButtons = markdownToolbar
+            ? Array.from(markdownToolbar.querySelectorAll('button[data-md-action]'))
+            : [];
         const coverPositionOverlay = document.getElementById('cover-position-overlay');
         const coverPositionFrame = document.getElementById('cover-position-frame');
         const coverLayoutViewport = document.getElementById('cover-layout-viewport');
@@ -89,6 +112,7 @@
             stories: [],
             selectedId: null,
             selectedEntry: null,
+            currentLibraryUrl: null,
         };
 
         // Undo/Redo state for story text
@@ -98,15 +122,20 @@
             maxHistorySize: 50,
             isUndoRedoOperation: false,
         };
+        let storyInputHistoryTimer = 0;
 
         const AUTO_SCAN_KEY = 'dataManagerAutoScan';
         const RECENT_FOLDER_KEY = 'dataManagerRecentFolder';
+        const RECENT_LIBRARY_URL_KEY = 'dataManagerRecentLibraryUrl';
         const RECENT_STORY_KEY = 'dataManagerRecentStory';
         const RECENT_STORY_TITLE_KEY = 'dataManagerRecentStoryTitle';
         const RECENT_FOLDER_TIME_KEY = 'dataManagerRecentFolderTime';
         const IMAGE_CARD_HEIGHT_KEY = 'dataManagerImageCardHeight';
         const CLOSE_AFTER_SAVE_KEY = 'dataManagerCloseAfterSave';
         const LIBRARY_BASE_URL_MAP_KEY = 'dataManagerLibraryBaseUrlMap';
+        const WORKFLOW_STATE_KEY = 'dataManagerWorkflowState';
+        const WORKFLOW_STATE_VERSION = 1;
+        const ACCENT_COLOR_KEY = 'dataManagerAccentColor';
         const RECENT_HANDLE_DB = 'story1-manager';
         const RECENT_HANDLE_STORE = 'handles';
         const RECENT_HANDLE_ID = 'library';
@@ -137,7 +166,7 @@
             'This manager writes the catalog, moves images into the correct folder, and rebuilds the library database.',
             'Leave Report Number empty to auto-assign the next available number.',
             'Type a Story Password to encrypt story/media. Leave it empty to save plain files.',
-            'Saved protected-story passwords are kept in decrypt/story-passwords.json inside the same folder as Data_Manager.html.',
+            'Saved protected-story passwords are kept in the library decrypt folder.',
             'Use "Scan Files" to rebuild from disk, "Fix Missing Files" to repair links, and "Save Story" to update entries.'
         ].join('\n');
         const COVER_PRESET_POINTS = {
@@ -211,6 +240,348 @@
         const LEGACY_STORY_PASSWORD_VAULT_DIR = 'database';
         const LEGACY_STORY_PASSWORD_VAULT_FILES = ['save-password.json', 'story-password.json'];
         const STORY_PASSWORD_VAULT_VERSION = 1;
+        const electronDesktopApi = window.electronDataManager && typeof window.electronDataManager === 'object'
+            ? window.electronDataManager
+            : null;
+
+        function formatFileSize(bytes) {
+            if (!bytes || bytes <= 0) return '';
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        function isElectronDesktopApp() {
+            return !!electronDesktopApi;
+        }
+
+        async function notifyPreviewWindowsReload() {
+            if (isElectronDesktopApp() && electronDesktopApi.reloadCurrentPage) {
+                try {
+                    const rootPath = state.rootHandle && state.rootHandle.path ? state.rootHandle.path : '';
+                    if (rootPath) {
+                        await electronDesktopApi.reloadCurrentPage({ rootPath });
+                    }
+                } catch (error) {
+                    // ignore errors
+                }
+            }
+        }
+
+        function hasElectronWindowChrome() {
+            return isElectronDesktopApp()
+                && typeof electronDesktopApi.minimizeWindow === 'function'
+                && typeof electronDesktopApi.toggleMaximizeWindow === 'function'
+                && typeof electronDesktopApi.closeWindow === 'function'
+                && typeof electronDesktopApi.getWindowState === 'function';
+        }
+
+        function canBuildNewLibraryTemplate() {
+            return isElectronDesktopApp()
+                && typeof electronDesktopApi.buildNewLibrary === 'function';
+        }
+
+        function setElectronShellEnabled(enabled) {
+            document.body.classList.toggle('is-electron-shell', !!enabled);
+            document.body.dataset.windowMaximized = 'false';
+            document.body.classList.remove('window-unfocused');
+            if (appTitlebar) {
+                appTitlebar.hidden = !enabled;
+            }
+            if (enabled && isElectronDesktopApp() && electronDesktopApi.getLogoPath) {
+                const logoImg = document.getElementById('app-titlebar-logo');
+                if (logoImg) {
+                    electronDesktopApi.getLogoPath().then(logoUrl => {
+                        if (logoUrl && logoUrl.length > 0) {
+                            logoImg.src = logoUrl;
+                        }
+                    }).catch(() => {
+                        // Silently fail - logo is optional
+                    });
+                }
+            }
+        }
+
+        function updateElectronTitleBarText() {
+            if (!appTitlebarText) {
+                return;
+            }
+
+            const heading = document.querySelector('header h1');
+            const headingText = heading && heading.textContent ? heading.textContent.trim() : '';
+            appTitlebarText.textContent = headingText
+                ? `Xedryk Data Manager - ${headingText}`
+                : (document.title || 'Xedryk Data Manager');
+        }
+
+        function applyElectronWindowState(state = {}) {
+            const isMaximized = !!state.isMaximized;
+            const isFocused = state.isFocused !== false;
+            document.body.dataset.windowMaximized = isMaximized ? 'true' : 'false';
+            document.body.classList.toggle('window-unfocused', !isFocused);
+
+            if (windowMaximizeBtn) {
+                const label = isMaximized ? 'Restore Down' : 'Maximize';
+                windowMaximizeBtn.title = label;
+                windowMaximizeBtn.setAttribute('aria-label', label);
+                if (typeof getIcon === 'function') {
+                    windowMaximizeBtn.innerHTML = getIcon(isMaximized ? 'restore' : 'maximize', { width: 16, height: 16 });
+                }
+            }
+        }
+
+        async function runElectronWindowAction(action) {
+            if (!hasElectronWindowChrome()) {
+                return;
+            }
+
+            try {
+                let nextState = null;
+                if (action === 'minimize') {
+                    nextState = await electronDesktopApi.minimizeWindow();
+                } else if (action === 'toggle-maximize') {
+                    nextState = await electronDesktopApi.toggleMaximizeWindow();
+                } else if (action === 'close') {
+                    nextState = await electronDesktopApi.closeWindow();
+                }
+
+                if (nextState) {
+                    applyElectronWindowState(nextState);
+                }
+            } catch (error) {
+                // ignore desktop chrome action failures
+            }
+        }
+
+        async function initializeElectronWindowChrome() {
+            if (!hasElectronWindowChrome()) {
+                setElectronShellEnabled(false);
+                return;
+            }
+
+            setElectronShellEnabled(true);
+            updateElectronTitleBarText();
+
+            if (windowMinimizeBtn) {
+                windowMinimizeBtn.addEventListener('click', () => {
+                    void runElectronWindowAction('minimize');
+                });
+            }
+            if (windowMaximizeBtn) {
+                windowMaximizeBtn.addEventListener('click', () => {
+                    void runElectronWindowAction('toggle-maximize');
+                });
+            }
+            if (windowCloseBtn) {
+                windowCloseBtn.addEventListener('click', () => {
+                    void runElectronWindowAction('close');
+                });
+            }
+            if (typeof electronDesktopApi.onWindowStateChanged === 'function') {
+                electronDesktopApi.onWindowStateChanged(state => {
+                    applyElectronWindowState(state);
+                });
+            }
+
+            try {
+                const state = await electronDesktopApi.getWindowState();
+                applyElectronWindowState(state);
+            } catch (error) {
+                applyElectronWindowState();
+            }
+        }
+
+        function slugifyLibraryFolderName(value) {
+            return String(value || '')
+                .trim()
+                .replace(/[<>:"/\\|?*\x00-\x1F]+/g, '')
+                .replace(/\s+/g, ' ')
+                .replace(/^ +| +$/g, '')
+                .slice(0, 80);
+        }
+
+        function createNamedError(name, message) {
+            try {
+                return new DOMException(message, name);
+            } catch (error) {
+                const fallback = new Error(message);
+                fallback.name = name;
+                return fallback;
+            }
+        }
+
+        function getDescriptorNameFromPath(filePath, fallback = '') {
+            const source = String(filePath || '');
+            if (!source) {
+                return fallback;
+            }
+            const segments = source.split(/[\\/]/).filter(Boolean);
+            return segments.length > 0 ? segments[segments.length - 1] : fallback;
+        }
+
+        function isElectronHandleDescriptor(value) {
+            return !!(value
+                && typeof value === 'object'
+                && typeof value.path === 'string'
+                && (value.kind === 'directory' || value.kind === 'file'));
+        }
+
+        function serializeHandleForStorage(handle) {
+            if (!isElectronDesktopApp() || !handle || typeof handle !== 'object') {
+                return handle;
+            }
+            if (!isElectronHandleDescriptor(handle)) {
+                return handle;
+            }
+            return {
+                kind: handle.kind,
+                name: handle.name || getDescriptorNameFromPath(handle.path, handle.kind),
+                path: handle.path,
+            };
+        }
+
+        function normalizeWritablePayload(data) {
+            if (typeof data === 'string') {
+                return data;
+            }
+            if (data instanceof Blob) {
+                return data.arrayBuffer().then(buffer => new Uint8Array(buffer));
+            }
+            if (data instanceof ArrayBuffer) {
+                return new Uint8Array(data);
+            }
+            if (ArrayBuffer.isView(data)) {
+                return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+            }
+            return '';
+        }
+
+        function createElectronWritable(filePath) {
+            let pendingData = '';
+            return {
+                async write(data) {
+                    pendingData = await normalizeWritablePayload(data);
+                },
+                async close() {
+                    await electronDesktopApi.writeFile(filePath, pendingData);
+                },
+            };
+        }
+
+        function hydrateElectronHandle(descriptor) {
+            if (!isElectronHandleDescriptor(descriptor)) {
+                return null;
+            }
+            if (descriptor.kind === 'file') {
+                const filePath = descriptor.path;
+                const fileName = descriptor.name || getDescriptorNameFromPath(filePath, 'file');
+                return {
+                    kind: 'file',
+                    name: fileName,
+                    path: filePath,
+                    async getFile() {
+                        const payload = await electronDesktopApi.readFile(filePath);
+                        const bytes = payload && payload.data ? payload.data : new Uint8Array();
+                        return new File([bytes], payload && payload.name ? payload.name : fileName, {
+                            type: payload && typeof payload.type === 'string' ? payload.type : '',
+                            lastModified: payload && payload.lastModified ? payload.lastModified : Date.now(),
+                        });
+                    },
+                    async createWritable() {
+                        return createElectronWritable(filePath);
+                    },
+                    async queryPermission() {
+                        return (await electronDesktopApi.pathExists(filePath)) ? 'granted' : 'denied';
+                    },
+                    async requestPermission() {
+                        return (await electronDesktopApi.pathExists(filePath)) ? 'granted' : 'denied';
+                    },
+                };
+            }
+
+            const dirPath = descriptor.path;
+            const dirName = descriptor.name || getDescriptorNameFromPath(dirPath, 'directory');
+            return {
+                kind: 'directory',
+                name: dirName,
+                path: dirPath,
+                async getDirectoryHandle(name, options = {}) {
+                    const child = await electronDesktopApi.getDirectoryHandle(dirPath, name, !!options.create);
+                    return hydrateElectronHandle(child);
+                },
+                async getFileHandle(name, options = {}) {
+                    const child = await electronDesktopApi.getFileHandle(dirPath, name, !!options.create);
+                    return hydrateElectronHandle(child);
+                },
+                async removeEntry(name, options = {}) {
+                    await electronDesktopApi.removeEntry(dirPath, name, !!options.recursive);
+                },
+                async queryPermission() {
+                    return (await electronDesktopApi.pathExists(dirPath)) ? 'granted' : 'denied';
+                },
+                async requestPermission() {
+                    return (await electronDesktopApi.pathExists(dirPath)) ? 'granted' : 'denied';
+                },
+                async *entries() {
+                    const children = await electronDesktopApi.listDirectory(dirPath);
+                    for (const child of children) {
+                        const hydrated = hydrateElectronHandle(child);
+                        if (hydrated) {
+                            yield [child.name, hydrated];
+                        }
+                    }
+                },
+            };
+        }
+
+        function hydrateStoredHandle(handle) {
+            if (!isElectronDesktopApp()) {
+                return handle;
+            }
+            return isElectronHandleDescriptor(handle) ? hydrateElectronHandle(handle) : null;
+        }
+
+        function toElectronPickerOptions(options = {}) {
+            const startIn = options && options.startIn && typeof options.startIn === 'object'
+                ? options.startIn
+                : null;
+            return {
+                id: options && options.id ? String(options.id) : '',
+                multiple: !!(options && options.multiple),
+                types: Array.isArray(options && options.types) ? options.types : [],
+                startInPath: startIn && typeof startIn.path === 'string' ? startIn.path : '',
+            };
+        }
+
+        async function electronShowDirectoryPicker(options = {}) {
+            const descriptor = await electronDesktopApi.showDirectoryPicker(toElectronPickerOptions(options));
+            if (!descriptor) {
+                throw createNamedError('AbortError', 'Directory selection cancelled.');
+            }
+            return hydrateElectronHandle(descriptor);
+        }
+
+        async function electronShowOpenFilePicker(options = {}) {
+            const descriptors = await electronDesktopApi.showOpenFilePicker(toElectronPickerOptions(options));
+            if (!Array.isArray(descriptors) || descriptors.length === 0) {
+                throw createNamedError('AbortError', 'File selection cancelled.');
+            }
+            return descriptors
+                .map(descriptor => hydrateElectronHandle(descriptor))
+                .filter(Boolean);
+        }
+
+        async function resolveElectronDecryptRootHandle() {
+            if (!isElectronDesktopApp() || !state.rootHandle) {
+                return null;
+            }
+            return state.rootHandle;
+        }
+
+        if (isElectronDesktopApp()) {
+            window.showDirectoryPicker = electronShowDirectoryPicker;
+            window.showOpenFilePicker = electronShowOpenFilePicker;
+        }
 
         function toFiniteNumber(value, fallback) {
             const parsed = Number(value);
@@ -322,6 +693,18 @@
         }
 
         async function ensureDecryptRootHandle({ interactive = false } = {}) {
+            if (isElectronDesktopApp()) {
+                const desktopHandle = await resolveElectronDecryptRootHandle();
+                if (desktopHandle) {
+                    decryptRootHandle = desktopHandle;
+                    await saveDecryptRootHandle(decryptRootHandle);
+                    return decryptRootHandle;
+                }
+                if (!interactive) {
+                    return null;
+                }
+            }
+
             if (decryptRootHandle) {
                 const hasPermission = await ensureHandleReadWritePermission(decryptRootHandle, { interactive });
                 if (hasPermission) {
@@ -372,7 +755,11 @@
             if (!rootHandle) {
                 return null;
             }
-            return rootHandle.getDirectoryHandle(STORY_PASSWORD_VAULT_SUB_DIR, { create });
+            try {
+                return await rootHandle.getDirectoryHandle(STORY_PASSWORD_VAULT_SUB_DIR, { create });
+            } catch (error) {
+                return null;
+            }
         }
 
         async function removeFileIfExists(dirHandle, fileName) {
@@ -499,6 +886,10 @@
         }
 
         async function writeStoryPasswordVault() {
+            const payload = buildStoryPasswordVaultPayload(storyPasswordVault);
+            storyPasswordVault = normalizeStoryPasswordVault(payload.stories);
+            const jsonContent = JSON.stringify(payload, null, 2);
+
             if (!state.rootHandle) {
                 return;
             }
@@ -507,9 +898,7 @@
                 setStatus(`Select the Data Manager folder (${DATA_MANAGER_FILE_NAME}) to save story passwords.`);
                 return;
             }
-            const payload = buildStoryPasswordVaultPayload(storyPasswordVault);
-            storyPasswordVault = normalizeStoryPasswordVault(payload.stories);
-            await writeFile(vaultDir, STORY_PASSWORD_VAULT_FILE, JSON.stringify(payload, null, 2));
+            await writeFile(vaultDir, STORY_PASSWORD_VAULT_FILE, jsonContent);
         }
 
         async function loadStoryPasswordVault({ createIfMissing = false } = {}) {
@@ -805,6 +1194,7 @@
                 storyTextInput.value = '';
                 clearUndoHistory();
             }
+            updateMarkdownToolbarState();
         }
 
         function normalizeBindingMap(bindings) {
@@ -1027,6 +1417,7 @@
             const merged = composeSettingsFile(existing, homepageSettings, viewerSettings);
             await writeFile(databaseDir, 'settings.json', JSON.stringify(merged, null, 2));
             syncSettingsToLocalStorage(merged);
+            await notifyPreviewWindowsReload();
 
             if (state.stories.length === 0) {
                 await loadLibrary();
@@ -1045,6 +1436,8 @@
         let storyDragId = null;
         let storyDropIndex = null;
         let storyDropPlaceholderEl = null;
+        let libraryBuilderTargetHandle = null;
+        let libraryBuilderFolderNameTouched = false;
         let coverSelection = null;
         let externalCoverMedia = null;
         let coverPosition = { x: 50, y: 50 };
@@ -1110,13 +1503,23 @@
         }
 
         function getToastIcon(type) {
-            const iconMap = {
-                success: '✅',
-                error: '❌',
-                warning: '⚠️',
-                info: 'ℹ️',
+            if (typeof getIcon === 'function') {
+                const iconMap = {
+                    success: 'iconCheck',
+                    error: 'iconClose',
+                    warning: 'iconInfo',
+                    info: 'iconInfo',
+                };
+                const iconName = iconMap[type] || iconMap.info;
+                return getIcon(iconName, { width: 18, height: 18 });
+            }
+            const fallbackMap = {
+                success: '&#x2705;',
+                error: '&#x2717;',
+                warning: '&#x26A0;',
+                info: '&#x2139;',
             };
-            return iconMap[type] || iconMap.info;
+            return fallbackMap[type] || fallbackMap.info;
         }
         
         function showToast(message, type = 'info', duration = 3000) {
@@ -1128,7 +1531,7 @@
 
             const icon = document.createElement('span');
             icon.className = 'toast-icon';
-            icon.textContent = getToastIcon(resolvedType);
+            icon.innerHTML = getToastIcon(resolvedType);
 
             const messageEl = document.createElement('span');
             messageEl.className = 'toast-message';
@@ -1138,7 +1541,7 @@
             closeBtn.type = 'button';
             closeBtn.className = 'toast-close';
             closeBtn.setAttribute('aria-label', 'Close notification');
-            closeBtn.textContent = '✕';
+            closeBtn.innerHTML = typeof getIcon === 'function' ? getIcon('close', { width: 14, height: 14 }) : '&#x2715;';
             closeBtn.addEventListener('click', () => {
                 toast.remove();
             });
@@ -1169,13 +1572,23 @@
         let dialogOpen = false;
 
         function getDialogIconByType(type) {
-            const map = {
-                info: 'ℹ️',
-                success: '✅',
-                warning: '⚠️',
-                error: '❌',
+            if (typeof getIcon === 'function') {
+                const map = {
+                    info: 'iconInfo',
+                    success: 'iconCheck',
+                    warning: 'iconInfo',
+                    error: 'iconClose',
+                };
+                const iconName = map[type] || map.info;
+                return getIcon(iconName, { width: 24, height: 24 });
+            }
+            const fallbackMap = {
+                info: '&#x2139;',
+                success: '&#x2705;',
+                warning: '&#x26A0;',
+                error: '&#x2717;',
             };
-            return map[type] || map.info;
+            return fallbackMap[type] || fallbackMap.info;
         }
 
         async function showThemedDialog({
@@ -1199,7 +1612,7 @@
             dialogOpen = true;
 
             dialogTitle.textContent = title;
-            dialogIcon.textContent = getDialogIconByType(type);
+            dialogIcon.innerHTML = getDialogIconByType(type);
             dialogMessage.textContent = message;
 
             dialogInput.hidden = !showInput;
@@ -1226,7 +1639,6 @@
                     }
                     settled = true;
                     document.removeEventListener('keydown', onKeyDown);
-                    dialogOverlay.removeEventListener('click', onOverlayClick);
                     dialogConfirmBtn.removeEventListener('click', onConfirm);
                     dialogCancelBtn.removeEventListener('click', onCancel);
                     dialogCloseBtn.removeEventListener('click', onCancel);
@@ -1249,15 +1661,6 @@
                         confirmed: false,
                         value: showInput ? dialogInput.value : null,
                     });
-                };
-
-                const onOverlayClick = event => {
-                    if (!allowCancel) {
-                        return;
-                    }
-                    if (event.target === dialogOverlay) {
-                        onCancel();
-                    }
                 };
 
                 const onKeyDown = event => {
@@ -1286,7 +1689,6 @@
                 };
 
                 document.addEventListener('keydown', onKeyDown);
-                dialogOverlay.addEventListener('click', onOverlayClick);
                 dialogConfirmBtn.addEventListener('click', onConfirm);
                 dialogCancelBtn.addEventListener('click', onCancel);
                 dialogCloseBtn.addEventListener('click', onCancel);
@@ -1352,6 +1754,191 @@
             helpModal.setAttribute('aria-hidden', 'true');
         }
 
+        function toggleStorySelection(storyId) {
+            if (!storyId) {
+                return;
+            }
+            if (selectedStoryIds.has(storyId)) {
+                selectedStoryIds.delete(storyId);
+            } else {
+                selectedStoryIds.add(storyId);
+            }
+            renderStoryList();
+        }
+
+        function setLibraryBuilderTargetHandle(handle) {
+            libraryBuilderTargetHandle = handle || null;
+            if (libraryBuilderPathInput) {
+                libraryBuilderPathInput.value = handle && handle.path
+                    ? handle.path
+                    : (handle && handle.name ? handle.name : '');
+            }
+        }
+
+        function resetLibraryBuilderForm() {
+            libraryBuilderFolderNameTouched = false;
+            const suggestedName = state.rootHandle && state.rootHandle.name
+                ? state.rootHandle.name
+                : 'New Library';
+            if (libraryBuilderNameInput) {
+                libraryBuilderNameInput.value = suggestedName;
+            }
+            if (libraryBuilderFolderInput) {
+                libraryBuilderFolderInput.value = slugifyLibraryFolderName(suggestedName) || 'New_Library';
+            }
+            setLibraryBuilderTargetHandle(state.rootHandle || null);
+            if (libraryBuilderNote) {
+                libraryBuilderNote.textContent = 'The new library opens automatically after it is created.';
+            }
+        }
+
+        function openLibraryBuilder() {
+            if (!libraryBuilderOverlay) {
+                return;
+            }
+            if (!canBuildNewLibraryTemplate()) {
+                setStatus('Build New Library is available in the Electron desktop app.');
+                showToast('Build New Library is available in the Electron desktop app.', 'warning');
+                return;
+            }
+            resetLibraryBuilderForm();
+            libraryBuilderOverlay.hidden = false;
+            requestAnimationFrame(() => {
+                libraryBuilderOverlay.classList.add('is-open');
+            });
+            if (libraryBuilderNameInput) {
+                libraryBuilderNameInput.focus();
+                libraryBuilderNameInput.select();
+            }
+        }
+
+        function closeLibraryBuilder() {
+            if (!libraryBuilderOverlay) {
+                return;
+            }
+            libraryBuilderOverlay.classList.remove('is-open');
+            libraryBuilderOverlay.hidden = true;
+            if (libraryBuilderSubmitBtn) {
+                libraryBuilderSubmitBtn.disabled = false;
+            }
+        }
+
+        async function chooseLibraryBuilderLocation() {
+            if (!canBuildNewLibraryTemplate()) {
+                return;
+            }
+            try {
+                const recentHandle = state.rootHandle || await loadRecentHandle();
+                const pickerOptions = recentHandle ? { startIn: recentHandle } : {};
+                const handle = await window.showDirectoryPicker(pickerOptions);
+                setLibraryBuilderTargetHandle(handle);
+                if (libraryBuilderNote) {
+                    libraryBuilderNote.textContent = `New library will be created inside "${handle.name}".`;
+                }
+            } catch (error) {
+                if (libraryBuilderNote) {
+                    libraryBuilderNote.textContent = 'Folder selection cancelled.';
+                }
+            }
+        }
+
+        async function handleBuildLibrarySubmit(event) {
+            if (event) {
+                event.preventDefault();
+            }
+            if (!canBuildNewLibraryTemplate()) {
+                return;
+            }
+
+            const parentHandle = libraryBuilderTargetHandle;
+            const libraryName = libraryBuilderNameInput ? String(libraryBuilderNameInput.value || '').trim() : '';
+            const folderName = libraryBuilderFolderInput
+                ? slugifyLibraryFolderName(libraryBuilderFolderInput.value || '')
+                : '';
+
+            if (!parentHandle || !parentHandle.path) {
+                if (libraryBuilderNote) {
+                    libraryBuilderNote.textContent = 'Choose a destination folder first.';
+                }
+                if (libraryBuilderPickPathBtn) {
+                    libraryBuilderPickPathBtn.focus();
+                }
+                return;
+            }
+
+            if (!libraryName) {
+                if (libraryBuilderNote) {
+                    libraryBuilderNote.textContent = 'Library name is required.';
+                }
+                if (libraryBuilderNameInput) {
+                    libraryBuilderNameInput.focus();
+                }
+                return;
+            }
+
+            if (!folderName) {
+                if (libraryBuilderNote) {
+                    libraryBuilderNote.textContent = 'Folder name must contain letters or numbers.';
+                }
+                if (libraryBuilderFolderInput) {
+                    libraryBuilderFolderInput.focus();
+                }
+                return;
+            }
+
+            if (libraryBuilderFolderInput) {
+                libraryBuilderFolderInput.value = folderName;
+            }
+            if (libraryBuilderSubmitBtn) {
+                libraryBuilderSubmitBtn.disabled = true;
+            }
+            if (libraryBuilderNote) {
+                libraryBuilderNote.textContent = `Building "${libraryName}"...`;
+            }
+
+            try {
+                const result = await electronDesktopApi.buildNewLibrary({
+                    parentPath: parentHandle.path,
+                    folderName,
+                    libraryName,
+                });
+                const nextHandle = result && result.handle ? hydrateElectronHandle(result.handle) : null;
+                if (!nextHandle) {
+                    throw new Error('The new library was created, but the app could not open it.');
+                }
+
+                state.rootHandle = nextHandle;
+
+                const libraryPath = `${parentHandle.path}\\${folderName}`;
+                state.currentLibraryUrl = normalizeLibraryBaseUrl(`file:///${libraryPath.replace(/\\/g, '/')}/`);
+                localStorage.setItem(RECENT_LIBRARY_URL_KEY, state.currentLibraryUrl);
+                if (window.electronDataManager && window.electronDataManager.saveLibraryPath) {
+                    await window.electronDataManager.saveLibraryPath(libraryPath);
+                }
+
+                await ensureDecryptRootHandle({ interactive: true });
+                clearLibraryPreviewCaches();
+                releaseAllMediaUrls();
+                await ensureStructure();
+                await saveRecentFolder(nextHandle);
+                await loadLibrary();
+
+                closeLibraryBuilder();
+                setStatus(`Built new library "${libraryName}".`);
+                showToast(`Built new library: ${libraryName}`, 'success');
+            } catch (error) {
+                if (libraryBuilderSubmitBtn) {
+                    libraryBuilderSubmitBtn.disabled = false;
+                }
+                const message = error && error.message ? error.message : 'Unable to build the new library.';
+                if (libraryBuilderNote) {
+                    libraryBuilderNote.textContent = message;
+                }
+                setStatus(message);
+                showToast(message, 'error');
+            }
+        }
+
         function openHandleDb() {
             return new Promise((resolve, reject) => {
                 const request = indexedDB.open(RECENT_HANDLE_DB, 1);
@@ -1369,9 +1956,10 @@
         async function saveStoredHandle(key, handle) {
             try {
                 const db = await openHandleDb();
+                const storedValue = serializeHandleForStorage(handle);
                 await new Promise((resolve, reject) => {
                     const tx = db.transaction(RECENT_HANDLE_STORE, 'readwrite');
-                    tx.objectStore(RECENT_HANDLE_STORE).put(handle, key);
+                    tx.objectStore(RECENT_HANDLE_STORE).put(storedValue, key);
                     tx.oncomplete = () => resolve();
                     tx.onerror = () => reject(tx.error);
                 });
@@ -1386,7 +1974,7 @@
                 return await new Promise((resolve, reject) => {
                     const tx = db.transaction(RECENT_HANDLE_STORE, 'readonly');
                     const request = tx.objectStore(RECENT_HANDLE_STORE).get(key);
-                    request.onsuccess = () => resolve(request.result || null);
+                    request.onsuccess = () => resolve(hydrateStoredHandle(request.result || null));
                     request.onerror = () => reject(request.error);
                 });
             } catch (error) {
@@ -1612,17 +2200,33 @@
                 return;
             }
             let permission = await handle.queryPermission({ mode: 'readwrite' });
-            if (permission !== 'granted' && !auto) {
-                permission = await handle.requestPermission({ mode: 'readwrite' });
+            if (permission !== 'granted') {
+                try {
+                    permission = await handle.requestPermission({ mode: 'readwrite' });
+                } catch (error) {
+                    permission = await handle.queryPermission({ mode: 'readwrite' });
+                }
             }
             if (permission !== 'granted') {
                 if (!auto) {
                     setStatus('Permission denied for recent folder.');
+                } else if (localStorage.getItem(RECENT_FOLDER_KEY)) {
+                    setStatus('Reconnect recent library permission to restore the last workspace.');
                 }
                 return;
             }
 
             state.rootHandle = handle;
+            const savedLibraryUrl = localStorage.getItem(RECENT_LIBRARY_URL_KEY);
+            if (savedLibraryUrl) {
+                state.currentLibraryUrl = savedLibraryUrl;
+            } else if (isElectronDesktopApp() && window.electronDataManager.resolveLibraryPath) {
+                const savedPath = await window.electronDataManager.resolveLibraryPath(handle.name);
+                if (savedPath) {
+                    state.currentLibraryUrl = normalizeLibraryBaseUrl(`file:///${savedPath.replace(/\\/g, '/')}/`);
+                    localStorage.setItem(RECENT_LIBRARY_URL_KEY, state.currentLibraryUrl);
+                }
+            }
             if (!auto) {
                 await ensureDecryptRootHandle({ interactive: true });
             }
@@ -1636,12 +2240,13 @@
             showToast(`📂 Opened "${state.rootHandle.name}" with ${count} story(ies)`, 'success');
         }
 
-        function saveRecentFolder(handle) {
+        async function saveRecentFolder(handle) {
             if (!handle) return;
             localStorage.setItem(RECENT_FOLDER_KEY, handle.name || 'Library');
             localStorage.setItem(RECENT_FOLDER_TIME_KEY, new Date().toISOString());
             updateRecentInfo();
-            saveRecentHandle(handle);
+            await saveRecentHandle(handle);
+            saveCurrentWorkflowState();
         }
 
         function saveRecentStory(entry) {
@@ -1690,6 +2295,70 @@
             const map = loadLibraryBaseUrlMap();
             const value = map[key];
             return typeof value === 'string' ? value : '';
+        }
+
+        function loadWorkflowState() {
+            try {
+                const raw = localStorage.getItem(WORKFLOW_STATE_KEY);
+                if (!raw) {
+                    return {};
+                }
+                const parsed = JSON.parse(raw);
+                return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+            } catch (error) {
+                return {};
+            }
+        }
+
+        function saveWorkflowStateMap(map) {
+            if (!map || typeof map !== 'object' || Array.isArray(map)) {
+                return;
+            }
+            localStorage.setItem(WORKFLOW_STATE_KEY, JSON.stringify(map));
+        }
+
+        function saveCurrentWorkflowState() {
+            const key = getLibraryBaseUrlStorageKey();
+            if (!key || !state.rootHandle) {
+                return;
+            }
+            const selectedStoryId = state.selectedId && state.stories.some(story => story.id === state.selectedId)
+                ? state.selectedId
+                : '';
+            const workflowState = loadWorkflowState();
+            workflowState[key] = {
+                version: WORKFLOW_STATE_VERSION,
+                libraryName: state.rootHandle.name || 'Library',
+                selectedStoryId,
+                updatedAt: new Date().toISOString(),
+            };
+            saveWorkflowStateMap(workflowState);
+        }
+
+        function getCurrentWorkflowState() {
+            const key = getLibraryBaseUrlStorageKey();
+            if (!key) {
+                return null;
+            }
+            const workflowState = loadWorkflowState();
+            const entry = workflowState[key];
+            return entry && typeof entry === 'object' && !Array.isArray(entry) ? entry : null;
+        }
+
+        async function restoreCurrentWorkflowState() {
+            const workflow = getCurrentWorkflowState();
+            if (!workflow || !workflow.selectedStoryId) {
+                return;
+            }
+            if (state.selectedId === workflow.selectedStoryId) {
+                return;
+            }
+            const targetStory = state.stories.find(story => story.id === workflow.selectedStoryId);
+            if (!targetStory) {
+                saveCurrentWorkflowState();
+                return;
+            }
+            await editStory(targetStory.id);
         }
 
         function saveStoredLibraryBaseUrl(baseUrl) {
@@ -1745,30 +2414,47 @@
             }
         }
 
+        function getCurrentManagerLibraryBaseUrl() {
+            try {
+                const url = normalizeLibraryBaseUrl(new URL('./', window.location.href).href);
+                if (url) {
+                    state.currentLibraryUrl = url;
+                }
+                return state.currentLibraryUrl || url;
+            } catch (error) {
+                return '';
+            }
+        }
+
+        function getCurrentManagerLibraryFolderName() {
+            try {
+                const libraryBaseUrl = new URL('../', window.location.href);
+                const pathSegments = decodeURIComponent(libraryBaseUrl.pathname || '')
+                    .replace(/\\/g, '/')
+                    .split('/')
+                    .filter(Boolean);
+                return pathSegments.length > 0 ? String(pathSegments[pathSegments.length - 1] || '').trim() : '';
+            } catch (error) {
+                return '';
+            }
+        }
+
         function buildRelativeLibraryBaseUrl() {
             if (!state.rootHandle || !state.rootHandle.name) {
                 return '';
             }
             const folderName = String(state.rootHandle.name).trim();
+            if (!folderName) {
+                return '';
+            }
+
+            const managerLibraryFolderName = getCurrentManagerLibraryFolderName();
+            if (managerLibraryFolderName && managerLibraryFolderName.toLowerCase() === folderName.toLowerCase()) {
+                return getCurrentManagerLibraryBaseUrl();
+            }
+
             try {
-                const pathSegments = decodeURIComponent(window.location.pathname || '')
-                    .replace(/\\/g, '/')
-                    .split('/')
-                    .filter(Boolean);
-                const target = folderName.toLowerCase();
-                const selectedFolderIndex = pathSegments.reduce((match, segment, index) => (
-                    segment.toLowerCase() === target ? index : match
-                ), -1);
-
-                if (selectedFolderIndex >= 0) {
-                    const tailCount = pathSegments.length - (selectedFolderIndex + 1);
-                    const upCount = Math.max(0, tailCount - 1);
-                    const relative = upCount > 0 ? '../'.repeat(upCount) : './';
-                    return new URL(relative, window.location.href).href;
-                }
-
-                const encodedName = encodeURIComponent(folderName);
-                return new URL(`../${encodedName}/`, window.location.href).href;
+                return normalizeLibraryBaseUrl(new URL(`../${encodeURIComponent(folderName)}/`, window.location.href).href);
             } catch (error) {
                 return '';
             }
@@ -1776,19 +2462,14 @@
 
         function isManagerInsideSelectedLibrary() {
             if (!state.rootHandle || !state.rootHandle.name) {
-                return true;
+                return false;
             }
-            try {
-                const folderName = String(state.rootHandle.name).trim();
-                if (!folderName) {
-                    return true;
-                }
-                const pathname = decodeURIComponent(window.location.pathname || '').replace(/\\/g, '/').toLowerCase();
-                const needle = `/${folderName.toLowerCase()}/`;
-                return pathname.includes(needle);
-            } catch (error) {
-                return true;
+            const folderName = String(state.rootHandle.name).trim();
+            if (!folderName) {
+                return false;
             }
+            const managerLibraryFolderName = getCurrentManagerLibraryFolderName();
+            return !!managerLibraryFolderName && managerLibraryFolderName.toLowerCase() === folderName.toLowerCase();
         }
 
         async function promptForLibraryBaseUrl() {
@@ -1830,33 +2511,6 @@
             return normalized;
         }
 
-        async function resolveLibraryLaunchBaseUrl() {
-            const relativeBase = buildRelativeLibraryBaseUrl();
-            if (isManagerInsideSelectedLibrary()) {
-                return relativeBase;
-            }
-
-            const saved = normalizeLibraryBaseUrl(getStoredLibraryBaseUrl());
-            if (saved) {
-                if (saved !== getStoredLibraryBaseUrl()) {
-                    saveStoredLibraryBaseUrl(saved);
-                }
-                return saved;
-            }
-
-            if (window.location.protocol !== 'file:') {
-                return relativeBase;
-            }
-
-            const configuredBase = await promptForLibraryBaseUrl();
-            if (configuredBase) {
-                return configuredBase;
-            }
-
-            setStatus('Using relative links. Set Library URL if Homepage/Preview opens the wrong location.');
-            return relativeBase;
-        }
-
         function createMediaId() {
             mediaIdCounter += 1;
             return `media_${Date.now()}_${mediaIdCounter}`;
@@ -1886,6 +2540,7 @@
                 file,
                 path: '',
                 name: file.name,
+                size: file.size || 0,
                 mediaType: detectCoverMediaType(file.name, file.type),
                 previewUrl: '',
                 previewMissing: false,
@@ -2615,13 +3270,23 @@
                 name.className = 'image-card-name';
                 name.textContent = `${formatMediaTypeLabel(externalCoverMedia.mediaType)}: ${externalCoverMedia.name || 'cover media'}`;
 
+                if (externalCoverMedia.size) {
+                    const sizeLabel = document.createElement('span');
+                    sizeLabel.className = 'image-card-size-pill';
+                    sizeLabel.textContent = formatFileSize(externalCoverMedia.size);
+                    meta.appendChild(name);
+                    meta.appendChild(sizeLabel);
+                } else {
+                    meta.appendChild(name);
+                }
+
                 const controls = document.createElement('div');
                 controls.className = 'image-card-controls';
 
                 const pinBtn = document.createElement('button');
                 pinBtn.type = 'button';
                 pinBtn.className = `ghost image-mini-btn ${coverSelection && coverSelection.kind === 'external' ? 'active' : ''}`;
-                pinBtn.textContent = '📌';
+                pinBtn.innerHTML = typeof getIcon === 'function' ? getIcon('pin', { width: 16, height: 16 }) : '&#x1F4CC;';
                 pinBtn.title = 'Use as cover';
                 pinBtn.addEventListener('click', event => {
                     event.stopPropagation();
@@ -2632,7 +3297,7 @@
                 const previewBtn = document.createElement('button');
                 previewBtn.type = 'button';
                 previewBtn.className = 'ghost image-mini-btn';
-                previewBtn.textContent = '👁';
+                previewBtn.innerHTML = typeof getIcon === 'function' ? getIcon('eye', { width: 16, height: 16 }) : '&#x1F441;';
                 previewBtn.title = 'Preview';
                 previewBtn.addEventListener('click', event => {
                     event.stopPropagation();
@@ -2642,7 +3307,7 @@
                 const removeBtn = document.createElement('button');
                 removeBtn.type = 'button';
                 removeBtn.className = 'ghost image-mini-btn';
-                removeBtn.textContent = '🗑';
+                removeBtn.innerHTML = typeof getIcon === 'function' ? getIcon('trash', { width: 16, height: 16 }) : '&#x1F5D1;';
                 removeBtn.title = 'Remove cover media';
                 removeBtn.addEventListener('click', event => {
                     event.stopPropagation();
@@ -2715,6 +3380,16 @@
                 name.className = 'image-card-name';
                 name.textContent = `${index + 1}. ${formatMediaTypeLabel(item.mediaType)}: ${item.name}`;
 
+                if (item.size) {
+                    const sizeLabel = document.createElement('span');
+                    sizeLabel.className = 'image-card-size-pill';
+                    sizeLabel.textContent = formatFileSize(item.size);
+                    meta.appendChild(name);
+                    meta.appendChild(sizeLabel);
+                } else {
+                    meta.appendChild(name);
+                }
+
                 const controls = document.createElement('div');
                 controls.className = 'image-card-controls';
 
@@ -2739,7 +3414,7 @@
                 const pinBtn = document.createElement('button');
                 pinBtn.type = 'button';
                 pinBtn.className = `ghost image-mini-btn ${coverSelection && coverSelection.kind === 'image' && coverSelection.itemId === item.id ? 'active' : ''}`;
-                pinBtn.textContent = '📌';
+                pinBtn.innerHTML = typeof getIcon === 'function' ? getIcon('pin', { width: 16, height: 16 }) : '&#x1F4CC;';
                 pinBtn.title = 'Pin as cover';
                 pinBtn.addEventListener('click', event => {
                     event.stopPropagation();
@@ -2750,7 +3425,7 @@
                 const previewBtn = document.createElement('button');
                 previewBtn.type = 'button';
                 previewBtn.className = 'ghost image-mini-btn';
-                previewBtn.textContent = '👁';
+                previewBtn.innerHTML = typeof getIcon === 'function' ? getIcon('eye', { width: 16, height: 16 }) : '&#x1F441;';
                 previewBtn.title = 'Preview';
                 previewBtn.addEventListener('click', event => {
                     event.stopPropagation();
@@ -2760,7 +3435,7 @@
                 const replaceBtn = document.createElement('button');
                 replaceBtn.type = 'button';
                 replaceBtn.className = 'ghost image-mini-btn';
-                replaceBtn.textContent = '🔁';
+                replaceBtn.innerHTML = typeof getIcon === 'function' ? getIcon('replace', { width: 16, height: 16 }) : '&#x1F501;';
                 replaceBtn.title = 'Replace media';
                 replaceBtn.addEventListener('click', event => {
                     event.stopPropagation();
@@ -2774,7 +3449,7 @@
                 const removeBtn = document.createElement('button');
                 removeBtn.type = 'button';
                 removeBtn.className = 'ghost image-mini-btn';
-                removeBtn.textContent = '🗑';
+                removeBtn.innerHTML = typeof getIcon === 'function' ? getIcon('trash', { width: 16, height: 16 }) : '&#x1F5D1;';
                 removeBtn.title = 'Remove media';
                 removeBtn.addEventListener('click', event => {
                     event.stopPropagation();
@@ -3177,7 +3852,7 @@
         }
 
         function supportsFileSystemAccess() {
-            return 'showDirectoryPicker' in window;
+            return 'showDirectoryPicker' in window || isElectronDesktopApp();
         }
 
         function normalizeCatalog(data) {
@@ -3301,7 +3976,8 @@
                 imagePanel.style.setProperty('--image-card-height', `${value}px`);
             }
             if (cardHeightValue) {
-                cardHeightValue.textContent = `${value}px`;
+                cardHeightValue.textContent = String(value);
+                cardHeightValue.title = `Image card height: ${value}px`;
             }
             if (cardHeightDecBtn) {
                 cardHeightDecBtn.disabled = value <= 92;
@@ -3324,12 +4000,46 @@
             }
 
             try {
-                state.rootHandle = await window.showDirectoryPicker();
+                let libraryPath = null;
+
+                if (isElectronDesktopApp() && window.electronDataManager.pickLibraryFolder) {
+                    const result = await window.electronDataManager.pickLibraryFolder();
+                    if (result.canceled) {
+                        setStatus('Folder selection cancelled.');
+                        return;
+                    }
+                    if (result.success && result.path) {
+                        libraryPath = result.path;
+                        await window.electronDataManager.saveLibraryPath(libraryPath);
+                    }
+                }
+
+                if (!state.rootHandle) {
+                    const recentHandle = await loadRecentHandle();
+                    const pickerOptions = recentHandle
+                        ? { startIn: recentHandle }
+                        : {};
+                    try {
+                        state.rootHandle = await window.showDirectoryPicker(pickerOptions);
+                    } catch (error) {
+                        if (!recentHandle || error?.name === 'AbortError') {
+                            throw error;
+                        }
+                        state.rootHandle = await window.showDirectoryPicker();
+                    }
+                }
+
                 await ensureDecryptRootHandle({ interactive: true });
                 clearLibraryPreviewCaches();
                 releaseAllMediaUrls();
                 await ensureStructure();
-                saveRecentFolder(state.rootHandle);
+
+                if (libraryPath) {
+                    state.currentLibraryUrl = normalizeLibraryBaseUrl(`file:///${libraryPath.replace(/\\/g, '/')}/`);
+                    localStorage.setItem(RECENT_LIBRARY_URL_KEY, state.currentLibraryUrl);
+                }
+
+                await saveRecentFolder(state.rootHandle);
                 if (autoScanToggle && autoScanToggle.checked) {
                     await scanLibrary();
                 } else {
@@ -3841,14 +4551,99 @@
             return url.href;
         }
 
-        async function openLibraryPage(relativePath, { query = null, label = 'page' } = {}) {
+        async function verifyLaunchBaseUrl(baseUrl, relativePath) {
+            const url = buildLibraryPageUrl(relativePath, null, baseUrl);
+            if (!url) {
+                return false;
+            }
+
+            try {
+                const targetUrl = new URL(url);
+                if (targetUrl.protocol === 'file:') {
+                    return null;
+                }
+                if ((targetUrl.protocol !== 'http:' && targetUrl.protocol !== 'https:')
+                    || targetUrl.origin !== window.location.origin) {
+                    return null;
+                }
+
+                let response = await fetch(targetUrl.href, {
+                    method: 'HEAD',
+                    cache: 'no-store',
+                });
+                if (!response.ok && (response.status === 405 || response.status === 501)) {
+                    response = await fetch(targetUrl.href, {
+                        method: 'GET',
+                        cache: 'no-store',
+                    });
+                }
+                return response.ok;
+            } catch (error) {
+                return false;
+            }
+        }
+
+        async function resolveLibraryLaunchBaseUrl(relativePath = '', label = 'page') {
+            const saved = normalizeLibraryBaseUrl(getStoredLibraryBaseUrl());
+            if (saved) {
+                if (saved !== getStoredLibraryBaseUrl()) {
+                    saveStoredLibraryBaseUrl(saved);
+                }
+                const savedCheck = relativePath ? await verifyLaunchBaseUrl(saved, relativePath) : null;
+                if (savedCheck !== false) {
+                    return saved;
+                }
+                saveStoredLibraryBaseUrl('');
+                showToast(`Saved ${label} path looked invalid. Please confirm the library path once.`, 'warning');
+            }
+
+            const relativeBase = buildRelativeLibraryBaseUrl();
+            if (isManagerInsideSelectedLibrary()) {
+                return relativeBase;
+            }
+
+            const relativeCheck = relativePath ? await verifyLaunchBaseUrl(relativeBase, relativePath) : null;
+            if (relativeCheck === true) {
+                return relativeBase;
+            }
+
+            if (window.location.protocol !== 'file:' && relativeCheck !== false) {
+                return relativeBase;
+            }
+
+            const configuredBase = await promptForLibraryBaseUrl();
+            if (configuredBase) {
+                return configuredBase;
+            }
+
+            setStatus(`Using guessed relative path for ${label}. Set Library URL if it opens the wrong location.`);
+            return relativeBase;
+        }
+
+        async function openLibraryPage(relativePath, { query = null, label = 'page', pageType = 'homepage' } = {}) {
             if (!state.rootHandle) {
                 setStatus('Choose a library folder first.');
                 showToast('Choose a library folder first.', 'error');
                 return false;
             }
 
-            const launchBaseUrl = await resolveLibraryLaunchBaseUrl();
+            if (isElectronDesktopApp() && state.rootHandle.path) {
+                const opened = await electronDesktopApi.openLibraryPage({
+                    rootPath: state.rootHandle.path,
+                    relativePath,
+                    query,
+                    label,
+                    pageType,
+                });
+                if (!opened) {
+                    setStatus(`Unable to open ${label}.`);
+                    showToast(`Unable to open ${label}.`, 'error');
+                    return false;
+                }
+                return true;
+            }
+
+            const launchBaseUrl = await resolveLibraryLaunchBaseUrl(relativePath, label);
             const url = buildLibraryPageUrl(relativePath, query, launchBaseUrl);
             if (!url) {
                 setStatus(`Unable to open ${label}. Invalid path.`);
@@ -3872,7 +4667,7 @@
                 showToast('Homepage file not found in selected library.', 'error');
                 return;
             }
-            await openLibraryPage(homepagePath, { label: 'homepage' });
+            await openLibraryPage(homepagePath, { label: 'homepage', pageType: 'homepage' });
         }
 
         async function openStoryPreviewInSelectedLibrary(storyId) {
@@ -3899,6 +4694,7 @@
                     home: homepagePath || HOMEPAGE_ENTRY_CANDIDATES[0],
                 },
                 label: 'story preview',
+                pageType: 'viewer',
             });
         }
 
@@ -3931,123 +4727,435 @@
             textarea.setSelectionRange(nextStart, nextEnd);
         }
 
-        // Undo/Redo functions for story text
-        function saveToUndoHistory() {
-            if (!storyTextInput) return;
-            const currentValue = storyTextInput.value;
-            
-            // Don't save if same as last entry
+        function isStandaloneMarkdownMarkerAt(value, index, marker) {
+            if (index < 0 || value.slice(index, index + marker.length) !== marker) {
+                return false;
+            }
+            if (!marker || marker.split('').some(char => char !== marker[0])) {
+                return true;
+            }
+            const repeatedChar = marker[0];
+            const beforeChar = index > 0 ? value[index - 1] : '';
+            const afterChar = value[index + marker.length] || '';
+            return beforeChar !== repeatedChar && afterChar !== repeatedChar;
+        }
+
+        function findMarkdownMarkerBackward(value, fromIndex, marker, minIndex = 0) {
+            let index = Math.min(fromIndex, value.length - marker.length);
+            while (index >= minIndex) {
+                const foundIndex = value.lastIndexOf(marker, index);
+                if (foundIndex < minIndex) {
+                    return -1;
+                }
+                if (isStandaloneMarkdownMarkerAt(value, foundIndex, marker)) {
+                    return foundIndex;
+                }
+                index = foundIndex - 1;
+            }
+            return -1;
+        }
+
+        function findMarkdownMarkerForward(value, fromIndex, marker, maxIndex = value.length) {
+            let index = Math.max(0, fromIndex);
+            while (index <= maxIndex - marker.length) {
+                const foundIndex = value.indexOf(marker, index);
+                if (foundIndex === -1 || foundIndex > maxIndex - marker.length) {
+                    return -1;
+                }
+                if (isStandaloneMarkdownMarkerAt(value, foundIndex, marker)) {
+                    return foundIndex;
+                }
+                index = foundIndex + 1;
+            }
+            return -1;
+        }
+
+        function findEnclosingInlineMarkdownRange(value, start, end, marker) {
+            const lineStart = value.lastIndexOf('\n', Math.max(0, start - 1)) + 1;
+            const nextLineBreak = value.indexOf('\n', end);
+            const lineEnd = nextLineBreak === -1 ? value.length : nextLineBreak;
+            const leftMarkerIndex = findMarkdownMarkerBackward(value, start - 1, marker, lineStart);
+            if (leftMarkerIndex === -1) {
+                return null;
+            }
+            const rightMarkerIndex = findMarkdownMarkerForward(value, end, marker, lineEnd);
+            if (rightMarkerIndex === -1 || rightMarkerIndex <= leftMarkerIndex) {
+                return null;
+            }
+            const innerStart = leftMarkerIndex + marker.length;
+            const innerEnd = rightMarkerIndex;
+            if (innerStart > start || innerEnd < end) {
+                return null;
+            }
+            return {
+                outerStart: leftMarkerIndex,
+                outerEnd: rightMarkerIndex + marker.length,
+                innerStart,
+                innerEnd,
+                innerText: value.slice(innerStart, innerEnd),
+            };
+        }
+
+        function toggleInlineMarkdown(textarea, start, end, marker, placeholder) {
+            const value = textarea.value || '';
+            const selected = value.slice(start, end);
+            const markerLength = marker.length;
+
+            if (start >= markerLength
+                && value.slice(start - markerLength, start) === marker
+                && value.slice(end, end + markerLength) === marker) {
+                replaceTextSelection(
+                    textarea,
+                    start - markerLength,
+                    end + markerLength,
+                    selected,
+                    start - markerLength,
+                    end - markerLength
+                );
+                return true;
+            }
+
+            if (selected.startsWith(marker) && selected.endsWith(marker) && selected.length >= markerLength * 2) {
+                const unwrapped = selected.slice(markerLength, selected.length - markerLength);
+                replaceTextSelection(
+                    textarea,
+                    start,
+                    end,
+                    unwrapped,
+                    start,
+                    start + unwrapped.length
+                );
+                return true;
+            }
+
+            const enclosingRange = findEnclosingInlineMarkdownRange(value, start, end, marker);
+            if (enclosingRange) {
+                replaceTextSelection(
+                    textarea,
+                    enclosingRange.outerStart,
+                    enclosingRange.outerEnd,
+                    enclosingRange.innerText,
+                    Math.max(enclosingRange.outerStart, start - markerLength),
+                    Math.max(enclosingRange.outerStart, end - markerLength)
+                );
+                return true;
+            }
+
+            const content = selected || placeholder;
+            const replacement = `${marker}${content}${marker}`;
+            const selectionStart = start + markerLength;
+            const selectionEnd = selectionStart + content.length;
+            replaceTextSelection(textarea, start, end, replacement, selectionStart, selectionEnd);
+            return true;
+        }
+
+        function togglePrefixedLines(textarea, start, end, { addPrefix, removePattern, placeholder }) {
+            const value = textarea.value || '';
+            const selected = value.slice(start, end);
+            const lines = (selected || placeholder).split('\n');
+            const allPrefixed = lines.every(line => removePattern.test(line));
+            const replacement = lines
+                .map((line, index) => {
+                    if (allPrefixed) {
+                        return line.replace(removePattern, '');
+                    }
+                    return addPrefix(line, index);
+                })
+                .join('\n');
+            replaceTextSelection(textarea, start, end, replacement, start, start + replacement.length);
+            return true;
+        }
+
+        function toggleLinkMarkdown(textarea, start, end) {
+            const value = textarea.value || '';
+            const selected = value.slice(start, end);
+
+            if (selected.startsWith('[') && /^\[[\s\S]*\]\([^)]+\)$/.test(selected)) {
+                const labelMatch = selected.match(/^\[([\s\S]*)\]\([^)]+\)$/);
+                const label = labelMatch ? labelMatch[1] : selected;
+                replaceTextSelection(textarea, start, end, label, start, start + label.length);
+                return true;
+            }
+
+            if (start > 0 && value[start - 1] === '[') {
+                const suffix = value.slice(end);
+                const suffixMatch = suffix.match(/^\]\(([^)]+)\)/);
+                if (suffixMatch) {
+                    const replacementStart = start - 1;
+                    const replacementEnd = end + suffixMatch[0].length;
+                    replaceTextSelection(textarea, replacementStart, replacementEnd, selected, replacementStart, replacementStart + selected.length);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        function toggleCodeMarkdown(textarea, start, end) {
+            const value = textarea.value || '';
+            const selected = value.slice(start, end);
+
+            if (start >= 1 && value.slice(start - 1, start) === '`' && value.slice(end, end + 1) === '`') {
+                replaceTextSelection(textarea, start - 1, end + 1, selected, start - 1, end - 1);
+                return true;
+            }
+
+            if (start >= 4
+                && value.slice(start - 4, start) === '```\n'
+                && value.slice(end, end + 4) === '\n```') {
+                replaceTextSelection(textarea, start - 4, end + 4, selected, start - 4, end - 4);
+                return true;
+            }
+
+            if (selected.startsWith('```') && selected.endsWith('```')) {
+                const unwrapped = selected.replace(/^```\n?/, '').replace(/\n?```$/, '');
+                replaceTextSelection(textarea, start, end, unwrapped, start, start + unwrapped.length);
+                return true;
+            }
+
+            if (selected.startsWith('`') && selected.endsWith('`') && selected.length >= 2) {
+                const unwrapped = selected.slice(1, -1);
+                replaceTextSelection(textarea, start, end, unwrapped, start, start + unwrapped.length);
+                return true;
+            }
+
+            return false;
+        }
+
+        function getStoryEditorSnapshot() {
+            if (!storyTextInput) {
+                return { value: '', selectionStart: 0, selectionEnd: 0 };
+            }
+            return {
+                value: storyTextInput.value || '',
+                selectionStart: storyTextInput.selectionStart || 0,
+                selectionEnd: storyTextInput.selectionEnd || 0,
+            };
+        }
+
+        function snapshotsEqual(left, right) {
+            if (!left || !right) {
+                return false;
+            }
+            return left.value === right.value
+                && left.selectionStart === right.selectionStart
+                && left.selectionEnd === right.selectionEnd;
+        }
+
+        function restoreStoryEditorSnapshot(snapshot) {
+            if (!storyTextInput || !snapshot) {
+                return;
+            }
+            storyTextInput.value = snapshot.value || '';
+            storyTextInput.focus();
+            storyTextInput.setSelectionRange(
+                Math.max(0, snapshot.selectionStart || 0),
+                Math.max(0, snapshot.selectionEnd || 0)
+            );
+            updateMarkdownToolbarState();
+        }
+
+        function updateMarkdownToolbarState() {
+            if (!markdownToolbarButtons.length) {
+                return;
+            }
+            const canUndo = undoRedoState.historyIndex > 0;
+            const canRedo = undoRedoState.historyIndex >= 0 && undoRedoState.historyIndex < undoRedoState.history.length - 1;
+            const editorLocked = !storyTextInput || !!storyTextInput.disabled;
+            markdownToolbarButtons.forEach(button => {
+                const action = button.dataset.mdAction || '';
+                if (action === 'undo') {
+                    button.disabled = !canUndo;
+                    return;
+                }
+                if (action === 'redo') {
+                    button.disabled = !canRedo;
+                    return;
+                }
+                button.disabled = editorLocked;
+            });
+        }
+
+        function saveToUndoHistory(snapshot = getStoryEditorSnapshot()) {
+            if (!storyTextInput) {
+                return;
+            }
+            const currentSnapshot = snapshot || getStoryEditorSnapshot();
+
             if (undoRedoState.historyIndex >= 0) {
                 const lastEntry = undoRedoState.history[undoRedoState.historyIndex];
-                if (lastEntry === currentValue) return;
+                if (snapshotsEqual(lastEntry, currentSnapshot)) {
+                    updateMarkdownToolbarState();
+                    return;
+                }
             }
-            
-            // Remove any entries after current index (for new edits after undo)
+
             undoRedoState.history = undoRedoState.history.slice(0, undoRedoState.historyIndex + 1);
-            
-            // Add new entry
-            undoRedoState.history.push(currentValue);
-            
-            // Limit history size
+            undoRedoState.history.push(currentSnapshot);
+
             if (undoRedoState.history.length > undoRedoState.maxHistorySize) {
                 undoRedoState.history.shift();
-            } else {
-                undoRedoState.historyIndex++;
             }
+            undoRedoState.historyIndex = undoRedoState.history.length - 1;
+            updateMarkdownToolbarState();
+        }
+
+        function scheduleStoryHistorySave() {
+            if (!storyTextInput || undoRedoState.isUndoRedoOperation) {
+                return;
+            }
+            if (storyInputHistoryTimer) {
+                clearTimeout(storyInputHistoryTimer);
+            }
+            storyInputHistoryTimer = window.setTimeout(() => {
+                storyInputHistoryTimer = 0;
+                saveToUndoHistory();
+            }, 260);
         }
 
         function performUndo() {
             if (!storyTextInput) return;
             if (undoRedoState.historyIndex > 0) {
+                if (storyInputHistoryTimer) {
+                    clearTimeout(storyInputHistoryTimer);
+                    storyInputHistoryTimer = 0;
+                }
+                undoRedoState.isUndoRedoOperation = true;
                 undoRedoState.historyIndex--;
-                storyTextInput.value = undoRedoState.history[undoRedoState.historyIndex];
-                storyTextInput.focus();
+                restoreStoryEditorSnapshot(undoRedoState.history[undoRedoState.historyIndex]);
+                undoRedoState.isUndoRedoOperation = false;
             }
+            updateMarkdownToolbarState();
         }
 
         function performRedo() {
             if (!storyTextInput) return;
             if (undoRedoState.historyIndex < undoRedoState.history.length - 1) {
+                if (storyInputHistoryTimer) {
+                    clearTimeout(storyInputHistoryTimer);
+                    storyInputHistoryTimer = 0;
+                }
+                undoRedoState.isUndoRedoOperation = true;
                 undoRedoState.historyIndex++;
-                storyTextInput.value = undoRedoState.history[undoRedoState.historyIndex];
-                storyTextInput.focus();
+                restoreStoryEditorSnapshot(undoRedoState.history[undoRedoState.historyIndex]);
+                undoRedoState.isUndoRedoOperation = false;
             }
+            updateMarkdownToolbarState();
         }
 
         function clearUndoHistory() {
+            if (storyInputHistoryTimer) {
+                clearTimeout(storyInputHistoryTimer);
+                storyInputHistoryTimer = 0;
+            }
             undoRedoState.history = [];
             undoRedoState.historyIndex = -1;
+            updateMarkdownToolbarState();
         }
 
-        // Initialize undo history when loading a story
         function initUndoHistory(text) {
             clearUndoHistory();
-            if (text) {
-                undoRedoState.history.push(text);
-                undoRedoState.historyIndex = 0;
-            }
+            const normalizedText = String(text || '');
+            undoRedoState.history.push({
+                value: normalizedText,
+                selectionStart: 0,
+                selectionEnd: 0,
+            });
+            undoRedoState.historyIndex = 0;
+            updateMarkdownToolbarState();
         }
 
         async function applyMarkdownAction(action) {
-            // Handle undo
             if (action === 'undo') {
                 performUndo();
                 return;
             }
 
-            // Handle redo
             if (action === 'redo') {
                 performRedo();
                 return;
             }
 
-            if (!storyTextInput) {
+            if (!storyTextInput || storyTextInput.disabled) {
                 return;
             }
             const start = storyTextInput.selectionStart || 0;
             const end = storyTextInput.selectionEnd || 0;
             const selected = storyTextInput.value.slice(start, end);
 
-            // Save current state to undo history before making changes
             saveToUndoHistory();
 
             if (action === 'bold') {
-                const content = selected || 'bold text';
-                const replacement = `**${content}**`;
-                const selStart = start + 2;
-                const selEnd = selStart + content.length;
-                replaceTextSelection(storyTextInput, start, end, replacement, selStart, selEnd);
+                toggleInlineMarkdown(storyTextInput, start, end, '**', 'bold text');
+                saveToUndoHistory();
+                return;
+            }
+
+            if (action === 'italic') {
+                toggleInlineMarkdown(storyTextInput, start, end, '*', 'italic text');
+                saveToUndoHistory();
                 return;
             }
 
             if (action === 'heading') {
-                if (selected) {
-                    const replacement = selected
-                        .split('\n')
-                        .map(line => line.startsWith('# ') ? line : `# ${line}`)
-                        .join('\n');
-                    replaceTextSelection(storyTextInput, start, end, replacement, start, start + replacement.length);
-                } else {
-                    const replacement = '# Heading';
-                    replaceTextSelection(storyTextInput, start, end, replacement, start + 2, start + replacement.length);
+                togglePrefixedLines(storyTextInput, start, end, {
+                    addPrefix: line => `# ${line || 'Heading'}`,
+                    removePattern: /^#\s+/,
+                    placeholder: 'Heading',
+                });
+                saveToUndoHistory();
+                return;
+            }
+
+            if (action === 'quote') {
+                togglePrefixedLines(storyTextInput, start, end, {
+                    addPrefix: line => `> ${line || 'Quoted text'}`,
+                    removePattern: /^>\s+/,
+                    placeholder: 'Quoted text',
+                });
+                saveToUndoHistory();
+                return;
+            }
+
+            if (action === 'code') {
+                if (!toggleCodeMarkdown(storyTextInput, start, end)) {
+                    const content = selected || 'code';
+                    const hasNewline = content.includes('\n');
+                    const replacement = hasNewline
+                        ? `\`\`\`\n${content}\n\`\`\``
+                        : `\`${content}\``;
+                    const selectionOffset = hasNewline ? 4 : 1;
+                    replaceTextSelection(
+                        storyTextInput,
+                        start,
+                        end,
+                        replacement,
+                        start + selectionOffset,
+                        start + selectionOffset + content.length
+                    );
                 }
+                saveToUndoHistory();
                 return;
             }
 
             if (action === 'list' || action === 'numbered') {
-                const lines = (selected || 'List item').split('\n');
-                const replacement = lines
-                    .map((line, index) => {
-                        const prefix = action === 'numbered' ? `${index + 1}. ` : '- ';
+                togglePrefixedLines(storyTextInput, start, end, {
+                    addPrefix: (line, index) => {
                         const text = line.trim() || (action === 'numbered' ? `Item ${index + 1}` : 'List item');
-                        return `${prefix}${text}`;
-                    })
-                    .join('\n');
-                replaceTextSelection(storyTextInput, start, end, replacement, start, start + replacement.length);
+                        return action === 'numbered' ? `${index + 1}. ${text}` : `- ${text}`;
+                    },
+                    removePattern: action === 'numbered' ? /^\d+\.\s+/ : /^-\s+/,
+                    placeholder: action === 'numbered' ? 'Item 1' : 'List item',
+                });
+                saveToUndoHistory();
                 return;
             }
 
             if (action === 'link') {
+                if (toggleLinkMarkdown(storyTextInput, start, end)) {
+                    saveToUndoHistory();
+                    return;
+                }
                 const label = selected || await themedPrompt('Link text:', {
                     title: 'Insert Link',
                     inputValue: 'link',
@@ -4070,12 +5178,34 @@
                 const startIndex = selected ? start : (storyTextInput.selectionStart || start);
                 const endIndex = selected ? end : (storyTextInput.selectionEnd || end);
                 replaceTextSelection(storyTextInput, startIndex, endIndex, replacement);
+                saveToUndoHistory();
+                return;
+            }
+
+            if (action === 'divider') {
+                const replacement = `${start > 0 && !storyTextInput.value.slice(0, start).endsWith('\n') ? '\n' : ''}---\n`;
+                const cursor = start + replacement.length;
+                replaceTextSelection(storyTextInput, start, end, replacement, cursor, cursor);
+                saveToUndoHistory();
             }
         }
 
         function getNextReportNumber() {
             const max = state.stories.reduce((acc, story) => Math.max(acc, story.reportNumber || 0), 0);
             return max + 1;
+        }
+
+        function adjustReportNumber(delta) {
+            if (!reportNumberInput) {
+                return;
+            }
+            const parsedValue = parseInt(reportNumberInput.value, 10);
+            const baseValue = Number.isFinite(parsedValue)
+                ? parsedValue
+                : (delta > 0 ? Math.max(1, getNextReportNumber() - 1) : getNextReportNumber());
+            reportNumberInput.value = String(Math.max(1, baseValue + delta));
+            reportNumberInput.focus();
+            reportNumberInput.select();
         }
 
         function hasDisplayOrder(list = state.stories) {
@@ -4135,6 +5265,7 @@
                 const fontsDir = await getFontsDir();
                 const fontFileGroups = new Map();
                 const validExtensions = ['.woff', '.woff2', '.ttf', '.otf'];
+                let emojiFontSrc = '';
 
                 const parseFontName = (fileName, folderName) => {
                     const name = fileName.split('.')[0];
@@ -4184,10 +5315,14 @@
                         } else if (handle.kind === 'file') {
                             const fileExtension = name.slice(name.lastIndexOf('.')).toLowerCase();
                             if (validExtensions.includes(fileExtension)) {
-                                const { family, weight, style } = parseFontName(name, dirHandle.name);
                                 const formatMap = { '.woff': 'woff', '.woff2': 'woff2', '.ttf': 'truetype', '.otf': 'opentype' };
                                 const format = formatMap[fileExtension];
                                 const src = `url(../fonts/${pathPrefix}${name}) format('${format}')`;
+                                if (/segoe\.ui\.emoji\.with\.twemoji\.flags/i.test(name)) {
+                                    emojiFontSrc = src;
+                                    continue;
+                                }
+                                const { family, weight, style } = parseFontName(name, dirHandle.name);
 
                                 if (!fontFileGroups.has(family)) {
                                     fontFileGroups.set(family, []);
@@ -4207,6 +5342,14 @@
                 }
 
                 let fontCss = '/* Generated by Data Manager */\n\n';
+                if (emojiFontSrc) {
+                    fontCss += `@font-face {\n`;
+                    fontCss += `  font-family: 'TwemojiFlagsEmoji';\n`;
+                    fontCss += `  font-style: normal;\n`;
+                    fontCss += `  font-weight: 400;\n`;
+                    fontCss += `  src: ${emojiFontSrc};\n`;
+                    fontCss += `}\n\n`;
+                }
                 const fontsJson = [];
 
                 for (const [family, variations] of fontFileGroups.entries()) {
@@ -4228,6 +5371,10 @@
                     }
                 }
 
+                fontCss += `:root {\n`;
+                fontCss += `  --emoji-font-stack: 'TwemojiFlagsEmoji', 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji';\n`;
+                fontCss += `}\n`;
+
                 const cssDir = await getDirectory('css', true);
                 await writeFile(cssDir, 'fonts.css', fontCss);
 
@@ -4239,6 +5386,7 @@
         await writeFile(dbDir, 'fonts.js', fontsJsContent);
 
         await loadFontsIntoSelect();
+        await notifyPreviewWindowsReload();
 
         setStatus(`Successfully updated ${fontFileGroups.size} font families.`);
         showToast(`🔤 Updated ${fontFileGroups.size} font families.`, 'success');
@@ -4262,6 +5410,16 @@
             const catalog = await readJsonFile(databaseDir, 'catalog.json');
             state.stories = normalizeCatalog(catalog);
             selectedStoryIds.clear();
+            sortStories();
+            reindexReportNumbers();
+
+            if (!state.currentLibraryUrl) {
+                const libraryUrl = normalizeLibraryBaseUrl(new URL('./', window.location.href).href);
+                if (libraryUrl) {
+                    state.currentLibraryUrl = libraryUrl;
+                    localStorage.setItem(RECENT_LIBRARY_URL_KEY, libraryUrl);
+                }
+            }
 
             const settingsData = await readJsonFile(databaseDir, 'settings.json');
             if (settingsData) {
@@ -4273,7 +5431,8 @@
             renderImageManager();
             void refreshLibraryStats();
             setStatus(`Loaded ${state.stories.length} stories from ${state.rootHandle.name}.`);
-            saveRecentFolder(state.rootHandle);
+            await saveRecentFolder(state.rootHandle);
+            await restoreCurrentWorkflowState();
         }
 
         async function scanLibrary() {
@@ -4416,6 +5575,7 @@
             sortStories();
             await pruneSavedStoryPasswords(rebuilt.map(story => story.id));
             await writeCatalog(state.stories);
+            await notifyPreviewWindowsReload();
             renderStoryList();
             renderImageManager();
             void refreshLibraryStats();
@@ -4423,7 +5583,7 @@
                 ? ` Removed ${tempCleanup.removed} empty temp file(s)${tempCleanup.failed > 0 ? `, failed ${tempCleanup.failed}` : ''}.`
                 : '';
             setStatus(`Scanned library and rebuilt ${state.stories.length} stories.${cleanupSummary}`);
-            saveRecentFolder(state.rootHandle);
+            await saveRecentFolder(state.rootHandle);
         }
 
         async function writeCatalog(catalog) {
@@ -4556,6 +5716,13 @@
             state.stories.sort((a, b) => (a.reportNumber || 0) - (b.reportNumber || 0));
         }
 
+        function reindexReportNumbers() {
+            state.stories.forEach((story, index) => {
+                story.reportNumber = index + 1;
+                story.displayOrder = index;
+            });
+        }
+
         function applyDisplayOrder() {
             state.stories.forEach((story, index) => {
                 story.displayOrder = index;
@@ -4684,7 +5851,7 @@
         async function handleCardClick(storyId, event) {
             // Don't trigger edit if clicking on checkbox or drag zone
             const target = event.target;
-            if (target.closest('.story-check') || target.closest('.story-drag-zone')) {
+            if (target.closest('.story-select-toggle') || target.closest('.story-drag-zone')) {
                 return;
             }
             
@@ -4715,19 +5882,6 @@
             storySearchQuery = typeof query === 'string' ? query : '';
             refreshStorySearchUi();
             renderStoryList();
-        }
-
-        function setTextZoneActive(active) {
-            if (!storyTextField) {
-                return;
-            }
-            storyTextField.classList.toggle('text-zone-active', !!active);
-        }
-
-        function refreshTextZoneActiveState() {
-            const hasFocus = !!storyTextInput && document.activeElement === storyTextInput;
-            const hasHover = !!storyTextInput && storyTextInput.matches(':hover');
-            setTextZoneActive(hasFocus || hasHover);
         }
 
         function storyMatchesSearch(story, tokens) {
@@ -4784,22 +5938,21 @@
                     void openStoryPreviewInSelectedLibrary(story.id);
                 });
 
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.className = 'story-check';
-                checkbox.checked = selectedStoryIds.has(story.id);
-                checkbox.addEventListener('change', (event) => {
+                const selectToggle = document.createElement('button');
+                selectToggle.type = 'button';
+                selectToggle.className = 'story-select-toggle';
+                if (selectedStoryIds.has(story.id)) {
+                    selectToggle.classList.add('active');
+                }
+                selectToggle.setAttribute('aria-pressed', selectedStoryIds.has(story.id) ? 'true' : 'false');
+                selectToggle.setAttribute('aria-label', selectedStoryIds.has(story.id)
+                    ? `Deselect ${story.title || story.id}`
+                    : `Select ${story.title || story.id}`);
+                selectToggle.innerHTML = '<span class="story-select-track" aria-hidden="true"></span>';
+                selectToggle.addEventListener('click', (event) => {
+                    event.preventDefault();
                     event.stopPropagation();
-                    if (checkbox.checked) {
-                        selectedStoryIds.add(story.id);
-                    } else {
-                        selectedStoryIds.delete(story.id);
-                    }
-                    renderStoryList();
-                });
-                // Prevent click on checkbox from triggering card click
-                checkbox.addEventListener('click', (event) => {
-                    event.stopPropagation();
+                    toggleStorySelection(story.id);
                 });
 
                 const info = document.createElement('div');
@@ -4834,7 +5987,6 @@
                 const dragHandle = document.createElement('button');
                 dragHandle.type = 'button';
                 dragHandle.className = 'drag-handle';
-                dragHandle.textContent = '↕️';
                 dragHandle.title = isSearchActive ? 'Clear search to reorder' : 'Drag to reorder';
                 dragHandle.draggable = !isSearchActive;
                 if (isSearchActive) {
@@ -4862,7 +6014,7 @@
 
                 dragZone.appendChild(dragHandle);
 
-                card.appendChild(checkbox);
+                card.appendChild(selectToggle);
                 card.appendChild(info);
                 card.appendChild(dragZone);
                 storyListEl.appendChild(card);
@@ -4886,7 +6038,9 @@
             }
 
             applyDisplayOrder();
+            reindexReportNumbers();
             await writeCatalog(state.stories);
+            await notifyPreviewWindowsReload();
             renderStoryList();
             setStatus('Story order updated.');
         }
@@ -5059,6 +6213,7 @@
                 setStatus(`Editing ${story.title || story.id}.`);
             }
             saveRecentStory(story);
+            saveCurrentWorkflowState();
         }
 
         function resetForm() {
@@ -5080,7 +6235,7 @@
             coverPositionInput.value = coverPositionsByLayout.grid;
             storyFileInput.value = '';
             storyTextInput.value = '';
-            clearUndoHistory();
+            initUndoHistory('');
             imageManagerInput.value = '';
             coverMediaInput.value = '';
             state.selectedId = null;
@@ -5096,26 +6251,35 @@
             coverViewportPositionBeforeEdit = null;
     pendingReplaceMediaId = null;
     releaseUnusedMediaUrls();
-    clearLibraryPreviewAssetUrls();
-    updateCoverPresetModeButtons();
+            clearLibraryPreviewAssetUrls();
+            updateCoverPresetModeButtons();
             renderCoverPresetGrid();
             applyCoverPosition();
             renderImageManager();
+            saveCurrentWorkflowState();
         }
 
         async function removeStoryFiles(id) {
-            const storyDir = await getStoryDir();
             try {
-                await storyDir.removeEntry(`${id}.md`);
-            } catch (error) {
-                // ignore
-            }
-
-            const imageDir = await getImageDir();
-            for await (const [name] of imageDir.entries()) {
-                if (name.startsWith(`${id}_`)) {
-                    await imageDir.removeEntry(name);
+                const storyDir = await getStoryDir();
+                try {
+                    await storyDir.removeEntry(`${id}.md`);
+                } catch (error) {
+                    console.warn(`Could not delete story file ${id}.md:`, error.message);
                 }
+
+                const imageDir = await getImageDir();
+                for await (const [name] of imageDir.entries()) {
+                    if (name.startsWith(`${id}_`)) {
+                        try {
+                            await imageDir.removeEntry(name);
+                        } catch (error) {
+                            console.warn(`Could not delete image ${name}:`, error.message);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error in removeStoryFiles:', error);
             }
         }
 
@@ -5273,6 +6437,7 @@
 
                 sortStories();
                 await writeCatalog(state.stories);
+                await notifyPreviewWindowsReload();
 
                 setStatus(`Saved ${title}.`);
                 await loadLibrary();
@@ -5531,48 +6696,56 @@
         }
 
         async function handleRemove() {
-            if (!state.rootHandle) {
-                setStatus('Choose a library folder first.');
-                return;
-            }
-
-            const idsToRemove = selectedStoryIds.size > 0
-                ? Array.from(selectedStoryIds)
-                : (state.selectedId ? [state.selectedId] : []);
-
-            if (idsToRemove.length === 0) {
-                setStatus('Select a story to remove.');
-                return;
-            }
-
-            const confirmedRemove = await themedConfirm(
-                `Remove ${idsToRemove.length} selected stor${idsToRemove.length > 1 ? 'ies' : 'y'}?`,
-                {
-                    title: 'Remove Stories',
-                    type: 'warning',
-                    confirmText: 'Remove',
-                    cancelText: 'Keep',
-                    dangerConfirm: true,
-                },
-            );
-            if (!confirmedRemove) {
-                return;
-            }
-
-            for (const id of idsToRemove) {
-                if (deleteFilesCheckbox.checked) {
-                    await removeStoryFiles(id);
+            try {
+                if (!state.rootHandle) {
+                    setStatus('Choose a library folder first.');
+                    return;
                 }
+
+                const idsToRemove = selectedStoryIds.size > 0
+                    ? Array.from(selectedStoryIds)
+                    : (state.selectedId ? [state.selectedId] : []);
+
+                if (idsToRemove.length === 0) {
+                    setStatus('Select a story to remove.');
+                    return;
+                }
+
+                const confirmedRemove = await themedConfirm(
+                    `Remove ${idsToRemove.length} selected stor${idsToRemove.length > 1 ? 'ies' : 'y'}?`,
+                    {
+                        title: 'Remove Stories',
+                        type: 'warning',
+                        confirmText: 'Remove',
+                        cancelText: 'Keep',
+                        dangerConfirm: true,
+                    },
+                );
+                if (!confirmedRemove) {
+                    return;
+                }
+
+                for (const id of idsToRemove) {
+                    if (deleteFilesCheckbox.checked) {
+                        await removeStoryFiles(id);
+                    }
+                }
+
+                state.stories = state.stories.filter(item => !idsToRemove.includes(item.id));
+                reindexReportNumbers();
+                await clearSavedStoryPasswords(idsToRemove);
+                await writeCatalog(state.stories);
+                await notifyPreviewWindowsReload();
+
+                selectedStoryIds.clear();
+                resetForm();
+                renderStoryList();
+                setStatus(`Removed ${idsToRemove.length} stor${idsToRemove.length > 1 ? 'ies' : 'y'}.`);
+            } catch (error) {
+                console.error('Delete error:', error);
+                setStatus(`Delete failed: ${error.message}`);
+                showToast(`Delete failed: ${error.message}`, 'error');
             }
-
-            state.stories = state.stories.filter(item => !idsToRemove.includes(item.id));
-            await clearSavedStoryPasswords(idsToRemove);
-            await writeCatalog(state.stories);
-
-            selectedStoryIds.clear();
-            resetForm();
-            renderStoryList();
-            setStatus(`Removed ${idsToRemove.length} stor${idsToRemove.length > 1 ? 'ies' : 'y'}.`);
         }
 
         async function fixMissingFiles() {
@@ -5789,6 +6962,7 @@
 
             await pruneSavedStoryPasswords(state.stories.map(story => story.id));
             await writeCatalog(state.stories);
+            await notifyPreviewWindowsReload();
             renderStoryList();
             const passwordSummaryParts = [];
             if (passwordMigration.importedStories > 0) {
@@ -5824,15 +6998,51 @@
                 showToast(`📂 Opened library: ${state.rootHandle.name}`, 'success');
             }
         });
+        if (buildLibraryBtn) {
+            buildLibraryBtn.addEventListener('click', openLibraryBuilder);
+        }
         openRecentBtn.addEventListener('click', () => tryUseRecentHandle(false));
         if (openHomepageBtn) {
-            openHomepageBtn.title = 'Open Homepage (Shift+Click to set library URL)';
             openHomepageBtn.addEventListener('click', event => {
                 if (event.shiftKey) {
                     void promptForLibraryBaseUrl();
                     return;
                 }
                 void openHomepageFromSelectedLibrary();
+            });
+        }
+        if (revealLibraryBtn) {
+            revealLibraryBtn.addEventListener('click', async () => {
+                if (!state.rootHandle) {
+                    showToast('No library selected', 'warning');
+                    return;
+                }
+
+                let libraryUrl = state.currentLibraryUrl;
+                if (!libraryUrl) {
+                    libraryUrl = localStorage.getItem(RECENT_LIBRARY_URL_KEY);
+                }
+                if (!libraryUrl && isElectronDesktopApp() && window.electronDataManager.resolveLibraryPath) {
+                    const savedPath = await window.electronDataManager.resolveLibraryPath();
+                    if (savedPath) {
+                        libraryUrl = normalizeLibraryBaseUrl(`file:///${savedPath.replace(/\\/g, '/')}/`);
+                    }
+                }
+
+                if (!libraryUrl) {
+                    showToast('Cannot determine library path', 'warning');
+                    return;
+                }
+
+                const folderPath = new URL(libraryUrl).pathname.replace(/\\/g, '/').replace(/\/$/, '');
+                if (isElectronDesktopApp() && window.electronDataManager.revealInExplorer) {
+                    const result = await window.electronDataManager.revealInExplorer(folderPath);
+                    if (!result.success) {
+                        showToast(`Cannot open folder: ${result.error || 'Unknown error'}`, 'error');
+                    }
+                } else {
+                    window.open(`file://${folderPath}`);
+                }
             });
         }
         scanLibraryBtn.addEventListener('click', async () => {
@@ -5848,9 +7058,175 @@
         }
 
         fixMissingBtn.addEventListener('click', fixMissingFiles);
+
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        if (themeToggleBtn && isElectronDesktopApp()) {
+            const savedTheme = localStorage.getItem('preferredTheme') || 'dark';
+            if (savedTheme === 'light') {
+                document.documentElement.setAttribute('data-theme', 'light');
+                themeToggleBtn.innerHTML = typeof getIcon === 'function' ? getIcon('dark', { width: 18, height: 18 }) : '&#x1F319;';
+            }
+            themeToggleBtn.addEventListener('click', () => {
+                const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+                if (isLight) {
+                    document.documentElement.removeAttribute('data-theme');
+                    themeToggleBtn.innerHTML = typeof getIcon === 'function' ? getIcon('light', { width: 18, height: 18 }) : '&#x2600;';
+                    localStorage.setItem('preferredTheme', 'dark');
+                } else {
+                    document.documentElement.setAttribute('data-theme', 'light');
+                    themeToggleBtn.innerHTML = typeof getIcon === 'function' ? getIcon('dark', { width: 18, height: 18 }) : '&#x1F319;';
+                    localStorage.setItem('preferredTheme', 'light');
+                }
+            });
+        }
+
+        const pinWindowBtn = document.getElementById('pin-window');
+        if (pinWindowBtn && isElectronDesktopApp() && window.electronDataManager.setAlwaysOnTop) {
+            pinWindowBtn.addEventListener('click', async () => {
+                const isPinned = await window.electronDataManager.getAlwaysOnTop();
+                const newState = !isPinned;
+                await window.electronDataManager.setAlwaysOnTop(newState);
+                if (newState) {
+                    pinWindowBtn.classList.add('pinned');
+                    pinWindowBtn.setAttribute('title', 'Unpin Window');
+                } else {
+                    pinWindowBtn.classList.remove('pinned');
+                    pinWindowBtn.setAttribute('title', 'Always on Top');
+                }
+            });
+        }
+
+        const accentColorBtn = document.getElementById('accent-color-btn');
+        const accentColorInput = document.getElementById('accent-color-input');
+        if (accentColorBtn && accentColorInput) {
+            const savedAccent = localStorage.getItem(ACCENT_COLOR_KEY);
+            if (savedAccent) {
+                document.documentElement.style.setProperty('--accent', savedAccent);
+                accentColorInput.value = savedAccent;
+            }
+            accentColorBtn.addEventListener('click', () => {
+                accentColorInput.click();
+            });
+            accentColorInput.addEventListener('input', (e) => {
+                const color = e.target.value;
+                document.documentElement.style.setProperty('--accent', color);
+                localStorage.setItem(ACCENT_COLOR_KEY, color);
+            });
+            accentColorInput.addEventListener('change', (e) => {
+                const color = e.target.value;
+                document.documentElement.style.setProperty('--accent', color);
+                localStorage.setItem(ACCENT_COLOR_KEY, color);
+            });
+        }
+
         if (helpBtn) {
             helpBtn.addEventListener('click', () => {
                 openHelpModal();
+            });
+        }
+
+        const settingsBtn = document.getElementById('settings-btn');
+        const settingsModal = document.getElementById('settings-modal');
+        const settingsClose = document.getElementById('settings-close');
+        const settingAutoRun = document.getElementById('setting-auto-run');
+        const settingCloseToTray = document.getElementById('setting-close-to-tray');
+        const settingStartMinimized = document.getElementById('setting-start-minimized');
+        const settingFollowSystem = document.getElementById('setting-follow-system');
+        const settingUiFont = document.getElementById('setting-ui-font');
+
+        function openSettingsModal() {
+            if (!settingsModal) return;
+            settingsModal.classList.add('is-open');
+            settingsModal.setAttribute('aria-hidden', 'false');
+            void loadSettingsIntoUI();
+            void loadSystemFontsIntoUI();
+        }
+
+        function closeSettingsModal() {
+            if (!settingsModal) return;
+            settingsModal.classList.remove('is-open');
+            settingsModal.setAttribute('aria-hidden', 'true');
+        }
+
+        async function loadSettingsIntoUI() {
+            if (!isElectronDesktopApp() || !electronDesktopApi.getSettings) return;
+            const settings = await electronDesktopApi.getSettings();
+            if (settingAutoRun) settingAutoRun.checked = !!settings.autoRun;
+            if (settingCloseToTray) settingCloseToTray.checked = !!settings.closeToTray;
+            if (settingStartMinimized) {
+                settingStartMinimized.checked = !!settings.startMinimized;
+                settingStartMinimized.disabled = !settings.autoRun;
+            }
+            if (settingFollowSystem) settingFollowSystem.checked = !!settings.followSystem;
+            if (settingUiFont && settings.uiFont !== undefined) {
+                settingUiFont.value = settings.uiFont;
+            }
+        }
+
+        async function loadSystemFontsIntoUI() {
+            if (!isElectronDesktopApp() || !electronDesktopApi.getSystemFonts || !settingUiFont) return;
+            const fonts = await electronDesktopApi.getSystemFonts();
+            const currentValue = settingUiFont.value;
+            settingUiFont.innerHTML = '<option value="">Default</option>';
+            fonts.forEach(font => {
+                const option = document.createElement('option');
+                option.value = font;
+                option.textContent = font;
+                settingUiFont.appendChild(option);
+            });
+            settingUiFont.value = currentValue;
+        }
+
+        async function saveCurrentSettings() {
+            if (!isElectronDesktopApp() || !electronDesktopApi.saveSettings) return;
+            const settings = {
+                autoRun: settingAutoRun ? settingAutoRun.checked : false,
+                closeToTray: settingCloseToTray ? settingCloseToTray.checked : false,
+                startMinimized: settingStartMinimized && !settingStartMinimized.disabled ? settingStartMinimized.checked : false,
+                followSystem: settingFollowSystem ? settingFollowSystem.checked : false,
+                uiFont: settingUiFont ? settingUiFont.value : '',
+            };
+            await electronDesktopApi.saveSettings(settings);
+        }
+
+        if (settingsBtn && isElectronDesktopApp()) {
+            settingsBtn.hidden = false;
+            settingsBtn.addEventListener('click', () => {
+                openSettingsModal();
+            });
+        }
+        if (settingsClose) {
+            settingsClose.addEventListener('click', closeSettingsModal);
+        }
+        if (settingsModal) {
+            settingsModal.addEventListener('click', (e) => {
+                if (e.target === settingsModal) {
+                    closeSettingsModal();
+                }
+            });
+        }
+        if (settingAutoRun) {
+            settingAutoRun.addEventListener('change', () => {
+                if (settingStartMinimized) {
+                    settingStartMinimized.disabled = !settingAutoRun.checked;
+                }
+                void saveCurrentSettings();
+            });
+        }
+        if (settingStartMinimized) {
+            settingStartMinimized.addEventListener('change', () => { void saveCurrentSettings(); });
+        }
+        if (settingCloseToTray) {
+            settingCloseToTray.addEventListener('change', () => { void saveCurrentSettings(); });
+        }
+        if (settingFollowSystem) {
+            settingFollowSystem.addEventListener('change', () => { void saveCurrentSettings(); });
+        }
+        if (settingUiFont) {
+            settingUiFont.addEventListener('change', () => {
+                void saveCurrentSettings();
+                const fontFamily = settingUiFont.value || '';
+                document.documentElement.style.setProperty('--ui-font', fontFamily || 'Segoe UI');
             });
         }
         if (helpClose) {
@@ -5859,11 +7235,35 @@
         if (helpOk) {
             helpOk.addEventListener('click', closeHelpModal);
         }
-        if (helpModal) {
-            helpModal.addEventListener('click', event => {
-                if (event.target === helpModal) {
-                    closeHelpModal();
+        if (libraryBuilderCloseBtn) {
+            libraryBuilderCloseBtn.addEventListener('click', closeLibraryBuilder);
+        }
+        if (libraryBuilderCancelBtn) {
+            libraryBuilderCancelBtn.addEventListener('click', closeLibraryBuilder);
+        }
+        if (libraryBuilderPickPathBtn) {
+            libraryBuilderPickPathBtn.addEventListener('click', () => {
+                void chooseLibraryBuilderLocation();
+            });
+        }
+        if (libraryBuilderNameInput) {
+            libraryBuilderNameInput.addEventListener('input', () => {
+                if (!libraryBuilderFolderNameTouched && libraryBuilderFolderInput) {
+                    libraryBuilderFolderInput.value = slugifyLibraryFolderName(libraryBuilderNameInput.value || '');
                 }
+            });
+        }
+        if (libraryBuilderFolderInput) {
+            libraryBuilderFolderInput.addEventListener('input', () => {
+                libraryBuilderFolderNameTouched = true;
+            });
+            libraryBuilderFolderInput.addEventListener('blur', () => {
+                libraryBuilderFolderInput.value = slugifyLibraryFolderName(libraryBuilderFolderInput.value || '');
+            });
+        }
+        if (libraryBuilderForm) {
+            libraryBuilderForm.addEventListener('submit', event => {
+                void handleBuildLibrarySubmit(event);
             });
         }
         clearFormBtn.addEventListener('click', () => {
@@ -5878,9 +7278,16 @@
             }
         });
         cleanupSelectedBtn.addEventListener('click', cleanupUnusedImages);
+        const deleteFilesToggle = document.getElementById('delete-files-toggle');
+        if (deleteFilesToggle) {
+            deleteFilesToggle.addEventListener('click', () => {
+                deleteFilesCheckbox.checked = !deleteFilesCheckbox.checked;
+            });
+        }
         document.addEventListener('keydown', event => {
             if (event.key === 'Escape') {
                 closeHelpModal();
+                closeLibraryBuilder();
                 closeMediaPreview();
                 if (coverPositionOverlay && !coverPositionOverlay.hidden) {
                     cancelCoverPositionEdit();
@@ -5937,13 +7344,29 @@
         }
 
         if (storyTextInput) {
-            storyTextInput.addEventListener('focus', () => setTextZoneActive(true));
-            storyTextInput.addEventListener('mouseenter', () => setTextZoneActive(true));
             storyTextInput.addEventListener('blur', () => {
-                requestAnimationFrame(refreshTextZoneActiveState);
+                if (!undoRedoState.isUndoRedoOperation) {
+                    saveToUndoHistory();
+                }
             });
-            storyTextInput.addEventListener('mouseleave', () => {
-                requestAnimationFrame(refreshTextZoneActiveState);
+            storyTextInput.addEventListener('input', () => {
+                if (!undoRedoState.isUndoRedoOperation) {
+                    scheduleStoryHistorySave();
+                }
+            });
+            storyTextInput.addEventListener('click', updateMarkdownToolbarState);
+            storyTextInput.addEventListener('keyup', updateMarkdownToolbarState);
+            storyTextInput.addEventListener('select', updateMarkdownToolbarState);
+            storyTextInput.addEventListener('keydown', event => {
+                if (event.key !== 'Tab') {
+                    return;
+                }
+                event.preventDefault();
+                const start = storyTextInput.selectionStart || 0;
+                const end = storyTextInput.selectionEnd || 0;
+                saveToUndoHistory();
+                replaceTextSelection(storyTextInput, start, end, '    ', start + 4, start + 4);
+                saveToUndoHistory();
             });
         }
 
@@ -5969,6 +7392,18 @@
 
                 setStoryEditorLocked(true);
                 setStatus(`"${state.selectedEntry.title || state.selectedEntry.id}" is protected. Enter password to unlock.`);
+            });
+        }
+
+        if (reportNumberDecBtn) {
+            reportNumberDecBtn.addEventListener('click', () => {
+                adjustReportNumber(-1);
+            });
+        }
+
+        if (reportNumberIncBtn) {
+            reportNumberIncBtn.addEventListener('click', () => {
+                adjustReportNumber(1);
             });
         }
 
@@ -6275,19 +7710,56 @@
         if (mediaPreviewClose) {
             mediaPreviewClose.addEventListener('click', closeMediaPreview);
         }
-        if (mediaPreviewOverlay) {
-            mediaPreviewOverlay.addEventListener('click', event => {
-                if (event.target === mediaPreviewOverlay) {
-                    closeMediaPreview();
-                }
-            });
+
+        function initIcons() {
+            if (typeof getIcon !== 'function') return;
+            if (windowMinimizeBtn) windowMinimizeBtn.innerHTML = getIcon('minimize', { width: 16, height: 16 });
+            if (windowCloseBtn) windowCloseBtn.innerHTML = getIcon('closeRound', { width: 16, height: 16 });
+            if (chooseFolderBtn) chooseFolderBtn.innerHTML = getIcon('folder', { width: 18, height: 18 });
+            if (buildLibraryBtn) buildLibraryBtn.innerHTML = getIcon('board', { width: 18, height: 18 });
+            if (openRecentBtn) openRecentBtn.innerHTML = getIcon('inbox', { width: 18, height: 18 });
+            if (scanLibraryBtn) scanLibraryBtn.innerHTML = getIcon('refresh', { width: 18, height: 18 });
+            if (reloadCatalogBtn) reloadCatalogBtn.innerHTML = getIcon('history', { width: 18, height: 18 });
+            if (updateFontsBtn) updateFontsBtn.innerHTML = getIcon('font', { width: 18, height: 18 });
+            if (fixMissingBtn) fixMissingBtn.innerHTML = getIcon('settings', { width: 18, height: 18 });
+            if (openHomepageBtn) openHomepageBtn.innerHTML = getIcon('globalGraph', { width: 18, height: 18 });
+            if (revealLibraryBtn) revealLibraryBtn.innerHTML = getIcon('eye', { width: 18, height: 18 });
+            if (themeToggleBtn) themeToggleBtn.innerHTML = getIcon('theme', { width: 18, height: 18 });
+            if (pinWindowBtn) pinWindowBtn.innerHTML = getIcon('pin', { width: 18, height: 18 });
+            if (helpBtn) helpBtn.innerHTML = getIcon('help', { width: 18, height: 18 });
+            if (settingsBtn) settingsBtn.innerHTML = getIcon('settings', { width: 18, height: 18 });
+            if (removeSelectedBtn) removeSelectedBtn.innerHTML = getIcon('trash', { width: 16, height: 16 });
+            if (cleanupSelectedBtn) cleanupSelectedBtn.innerHTML = getIcon('clear', { width: 16, height: 16 });
+            const saveBtn = document.querySelector('button[form="story-form"]:not(.ghost)');
+            if (saveBtn) saveBtn.innerHTML = getIcon('cloudSucc', { width: 18, height: 18 }) + ' Save';
+            const loadBtn = document.getElementById('load-story-btn');
+            if (loadBtn) loadBtn.innerHTML = getIcon('upload', { width: 18, height: 18 }) + ' Load';
+            const clearBtn = document.getElementById('clear-form');
+            if (clearBtn) clearBtn.innerHTML = getIcon('clear', { width: 18, height: 18 }) + ' Clear';
+            if (addImagesBtn) addImagesBtn.innerHTML = getIcon('image', { width: 16, height: 16 }) + getIcon('add', { width: 12, height: 12 });
+            const removeImagesBtn = document.getElementById('remove-images-btn');
+            if (removeImagesBtn) removeImagesBtn.innerHTML = getIcon('trash', { width: 18, height: 18 });
+            if (uploadCoverMediaBtn) uploadCoverMediaBtn.innerHTML = getIcon('sparkles', { width: 18, height: 18 });
+            if (clearCoverMediaBtn) clearCoverMediaBtn.innerHTML = getIcon('clear', { width: 18, height: 18 });
+            if (setCoverPositionBtn) setCoverPositionBtn.innerHTML = getIcon('focus', { width: 18, height: 18 });
+            const cardHeightDec = document.getElementById('card-height-dec');
+            if (cardHeightDec) cardHeightDec.innerHTML = getIcon('down', { width: 16, height: 16 });
+            const cardHeightInc = document.getElementById('card-height-inc');
+            if (cardHeightInc) cardHeightInc.innerHTML = getIcon('up', { width: 16, height: 16 });
+            if (libraryBuilderCloseBtn) libraryBuilderCloseBtn.innerHTML = getIcon('close', { width: 18, height: 18 });
+            const dialogIcon = document.getElementById('dialog-icon');
+            if (dialogIcon) dialogIcon.innerHTML = getIcon('info', { width: 24, height: 24 });
+            const dialogClose = document.getElementById('dialog-close');
+            if (dialogClose) dialogClose.innerHTML = getIcon('close', { width: 18, height: 18 });
         }
+        initIcons();
 
         storyFileInput.addEventListener('change', async () => {
             const file = storyFileInput.files[0];
             if (file) {
                 const text = await file.text();
                 storyTextInput.value = text;
+                initUndoHistory(text);
             }
         });
 
@@ -6317,9 +7789,26 @@
         refreshStorySearchUi();
         updateReportPasswordClearButtonState();
         setStoryEditorLocked(false);
-        refreshTextZoneActiveState();
+        initUndoHistory(storyTextInput ? storyTextInput.value : '');
+        if (buildLibraryBtn) {
+            buildLibraryBtn.disabled = !canBuildNewLibraryTemplate();
+            if (!canBuildNewLibraryTemplate()) {
+                buildLibraryBtn.title = 'Build New Library is available in the Electron desktop app.';
+            }
+        }
+        void initializeElectronWindowChrome();
         window.addEventListener('beforeunload', () => {
             releaseAllMediaUrls();
             clearLibraryPreviewCaches();
         });
         tryUseRecentHandle(true);
+
+        const loadingScreen = document.getElementById('app-loading-screen');
+        if (loadingScreen) {
+            requestAnimationFrame(() => {
+                loadingScreen.classList.add('hidden');
+                setTimeout(() => {
+                    loadingScreen.remove();
+                }, 300);
+            });
+        }

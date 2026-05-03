@@ -5,39 +5,61 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Xedryk's Lab System - Data Manager</title>
     <link rel="stylesheet" href="css/data_manager.css" />
+    <script src="js/icon-helper.js"></script>
 </head>
-<body>
+<body onload="loadIconSprite()">
+    <div class="app-loading-screen" id="app-loading-screen">
+        <div class="app-loading-content">
+            <div class="app-loading-logo"></div>
+            <div class="app-loading-text">Loading...</div>
+            <div class="app-loading-bar">
+                <div class="app-loading-progress" id="app-loading-progress"></div>
+            </div>
+        </div>
+    </div>
+    <div class="app-titlebar" id="app-titlebar" hidden>
+        <div class="app-titlebar-drag">
+            <img class="app-titlebar-logo" src="" alt="Logo" id="app-titlebar-logo">
+            <strong id="app-titlebar-text">Data Manager</strong>
+        </div>
+        <div class="app-titlebar-tools" id="app-titlebar-tools">
+            <button class="titlebar-btn" id="choose-folder" type="button" title="Choose Library Folder"></button>
+            <button class="titlebar-btn" id="build-library" type="button" title="Build New Library"></button>
+            <button class="titlebar-btn" id="open-recent" type="button" title="Open Recent"></button>
+            <div class="titlebar-divider"></div>
+            <button class="titlebar-btn" id="scan-library" type="button" title="Scan Files"></button>
+            <button class="titlebar-btn" id="reload-catalog" type="button" title="Reload Catalog"></button>
+            <button class="titlebar-btn" id="update-fonts" type="button" title="Update Fonts"></button>
+            <button class="titlebar-btn" id="fix-missing" type="button" title="Fix Missing Files"></button>
+            <div class="titlebar-divider"></div>
+            <button class="titlebar-btn" id="open-homepage" type="button" title="Open Homepage"></button>
+            <button class="titlebar-btn" id="reveal-library" type="button" title="Reveal Library Folder"></button>
+            <div class="titlebar-divider"></div>
+            <label class="ios-toggle" title="Auto Scan on Folder Open">
+                <input type="checkbox" id="auto-scan">
+                <span class="ios-toggle-track"><span class="ios-toggle-thumb"></span></span>
+            </label>
+            <button class="titlebar-btn" id="theme-toggle" type="button" title="Toggle Light/Dark Theme"></button>
+            <button class="titlebar-btn" id="accent-color-btn" type="button" title="Pick Accent Color"><span class="accent-color-indicator"></span></button>
+            <input type="color" id="accent-color-input" value="#3ef0c1" style="position:absolute;width:0;height:0;opacity:0;pointer-events:none;">
+            <button class="titlebar-btn" id="pin-window" type="button" title="Always on Top"></button>
+            <div class="titlebar-divider"></div>
+            <button class="titlebar-btn" id="help-btn" type="button" title="Help"></button>
+            <button class="titlebar-btn" id="settings-btn" type="button" title="Settings" hidden></button>
+            <div class="titlebar-drag-spacer"></div>
+        </div>
+        <div class="app-titlebar-actions">
+            <button class="app-window-btn" id="window-minimize" type="button" title="Minimize" aria-label="Minimize"></button>
+            <button class="app-window-btn" id="window-maximize" type="button" title="Maximize" aria-label="Maximize"></button>
+            <button class="app-window-btn close" id="window-close" type="button" title="Close" aria-label="Close"></button>
+        </div>
+    </div>
     <div class="shell">
-        <header>
-            <div>
-                <p class="eyebrow">Xedryk's Lab System</p>
-                <h1>Data Manager</h1>
-            </div>
-            <div class="header-actions">
-                <div class="header-row">
-                    <button id="choose-folder">📁 Choose Library Folder</button>
-                    <button class="ghost" id="open-recent" type="button">📂 Open Recent</button>
-                    <button class="ghost" id="scan-library">🔄 Scan Files</button>
-                    <button class="ghost" id="reload-catalog">📋 Reload Catalog</button>
-                </div>
-                <div class="header-row">
-                    <button class="ghost" id="update-fonts">🔤 Update Fonts</button>
-                    <button class="ghost" id="fix-missing" type="button">🔧 Fix Missing</button>
-                    <button class="ghost" id="help-btn" type="button">&#x2753; Help</button>
-                    <a class="link-btn ghost" href="Setting_Manager.html" target="_blank">⚙️ Setting Manager</a>
-                    <label class="checkbox auto-scan">
-                        <input type="checkbox" id="auto-scan">
-                        Auto Scan
-                    </label>
-                    <button class="ghost" id="open-homepage" type="button">🌐 Homepage</button>
-                </div>
-            </div>
-        </header>
-
+        <header hidden></header>
         <main class="layout">
             <section class="panel stories-panel">
                 <div class="panel-header stories-header">
-                    <h2>Existing Stories</h2>
+                    <h2>Stories</h2>
                     <div class="story-search-wrap">
                         <input type="search" id="story-search" class="story-search-input" placeholder="Search stories..." aria-label="Search stories">
                         <button type="button" id="story-search-clear" class="story-search-clear" title="Clear search" aria-label="Clear search" hidden>&times;</button>
@@ -46,13 +68,14 @@
                 <div class="panel-content">
                     <div class="story-list" id="story-list"></div>
                     <div class="danger-zone">
-                        <label class="checkbox">
-                            <input type="checkbox" id="delete-files" checked>
-                            Delete files on removal
+                        <label class="toggle-row" id="delete-files-toggle">
+                            <span class="toggle-label">Delete files on removal</span>
+                            <input type="checkbox" id="delete-files" checked hidden>
+                            <span class="toggle-track"><span class="toggle-thumb"></span></span>
                         </label>
                         <div class="danger-actions">
-                            <button class="danger icon-btn" id="remove-selected" title="Remove Selected Stories" type="button">🗑️</button>
-                            <button class="ghost icon-btn" id="cleanup-selected" title="Cleanup Unused Images" type="button">🧹</button>
+                            <button class="danger icon-btn" id="remove-selected" title="Remove Selected Stories" type="button"></button>
+                            <button class="ghost icon-btn" id="cleanup-selected" title="Cleanup Unused Images" type="button"></button>
                         </div>
                     </div>
                 </div>
@@ -62,32 +85,36 @@
                 <div class="panel-header">
                     <h2>Story Manager</h2>
                     <div class="panel-actions">
-                        <button type="submit" form="story-form">Save Story</button>
+                        <button type="submit" form="story-form" title="Save story" aria-label="Save story"></button>
                         <label class="checkbox close-after-save-toggle" title="After saving, clear editor for the next story">
                             <input type="checkbox" id="close-after-save" checked>
-                            Close after save (Always)
+                            Auto close
                         </label>
-                        <button type="button" class="ghost" id="load-story-btn">Load Story</button>
-                        <button type="button" class="ghost" id="clear-form" form="story-form">Clear Form</button>
+                        <button type="button" class="ghost" id="load-story-btn" title="Load story text from a markdown or text file" aria-label="Load story text from a markdown or text file"></button>
+                        <button type="button" class="ghost" id="clear-form" form="story-form" title="Clear current story form" aria-label="Clear current story form"></button>
                     </div>
                 </div>
                 <div class="panel-content">
                     <form id="story-form">
-                        <div class="form-row">
-                            <label>
+                        <div class="form-row story-form-primary">
+                            <label class="report-number-field">
                                 Report Number
-                                <input type="number" id="report-number" min="1" placeholder="Auto">
-                            </label>
-
-                            <label>
-                                Story Password
-                                <div class="password-input-row">
-                                    <input type="text" id="report-password" placeholder="Empty = no encryption">
-                                    <button type="button" class="ghost password-clear-btn" id="report-password-clear" aria-label="Clear password">Clear</button>
+                                <div class="report-number-stepper">
+                                    <button type="button" class="ghost report-step-btn" id="report-number-dec" title="Decrease report number" aria-label="Decrease report number">&#x2796;</button>
+                                    <input type="number" id="report-number" class="report-number-input" min="1" placeholder="Auto">
+                                    <button type="button" class="ghost report-step-btn" id="report-number-inc" title="Increase report number" aria-label="Increase report number">&#x2795;</button>
                                 </div>
                             </label>
 
-                            <label>
+                            <label class="story-password-field">
+                                Story Password
+                                <div class="password-input-row">
+                                    <input type="text" id="report-password" placeholder="Empty = no encryption">
+                                    <button type="button" class="ghost password-clear-btn" id="report-password-clear" title="Clear password" aria-label="Clear password">&#x274C; Clear</button>
+                                </div>
+                            </label>
+
+                            <label class="title-field">
                                 Title
                                 <input type="text" id="report-title" placeholder="The Report #1">
                             </label>
@@ -111,37 +138,17 @@
                         <div class="story-text-field">
                             <label class="story-text-label" for="story-text">Story Text (Markdown)</label>
                             <div class="markdown-toolbar" id="markdown-toolbar">
-                                <button type="button" class="md-icon-btn" data-md-action="heading" title="Heading" aria-label="Heading">
-                                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                                        <path d="M4 5v14M10 5v14M4 12h6M15 8h5M15 12h5M15 16h5" />
-                                    </svg>
-                                </button>
-                                <button type="button" class="md-icon-btn" data-md-action="bold" title="Bold" aria-label="Bold">
-                                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                                        <path d="M7 5h7a3 3 0 1 1 0 6H7z" />
-                                        <path d="M7 11h8a4 4 0 1 1 0 8H7z" />
-                                    </svg>
-                                </button>
-                                <button type="button" class="md-icon-btn" data-md-action="list" title="Bullet List" aria-label="Bullet List">
-                                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                                        <circle cx="6" cy="7" r="1.2" />
-                                        <circle cx="6" cy="12" r="1.2" />
-                                        <circle cx="6" cy="17" r="1.2" />
-                                        <path d="M10 7h10M10 12h10M10 17h10" />
-                                    </svg>
-                                </button>
-                                <button type="button" class="md-icon-btn" data-md-action="numbered" title="Numbered List" aria-label="Numbered List">
-                                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                                        <path d="M10 7h10M10 12h10M10 17h10" />
-                                        <path d="M4 8h2V5M4 12h2M4 15h2M4 17h2" />
-                                    </svg>
-                                </button>
-                                <button type="button" class="md-icon-btn" data-md-action="link" title="Insert Link" aria-label="Insert Link">
-                                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                                        <path d="M10 13a4 4 0 0 1 0-6l2-2a4 4 0 1 1 6 6l-1.5 1.5" />
-                                        <path d="M14 11a4 4 0 0 1 0 6l-2 2a4 4 0 0 1-6-6L7.5 11.5" />
-                                    </svg>
-                                </button>
+                                <button type="button" class="md-icon-btn" data-md-action="undo" title="Undo" aria-label="Undo">&#x21A9;&#xFE0F;</button>
+                                <button type="button" class="md-icon-btn" data-md-action="redo" title="Redo" aria-label="Redo">&#x21AA;&#xFE0F;</button>
+                                <button type="button" class="md-icon-btn" data-md-action="heading" title="Heading" aria-label="Heading">H1</button>
+                                <button type="button" class="md-icon-btn" data-md-action="bold" title="Bold" aria-label="Bold"><strong>B</strong></button>
+                                <button type="button" class="md-icon-btn" data-md-action="italic" title="Italic" aria-label="Italic"><em>I</em></button>
+                                <button type="button" class="md-icon-btn" data-md-action="code" title="Code block" aria-label="Code block">&lt;/&gt;</button>
+                                <button type="button" class="md-icon-btn" data-md-action="quote" title="Quote" aria-label="Quote">&#x275D;</button>
+                                <button type="button" class="md-icon-btn" data-md-action="list" title="Bullet List" aria-label="Bullet List">&#x2022;</button>
+                                <button type="button" class="md-icon-btn" data-md-action="numbered" title="Numbered List" aria-label="Numbered List">1.</button>
+                                <button type="button" class="md-icon-btn" data-md-action="link" title="Insert Link" aria-label="Insert Link">&#x1F517;</button>
+                                <button type="button" class="md-icon-btn" data-md-action="divider" title="Divider" aria-label="Divider">&#x2014;</button>
                             </div>
                             <textarea id="story-text" rows="18" placeholder="Write the story here..."></textarea>
                         </div>
@@ -153,19 +160,19 @@
                 <div class="panel-header">
                     <h2>Image Manager</h2>
                     <div class="panel-actions">
-                        <button type="button" id="add-images-btn">Add Images</button>
-                        <button type="button" class="ghost" id="remove-images-btn">Remove Selected</button>
+                        <button type="button" id="add-images-btn" title="Add images or videos" aria-label="Add images or videos"></button>
+                        <button type="button" class="ghost" id="remove-images-btn" title="Remove selected media" aria-label="Remove selected media"></button>
                     </div>
                 </div>
                 <div class="panel-content">
                     <div class="image-manager-actions">
-                        <button type="button" class="ghost" id="upload-cover-media-btn">Upload Homepage Cover</button>
-                        <button type="button" class="ghost" id="clear-cover-media-btn">Clear Homepage Cover</button>
-                        <button type="button" class="ghost" id="set-cover-position-btn">Set Cover Position</button>
+                        <button type="button" class="ghost" id="upload-cover-media-btn" title="Upload homepage cover" aria-label="Upload homepage cover"></button>
+                        <button type="button" class="ghost" id="clear-cover-media-btn" title="Clear homepage cover" aria-label="Clear homepage cover"></button>
+                        <button type="button" class="ghost" id="set-cover-position-btn" title="Adjust cover position" aria-label="Adjust cover position"></button>
                         <div class="image-card-size-controls">
-                            <button type="button" class="ghost" id="card-height-dec">-</button>
+                            <button type="button" class="ghost" id="card-height-dec" title="Smaller image cards" aria-label="Smaller image cards"></button>
                             <span class="image-card-size-value" id="card-height-value">148px</span>
-                            <button type="button" class="ghost" id="card-height-inc">+</button>
+                            <button type="button" class="ghost" id="card-height-inc" title="Larger image cards" aria-label="Larger image cards"></button>
                         </div>
                     </div>
                     <p class="hint" id="image-manager-summary">No media selected yet.</p>
@@ -252,14 +259,122 @@
             </div>
         </div>
     </div>
+
+    <div class="settings-backdrop" id="settings-modal" aria-hidden="true">
+        <div class="settings-panel" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+            <div class="settings-header">
+                <div>
+                    <p class="settings-eyebrow">Xedryk's Lab System</p>
+                    <h2 id="settings-title">Settings</h2>
+                </div>
+                <button class="settings-close" id="settings-close" type="button" aria-label="Close">&#x2716;&#xFE0F;</button>
+            </div>
+            <div class="settings-body" id="settings-body">
+                <div class="settings-section">
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <span class="settings-item-label">Auto run at Windows start</span>
+                            <span class="settings-item-desc">Launch app automatically when Windows starts</span>
+                        </div>
+                        <label class="ios-toggle">
+                            <input type="checkbox" id="setting-auto-run">
+                            <span class="ios-toggle-track"><span class="ios-toggle-thumb"></span></span>
+                        </label>
+                    </div>
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <span class="settings-item-label">Auto close to tray</span>
+                            <span class="settings-item-desc">Close button minimizes to system tray instead of exiting</span>
+                        </div>
+                        <label class="ios-toggle">
+                            <input type="checkbox" id="setting-close-to-tray">
+                            <span class="ios-toggle-track"><span class="ios-toggle-thumb"></span></span>
+                        </label>
+                    </div>
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <span class="settings-item-label">Auto start minimized</span>
+                            <span class="settings-item-desc">Start in system tray when Windows starts</span>
+                        </div>
+                        <label class="ios-toggle">
+                            <input type="checkbox" id="setting-start-minimized">
+                            <span class="ios-toggle-track"><span class="ios-toggle-thumb"></span></span>
+                        </label>
+                    </div>
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <span class="settings-item-label">Follow system theme</span>
+                            <span class="settings-item-desc">Match Windows light/dark mode automatically</span>
+                        </div>
+                        <label class="ios-toggle">
+                            <input type="checkbox" id="setting-follow-system">
+                            <span class="ios-toggle-track"><span class="ios-toggle-thumb"></span></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="settings-section">
+                    <div class="settings-item settings-item-row">
+                        <div class="settings-item-info">
+                            <span class="settings-item-label">UI Font</span>
+                            <span class="settings-item-desc">Choose the system font for app interface</span>
+                        </div>
+                    </div>
+                    <div class="settings-item settings-item-row">
+                        <select class="settings-select" id="setting-ui-font">
+                            <option value="">Default</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="library-builder-overlay" id="library-builder-overlay" hidden>
+        <div class="library-builder-modal" role="dialog" aria-modal="true" aria-labelledby="library-builder-title">
+            <div class="library-builder-header">
+                <div>
+                    <p class="library-builder-eyebrow">Template Builder</p>
+                    <h3 id="library-builder-title">Build New Library</h3>
+                </div>
+                <button class="library-builder-close" id="library-builder-close" type="button" aria-label="Close"></button>
+            </div>
+            <p class="library-builder-body">
+                Copy the bundled `default_gallery` template into a new folder, then rename the visible homepage title for the new library.
+            </p>
+            <form class="library-builder-form" id="library-builder-form">
+                <label>
+                    Destination
+                    <div class="library-builder-path-row">
+                        <input type="text" id="library-builder-path" placeholder="Choose where to create the library" readonly>
+                        <button class="ghost" id="library-builder-pick-path" type="button">Browse</button>
+                    </div>
+                </label>
+                <label>
+                    Folder Name
+                    <input type="text" id="library-builder-folder-name" placeholder="My_New_Library">
+                </label>
+                <label>
+                    Library Name
+                    <input type="text" id="library-builder-name" placeholder="My New Library">
+                </label>
+                <p class="library-builder-note" id="library-builder-note">
+                    The new library opens automatically after it is created.
+                </p>
+                <div class="library-builder-actions">
+                    <button class="ghost" id="library-builder-cancel" type="button">Cancel</button>
+                    <button id="library-builder-submit" type="submit">Build Library</button>
+                </div>
+            </form>
+        </div>
+    </div>
     <div class="dialog-overlay" id="dialog-overlay" hidden>
         <div class="dialog-modal" role="dialog" aria-modal="true" aria-labelledby="dialog-title" aria-describedby="dialog-message">
             <div class="dialog-header">
                 <div class="dialog-title-wrap">
-                    <span class="dialog-icon" id="dialog-icon">ℹ️</span>
+                    <span class="dialog-icon" id="dialog-icon"></span>
                     <h3 id="dialog-title">Confirm</h3>
                 </div>
-                <button class="dialog-close" id="dialog-close" type="button" aria-label="Close">&#x2716;&#xFE0F;</button>
+                <button class="dialog-close" id="dialog-close" type="button" aria-label="Close"></button>
             </div>
             <p class="dialog-message" id="dialog-message"></p>
             <input type="text" class="dialog-input" id="dialog-input" hidden>

@@ -1,0 +1,673 @@
+﻿<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Viewer</title>
+        <link rel="icon" href="../database/favicon.png" />
+        <script>
+            (function () {
+                function readJson(key) {
+                    try {
+                        var raw = localStorage.getItem(key);
+                        return raw ? JSON.parse(raw) : null;
+                    } catch (error) {
+                        return null;
+                    }
+                }
+
+                var theme = localStorage.getItem("homepageTheme");
+                var globalViewer = readJson("viewerSettings:global");
+                var viewer = readJson("viewerSettings");
+                var db = readJson("xedryk_database");
+
+                if (!theme && globalViewer && globalViewer.theme) {
+                    theme = globalViewer.theme;
+                }
+                if (!theme && viewer && viewer.theme) {
+                    theme = viewer.theme;
+                }
+                if (!theme && db && db.viewerSettings && db.viewerSettings.theme) {
+                    theme = db.viewerSettings.theme;
+                }
+                if (!theme && db && db.settings && db.settings.theme) {
+                    theme = db.settings.theme;
+                }
+                if (theme !== "light" && theme !== "dark") {
+                    theme = "dark";
+                }
+
+                document.documentElement.dataset.theme = theme;
+                window.__XEDRYK_BOOT_THEME__ = theme;
+            })();
+        </script>
+        <link rel="stylesheet" href="viewer.css" />
+        <link rel="stylesheet" href="vendor/katex.min.css" />
+        <link rel="stylesheet" href="../css/fonts.css" />
+    </head>
+    <body>
+        <script>
+            document.body.dataset.theme =
+                window.__XEDRYK_BOOT_THEME__ ||
+                document.documentElement.dataset.theme ||
+                "dark";
+        </script>
+        <div class="code-field" aria-hidden="true"></div>
+        <div class="viewer">
+            <div class="image-layer">
+                <div class="image-hud" aria-hidden="true">
+                    <span class="hud-mark tl"></span>
+                    <span class="hud-mark tr"></span>
+                    <span class="hud-mark bl"></span>
+                    <span class="hud-mark br"></span>
+                </div>
+                <div id="image-fallback" class="image-fallback" hidden>
+                    Media missing
+                </div>
+                <img id="photo" src="" alt="Photo" />
+                <video
+                    id="video"
+                    playsinline
+                    muted
+                    loop
+                    preload="metadata"
+                    hidden
+                    aria-label="Video"
+                ></video>
+                <button
+                    id="video-audio-btn"
+                    class="video-audio-btn"
+                    type="button"
+                    title="Unmute video"
+                    aria-label="Unmute video"
+                    hidden
+                >
+                    🔇
+                </button>
+                <div class="image-controls">
+                    <button
+                        id="prev-btn"
+                        class="control-btn"
+                        type="button"
+                        title="Previous image"
+                        aria-label="Previous image"
+                    >
+                        ◀
+                    </button>
+                    <button
+                        id="zoom-out-btn"
+                        class="control-btn"
+                        type="button"
+                        title="Zoom out"
+                        aria-label="Zoom out"
+                    >
+                        ➖
+                    </button>
+                    <button
+                        id="zoom-in-btn"
+                        class="control-btn"
+                        type="button"
+                        title="Zoom in"
+                        aria-label="Zoom in"
+                    >
+                        ➕
+                    </button>
+                    <button
+                        id="fit-view-btn"
+                        class="control-btn"
+                        type="button"
+                        title="Fit"
+                        aria-label="Fit"
+                    >
+                        ⛶
+                    </button>
+                    <button
+                        id="next-btn"
+                        class="control-btn"
+                        type="button"
+                        title="Next image"
+                        aria-label="Next image"
+                    >
+                        ▶ </button>
+                    <span id="image-counter" class="image-counter">0 / 0</span>
+                </div>
+            </div>
+            <div id="blackout" class="blackout" hidden>
+                <div class="blackout-content" aria-live="polite">
+                    <div class="blackout-binary" id="blackout-time">
+                        00:00:00
+                    </div>
+                    <div class="blackout-search-container">
+                        <input
+                            type="text"
+                            id="blackout-search-input"
+                            class="blackout-search-input"
+                            placeholder="Search Google..."
+                            autocomplete="off"
+                        />
+                        <button
+                            type="button"
+                            id="blackout-search-btn"
+                            class="blackout-search-btn"
+                            aria-label="Search"
+                        >
+                            🔍
+                        </button>
+                    </div>
+                    <div class="blackout-text" id="blackout-resume-text">
+                        Press <span id="blackout-resume-key">spacebar</span> again to resume
+                    </div>
+                </div>
+            </div>
+
+            <header class="viewer-toolbar">
+                <button
+                    id="prev-story-btn"
+                    class="icon-btn"
+                    title="Previous story"
+                    aria-label="Previous story"
+                >
+                    ⟵
+                </button>
+                <button
+                    id="next-story-btn"
+                    class="icon-btn"
+                    title="Next story"
+                    aria-label="Next story"
+                >
+                    ⟶
+                </button>
+                <button
+                    id="font-down-btn"
+                    class="icon-btn"
+                    title="Decrease font size"
+                    aria-label="Decrease font size"
+                >
+                    ➖
+                </button>
+                <button
+                    id="font-up-btn"
+                    class="icon-btn"
+                    title="Increase font size"
+                    aria-label="Increase font size"
+                >
+                    ➕
+                </button>
+                <button
+                    id="theme-toggle-btn"
+                    class="icon-btn"
+                    title="Toggle theme"
+                    aria-label="Toggle theme"
+                >
+                    🌙
+                </button>
+                <button
+                    id="favorite-btn"
+                    class="icon-btn"
+                    title="Favorite"
+                    aria-label="Favorite"
+                >
+                    ⭐
+                </button>
+                <button
+                    id="bookmark-btn"
+                    class="icon-btn"
+                    title="Pinned"
+                    aria-label="Pinned"
+                >
+                    📌
+                </button>
+                <button
+                    id="help-btn"
+                    class="icon-btn"
+                    type="button"
+                    title="Help & Shortcuts"
+                    aria-label="Help and shortcuts"
+                >
+                    ❓
+                </button>
+                <button
+                    id="settings-btn"
+                    class="icon-btn"
+                    type="button"
+                    title="Settings"
+                    aria-label="Settings"
+                >
+                    ⚙️
+                </button>
+                <a
+                    id="home-link"
+                    class="icon-btn"
+                    href="../index.html"
+                    title="Library"
+                    aria-label="Library"
+                    >🏠</a
+                >
+            </header>
+
+            <main class="viewer-body">
+                <section class="story-panel">
+                    <div class="story-header">
+                        <p class="eyebrow">Report Viewer</p>
+                        <h1 id="story-title">Story</h1>
+                        <p id="story-meta" class="story-meta"></p>
+                    </div>
+                    <div id="story-content" class="story-content"></div>
+                </section>
+            </main>
+        </div>
+
+        <div class="help-overlay" id="help-overlay" hidden>
+            <div
+                class="help-modal"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="help-title"
+            >
+                <div class="help-header">
+                    <h2 id="help-title">🚀 VIEWER HELP</h2>
+                    <button id="close-help" class="ghost" type="button">✕</button>
+                </div>
+                <div class="help-content">
+                    <!-- Keyboard Shortcuts Section -->
+                    <div class="help-section">
+                        <h3>🎮 Keyboard Navigation</h3>
+                        
+                        <div class="shortcuts-category">
+                            <h4>📷 Image Controls</h4>
+                            <div class="shortcuts-pill-grid">
+                                <div class="shortcut-pill">
+                                    <span class="shortcut-pill-key">Shift + ←/→</span>
+                                    <span class="shortcut-pill-desc">Prev/Next Image</span>
+                                </div>
+                                <div class="shortcut-pill">
+                                    <span class="shortcut-pill-key">Q / -</span>
+                                    <span class="shortcut-pill-desc">Zoom Out</span>
+                                </div>
+                                <div class="shortcut-pill">
+                                    <span class="shortcut-pill-key">E / =</span>
+                                    <span class="shortcut-pill-desc">Zoom In</span>
+                                </div>
+                                <div class="shortcut-pill">
+                                    <span class="shortcut-pill-key">1 / 0</span>
+                                    <span class="shortcut-pill-desc">Fit to View</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="shortcuts-category">
+                            <h4>🔄 Navigation Modes <span style="font-size:10px;color:var(--muted);">(toggle in Settings)</span></h4>
+                            <div style="margin-bottom:8px;padding:8px;background:rgba(98,247,255,0.05);border-radius:8px;font-size:12px;">
+                                <strong style="color:var(--accent);">Pan Keys ON:</strong> W/A/S/D + Arrows pan the image
+                            </div>
+                            <div style="margin-bottom:8px;padding:8px;background:rgba(255,107,107,0.05);border-radius:8px;font-size:12px;">
+                                <strong style="color:#ff9d9d;">Pan Keys OFF:</strong> A/D + ←/→ = Prev/Next Image, W/S + ↑/↓ = Scroll Story
+                            </div>
+                        </div>
+
+                        <div class="shortcuts-category">
+                            <h4>📖 Story Controls</h4>
+                            <div class="shortcuts-pill-grid">
+                                <div class="shortcut-pill">
+                                    <span class="shortcut-pill-key">Shift + W/S</span>
+                                    <span class="shortcut-pill-desc">Scroll Text</span>
+                                </div>
+                                <div class="shortcut-pill">
+                                    <span class="shortcut-pill-key">[</span>
+                                    <span class="shortcut-pill-desc">Font Size --</span>
+                                </div>
+                                <div class="shortcut-pill">
+                                    <span class="shortcut-pill-key">]</span>
+                                    <span class="shortcut-pill-desc">Font Size ++</span>
+                                </div>
+                                <div class="shortcut-pill">
+                                    <span class="shortcut-pill-key">{ / }</span>
+                                    <span class="shortcut-pill-desc">Line Spacing</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="shortcuts-category">
+                            <h4>⚡ Global Actions</h4>
+                            <div class="shortcuts-pill-grid">
+                                <div class="shortcut-pill">
+                                    <span class="shortcut-pill-key">Ctrl + ←/→</span>
+                                    <span class="shortcut-pill-desc">Prev/Next Story</span>
+                                </div>
+                                <div class="shortcut-pill">
+                                    <span class="shortcut-pill-key">F</span>
+                                    <span class="shortcut-pill-desc">Toggle Favorite</span>
+                                </div>
+                                <div class="shortcut-pill">
+                                    <span class="shortcut-pill-key">B</span>
+                                    <span class="shortcut-pill-desc">Toggle Pin</span>
+                                </div>
+                                <div class="shortcut-pill">
+                                    <span class="shortcut-pill-key">T</span>
+                                    <span class="shortcut-pill-desc">Toggle Theme</span>
+                                </div>
+                                <div class="shortcut-pill">
+                                    <span class="shortcut-pill-key">S</span>
+                                    <span class="shortcut-pill-desc">Open Settings</span>
+                                </div>
+                                <div class="shortcut-pill">
+                                    <span class="shortcut-pill-key">SPACEBAR</span>
+                                    <span class="shortcut-pill-desc">Blackout Mode</span>
+                                </div>
+                                <div class="shortcut-pill">
+                                    <span class="shortcut-pill-key">ESC</span>
+                                    <span class="shortcut-pill-desc">Close Modal</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <p style="font-size: 11px; color: var(--muted); margin-top: 12px; padding: 8px; background: rgba(98, 247, 255, 0.05); border-radius: 8px;">
+                            💡 <strong>Tip:</strong> Customize all shortcuts in the <strong>Settings → Shortcuts</strong> tab.
+                        </p>
+                    </div>
+
+                    <!-- System Controls Section -->
+                    <div class="help-section">
+                        <h3>⚙️ System Controls</h3>
+                        <div class="control-grid">
+                            <div class="control-item">
+                                <div class="control-icon">⟵ / ⟶</div>
+                                <div class="control-desc">
+                                    <strong>Navigate Stories:</strong> Move to the previous or next story in the sequence from the homepage.
+                                </div>
+                            </div>
+                            <div class="control-item">
+                                <div class="control-icon">➕ / ➖</div>
+                                <div class="control-desc">
+                                    <strong>Adjust Font:</strong> Increase or decrease the font size of the story text for comfortable reading.
+                                </div>
+                            </div>
+                             <div class="control-item">
+                                <div class="control-icon">⭐ / 📌</div>
+                                <div class="control-desc">
+                                    <strong>Favorite & Pin:</strong> Mark a story as a favorite or pin it for quick access later from the homepage.
+                                </div>
+                            </div>
+                            <div class="control-item">
+                                <div class="control-icon">🌙 / ☀️</div>
+                                <div class="control-desc">
+                                    <strong>Toggle Theme:</strong> Switch between the dark and light interface modes. Your preference is saved.
+                                </div>
+                            </div>
+                            <div class="control-item">
+                                <div class="control-icon">🏠</div>
+                                <div class="control-desc">
+                                    <strong>Return Home:</strong> Go back to the main story library on the homepage.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Blackout Mode Section -->
+                    <div class="help-section">
+                        <h3>🕶️ Blackout Mode</h3>
+                         <div class="control-grid">
+                            <div class="control-item">
+                                <div class="control-icon">SPACEBAR</div>
+                                <div class="control-desc">
+                                    <strong>Activate:</strong> Press the spacebar to enter a minimalist, distraction-free mode that displays only the time.
+                                </div>
+                            </div>
+                            <div class="control-item">
+                                <div class="control-icon">🔍</div>
+                                <div class="control-desc">
+                                    <strong>Google Search:</strong> While in Blackout Mode, you can type directly to search on Google. Press Enter to open the search in a new tab.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="draggable-panel" id="settings-panel" hidden>
+            <div class="settings-header">
+                <h3>⚙️ Viewer Settings</h3>
+                <button
+                    class="settings-close"
+                    id="settings-close"
+                    type="button"
+                    aria-label="Close settings"
+                >
+                    ✕
+                </button>
+            </div>
+            <div class="settings-tabs" role="tablist">
+                <button
+                    class="tab-btn active"
+                    data-tab="appearance"
+                    type="button"
+                    role="tab"
+                    aria-selected="true"
+                >
+                    🎨 Appearance
+                </button>
+                <button
+                    class="tab-btn"
+                    data-tab="reading"
+                    type="button"
+                    role="tab"
+                    aria-selected="false"
+                >
+                    📖 Reading
+                </button>
+                <button
+                    class="tab-btn"
+                    data-tab="input"
+                    type="button"
+                    role="tab"
+                    aria-selected="false"
+                >
+                    ⌨️ Input
+                </button>
+                <button
+                    class="tab-btn"
+                    data-tab="shortcuts"
+                    type="button"
+                    role="tab"
+                    aria-selected="false"
+                >
+                    🔗 Shortcuts
+                </button>
+            </div>
+            <div class="settings-content">
+                <div
+                    class="tab-panel active"
+                    data-tab-panel="appearance"
+                    role="tabpanel"
+                >
+                    <div class="settings-section">
+                        <h4>Theme</h4>
+                        <select id="theme-select" class="font-select">
+                            <option value="dark">🌙 Dark</option>
+                            <option value="light">☀️ Light</option>
+                        </select>
+                    </div>
+
+                    <div class="settings-section">
+                        <h4>Story Font</h4>
+                        <select id="font-family" class="font-select">
+                            <option value="tech">Share Tech Mono</option>
+                            <option value="orbitron">Orbitron</option>
+                            <option value="vt323">VT323</option>
+                            <option value="system-mono">System Mono</option>
+                            <option value="system-sans">System Sans</option>
+                            <option value="system-serif">System Serif</option>
+                        </select>
+                        <label class="full custom-font-label">
+                            Custom Font (optional)
+                            <input
+                                type="text"
+                                id="custom-font"
+                                placeholder="e.g. 'Fira Code', monospace"
+                            />
+                        </label>
+                    </div>
+                </div>
+
+                <div
+                    class="tab-panel"
+                    data-tab-panel="reading"
+                    role="tabpanel"
+                    hidden
+                >
+                    <div class="settings-section">
+                        <h4>Font Size</h4>
+                        <input
+                            type="range"
+                            id="font-size"
+                            min="14"
+                            max="26"
+                            step="1"
+                        />
+                        <span class="range-value" id="font-size-value">18px</span>
+                    </div>
+
+                    <div class="settings-section">
+                        <h4>Line Spacing</h4>
+                        <input
+                            type="range"
+                            id="line-spacing"
+                            min="1.2"
+                            max="2.2"
+                            step="0.1"
+                        />
+                        <span class="range-value" id="line-spacing-value">1.6</span>
+                    </div>
+
+                    <div class="settings-section">
+                        <h4>Scroll Step</h4>
+                        <input
+                            type="range"
+                            id="scroll-step"
+                            min="20"
+                            max="300"
+                            step="10"
+                        />
+                        <span class="range-value" id="scroll-step-value">100 px</span>
+                    </div>
+
+                    <div class="settings-section">
+                        <h4>Zoom Step</h4>
+                        <input
+                            type="range"
+                            id="zoom-step"
+                            min="0.05"
+                            max="0.5"
+                            step="0.05"
+                        />
+                        <span class="range-value" id="zoom-step-value">0.25</span>
+                    </div>
+
+                    <div class="settings-section">
+                        <h4>Scroll Behavior</h4>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="smooth-scroll" />
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">
+                                <span class="toggle-title">Smooth Scroll</span>
+                                <span class="toggle-desc">Animate keyboard scrolling like mouse wheel</span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
+                <div
+                    class="tab-panel"
+                    data-tab-panel="input"
+                    role="tabpanel"
+                    hidden
+                >
+                    <div class="settings-section">
+                        <h4>Keyboard Mode</h4>
+                        <select id="keyboard-mode" class="font-select">
+                            <option value="default">Default</option>
+                            <option value="left">One-Hand Left</option>
+                            <option value="right">One-Hand Right</option>
+                        </select>
+                    </div>
+
+                    <div class="settings-section">
+                        <h4>Options</h4>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="pan-keys" />
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">
+                                <span class="toggle-title">Pan Keys</span>
+                                <span class="toggle-desc">WASD / Arrows pan the image. OFF = navigate images & scroll story</span>
+                            </span>
+                        </label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="ui-sfx-enabled" />
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">
+                                <span class="toggle-title">Interface Sounds</span>
+                                <span class="toggle-desc">Enable lightweight Web Audio sounds for hover, click, and typing</span>
+                            </span>
+                        </label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="remember-zoom" />
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">
+                                <span class="toggle-title">Remember Zoom</span>
+                                <span class="toggle-desc">Save zoom level per story</span>
+                            </span>
+                        </label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="remember-view-all" />
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">
+                                <span class="toggle-title">Global View</span>
+                                <span class="toggle-desc">Remember view across all stories</span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
+                <div
+                    class="tab-panel"
+                    data-tab-panel="shortcuts"
+                    role="tabpanel"
+                    hidden
+                >
+                    <div class="settings-section">
+                        <h4>Keyboard Shortcuts</h4>
+                        <div class="shortcuts" id="shortcut-list"></div>
+                        <div class="keybinds" id="keybind-list"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Custom Confirmation Popup -->
+        <div id="confirm-overlay" class="confirm-overlay" hidden>
+            <div class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+                <div class="confirm-header">
+                    <span class="confirm-icon">⚠️</span>
+                    <h3 id="confirm-title" class="confirm-title">Confirm Reset</h3>
+                </div>
+                <p id="confirm-message" class="confirm-message">Are you sure you want to proceed?</p>
+                <div class="confirm-actions">
+                    <button type="button" id="confirm-cancel" class="confirm-btn confirm-btn-secondary">Cancel</button>
+                    <button type="button" id="confirm-ok" class="confirm-btn confirm-btn-danger">Reset</button>
+                </div>
+            </div>
+        </div>
+
+        <script src="../database/fonts.js"></script>
+        <script src="../database/catalog.js"></script>
+        <script src="vendor/markdown-it.min.js"></script>
+        <script src="vendor/markdown-it-footnote.min.js"></script>
+        <script src="vendor/markdown-it-task-lists.min.js"></script>
+        <script src="vendor/katex.min.js"></script>
+        <script src="vendor/markdown-it-katex-plugin.js"></script>
+        <script src="../js/ui-sfx.js"></script>
+        <script src="viewer.js"></script>
+    </body>
+</html>

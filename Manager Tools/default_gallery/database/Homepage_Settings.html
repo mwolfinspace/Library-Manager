@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Homepage Settings</title>
+    <link rel="stylesheet" href="homepage_settings.css" />
+</head>
+<body>
+    <h1>Homepage Settings</h1>
+    <p class="subtitle">Customize your reading experience</p>
+
+    <div class="settings-tabs" role="tablist">
+        <button class="tab-btn active" data-tab="hp-font" type="button" role="tab">📝 Font</button>
+        <button class="tab-btn" data-tab="hp-color" type="button" role="tab">🎨 Color</button>
+        <button class="tab-btn" data-tab="hp-keyboard" type="button" role="tab">⌨️ Shortcuts</button>
+        <button class="tab-btn" data-tab="hp-data" type="button" role="tab">💾 Data</button>
+    </div>
+
+    <!-- Font Tab -->
+    <div class="tab-panel active" data-tab-panel="hp-font">
+        <div class="settings-section">
+            <h4>Font Family</h4>
+            <select id="hp-font-select" class="font-select"></select>
+            <label class="custom-font-label">Custom Font<input type="text" id="hp-custom-font" placeholder="e.g. 'Fira Code', monospace"></label>
+        </div>
+        <div class="settings-section">
+            <h4>Font Sizes</h4>
+            <div class="font-size-grid">
+                <label>Base Size<input type="range" id="hp-base-font-size" min="10" max="24" step="1" value="14"><span class="range-value">14px</span></label>
+                <label>Headers<input type="range" id="hp-header-font-size" min="16" max="48" step="2" value="26"><span class="range-value">26px</span></label>
+                <label>Buttons<input type="range" id="hp-button-font-size" min="8" max="18" step="1" value="12"><span class="range-value">12px</span></label>
+                <label>Cards<input type="range" id="hp-card-font-size" min="10" max="20" step="1" value="13"><span class="range-value">13px</span></label>
+            </div>
+        </div>
+        <div class="settings-section">
+            <button id="hp-reset-fonts" class="settings-reset-btn">Reset Fonts to Default</button>
+        </div>
+    </div>
+
+    <!-- Color Tab -->
+    <div class="tab-panel" data-tab-panel="hp-color" hidden>
+        <div class="settings-section">
+            <h4>Theme Mode</h4>
+            <div class="theme-tabs">
+                <button class="theme-tab active" data-theme="dark">🌙 Dark</button>
+                <button class="theme-tab" data-theme="light">☀️ Light</button>
+            </div>
+        </div>
+        <div class="settings-section">
+            <h4>Dark Theme Colors</h4>
+            <div class="color-grid" id="dark-colors">
+                <div class="color-item">
+                    <label>Text (ink)</label>
+                    <input type="color" class="color-picker" data-color="dark.ink" value="#e8f1ff">
+                </div>
+                <div class="color-item">
+                    <label>Muted text</label>
+                    <input type="color" class="color-picker" data-color="dark.muted" value="#e8f1ff">
+                </div>
+                <div class="color-item">
+                    <label>Background</label>
+                    <input type="color" class="color-picker" data-color="dark.bg" value="#03050b">
+                </div>
+                <div class="color-item">
+                    <label>Background 2</label>
+                    <input type="color" class="color-picker" data-color="dark.bg-2" value="#0a1220">
+                </div>
+                <div class="color-item">
+                    <label>Panel</label>
+                    <input type="color" class="color-picker" data-color="dark.panel" value="#0c1422">
+                </div>
+                <div class="color-item">
+                    <label>Accent</label>
+                    <input type="color" class="color-picker" data-color="dark.accent" value="#62f7ff">
+                </div>
+                <div class="color-item">
+                    <label>Accent 2</label>
+                    <input type="color" class="color-picker" data-color="dark.accent-2" value="#8dff7b">
+                </div>
+                <div class="color-item">
+                    <label>Card</label>
+                    <input type="color" class="color-picker" data-color="dark.card" value="#0c1422">
+                </div>
+                <div class="color-item">
+                    <label>Shadow</label>
+                    <input type="color" class="color-picker" data-color="dark.shadow" value="#02060c">
+                </div>
+                <div class="color-item">
+                    <label>Grid</label>
+                    <input type="color" class="color-picker" data-color="dark.grid" value="#62f7ff">
+                </div>
+            </div>
+        </div>
+        <div class="settings-section">
+            <h4>Light Theme Colors</h4>
+            <div class="color-grid" id="light-colors">
+                <div class="color-item">
+                    <label>Text (ink)</label>
+                    <input type="color" class="color-picker" data-color="light.ink" value="#0b1220">
+                </div>
+                <div class="color-item">
+                    <label>Muted text</label>
+                    <input type="color" class="color-picker" data-color="light.muted" value="#0b1220">
+                </div>
+                <div class="color-item">
+                    <label>Background</label>
+                    <input type="color" class="color-picker" data-color="light.bg" value="#eef3f9">
+                </div>
+                <div class="color-item">
+                    <label>Background 2</label>
+                    <input type="color" class="color-picker" data-color="light.bg-2" value="#f8fbff">
+                </div>
+                <div class="color-item">
+                    <label>Panel</label>
+                    <input type="color" class="color-picker" data-color="light.panel" value="#ffffff">
+                </div>
+                <div class="color-item">
+                    <label>Accent</label>
+                    <input type="color" class="color-picker" data-color="light.accent" value="#0aa6c7">
+                </div>
+                <div class="color-item">
+                    <label>Accent 2</label>
+                    <input type="color" class="color-picker" data-color="light.accent-2" value="#3b5bff">
+                </div>
+                <div class="color-item">
+                    <label>Card</label>
+                    <input type="color" class="color-picker" data-color="light.card" value="#ffffff">
+                </div>
+                <div class="color-item">
+                    <label>Shadow</label>
+                    <input type="color" class="color-picker" data-color="light.shadow" value="#0c1626">
+                </div>
+                <div class="color-item">
+                    <label>Grid</label>
+                    <input type="color" class="color-picker" data-color="light.grid" value="#0aa6c7">
+                </div>
+            </div>
+        </div>
+        <div class="settings-section">
+            <button id="hp-reset-colors" class="settings-reset-btn">Reset Colors to Default</button>
+        </div>
+    </div>
+
+    <!-- Keyboard Shortcuts Tab -->
+    <div class="tab-panel" data-tab-panel="hp-keyboard" hidden>
+        <div class="settings-section">
+            <h4>Navigation Keys</h4>
+            <div class="keybind-list">
+                <div class="keybind-item">
+                    <span class="keybind-label">Navigate Up</span>
+                    <input type="text" class="keybind-key" data-keybind="navUp" value="W" style="width: 50px; text-align: center;">
+                </div>
+                <div class="keybind-item">
+                    <span class="keybind-label">Navigate Down</span>
+                    <input type="text" class="keybind-key" data-keybind="navDown" value="S" style="width: 50px; text-align: center;">
+                </div>
+                <div class="keybind-item">
+                    <span class="keybind-label">Navigate Left</span>
+                    <input type="text" class="keybind-key" data-keybind="navLeft" value="A" style="width: 50px; text-align: center;">
+                </div>
+                <div class="keybind-item">
+                    <span class="keybind-label">Navigate Right</span>
+                    <input type="text" class="keybind-key" data-keybind="navRight" value="D" style="width: 50px; text-align: center;">
+                </div>
+                <div class="keybind-item">
+                    <span class="keybind-label">Open Card</span>
+                    <input type="text" class="keybind-key" data-keybind="openCard" value="Enter" style="width: 50px; text-align: center;">
+                </div>
+            </div>
+        </div>
+        <div class="settings-section">
+            <h4>Card Actions</h4>
+            <div class="keybind-list">
+                <div class="keybind-item">
+                    <span class="keybind-label">Pin/Unpin Card</span>
+                    <input type="text" class="keybind-key" data-keybind="pin" value="Q" style="width: 50px; text-align: center;">
+                </div>
+                <div class="keybind-item">
+                    <span class="keybind-label">Favorite/Unfavorite</span>
+                    <input type="text" class="keybind-key" data-keybind="favorite" value="E" style="width: 50px; text-align: center;">
+                </div>
+            </div>
+        </div>
+        <div class="settings-section">
+            <h4>Layouts</h4>
+            <div class="keybind-list">
+                <div class="keybind-item">
+                    <span class="keybind-label">Grid Layout</span>
+                    <input type="text" class="keybind-key" data-keybind="layoutGrid" value="1" style="width: 50px; text-align: center;">
+                </div>
+                <div class="keybind-item">
+                    <span class="keybind-label">List Layout</span>
+                    <input type="text" class="keybind-key" data-keybind="layoutList" value="2" style="width: 50px; text-align: center;">
+                </div>
+                <div class="keybind-item">
+                    <span class="keybind-label">Compact Layout</span>
+                    <input type="text" class="keybind-key" data-keybind="layoutCompact" value="3" style="width: 50px; text-align: center;">
+                </div>
+                <div class="keybind-item">
+                    <span class="keybind-label">Spotlight Layout</span>
+                    <input type="text" class="keybind-key" data-keybind="layoutSpotlight" value="4" style="width: 50px; text-align: center;">
+                </div>
+            </div>
+        </div>
+        <div class="settings-section">
+            <h4>Panels & Modes</h4>
+            <div class="keybind-list">
+                <div class="keybind-item">
+                    <span class="keybind-label">Open Settings</span>
+                    <input type="text" class="keybind-key" data-keybind="settingsTab" value="U" style="width: 50px; text-align: center;">
+                </div>
+                <div class="keybind-item">
+                    <span class="keybind-label">Open Help</span>
+                    <input type="text" class="keybind-key" data-keybind="helpTab" value="H" style="width: 50px; text-align: center;">
+                </div>
+                <div class="keybind-item">
+                    <span class="keybind-label">Toggle Theme</span>
+                    <input type="text" class="keybind-key" data-keybind="toggleTheme" value="L" style="width: 50px; text-align: center;">
+                </div>
+                <div class="keybind-item">
+                    <span class="keybind-label">Blackout Mode</span>
+                    <input type="text" class="keybind-key" data-keybind="blackout" value="Space" style="width: 50px; text-align: center;">
+                </div>
+                <div class="keybind-item">
+                    <span class="keybind-label">Focus Search</span>
+                    <input type="text" class="keybind-key" data-keybind="focusSearch" value="/" style="width: 50px; text-align: center;">
+                </div>
+            </div>
+        </div>
+        <div class="settings-section">
+            <button id="hp-reset-keybinds" class="settings-reset-btn">Reset Keybinds to Default</button>
+        </div>
+    </div>
+
+    <!-- Data Tab -->
+    <div class="tab-panel" data-tab-panel="hp-data" hidden>
+        <div class="settings-section">
+            <h4>Startup Options</h4>
+            <div class="toggle-list">
+                <label class="toggle-item">
+                    <div class="toggle-info">
+                        <span class="toggle-icon">🔞</span>
+                        <div class="toggle-text"><strong>Skip Age Verification</strong></div>
+                    </div>
+                    <div class="toggle-switch"><input type="checkbox" id="hp-skip-age-verify" class="toggle-input"><span class="toggle-slider"></span></div>
+                </label>
+                <label class="toggle-item">
+                    <div class="toggle-info">
+                        <span class="toggle-icon">👋</span>
+                        <div class="toggle-text"><strong>Skip Welcome Screen</strong></div>
+                    </div>
+                    <div class="toggle-switch"><input type="checkbox" id="hp-skip-welcome" class="toggle-input"><span class="toggle-slider"></span></div>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <div class="current-settings" id="current-settings">
+        <h4>Current Settings</h4>
+        <div class="settings-display" id="settings-display">
+            <p class="loading">Loading...</p>
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <button id="save-btn" type="button">💾 Save Settings</button>
+        <button class="ghost" id="close-btn" type="button">Close</button>
+    </div>
+
+    <div class="status-msg" id="status-msg"></div>
+
+    <script src="homepage_settings.js"></script>
+</body>
+</html>
