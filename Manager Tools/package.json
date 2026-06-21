@@ -16,8 +16,8 @@
     "dist:portable": "electron-builder --win portable"
   },
   "devDependencies": {
-    "electron": "^30.0.0",
-    "electron-builder": "^24.13.3"
+    "electron": "^42.0.0",
+    "electron-builder": "^26.0.0"
   },
   "build": {
     "appId": "com.xedryk.datamanager",
@@ -50,15 +50,26 @@
       "executableName": "Xedryk Data Manager",
       "target": [
         {
-          "target": "dir",
+          "target": "nsis",
           "arch": ["x64"]
         },
         {
           "target": "portable",
           "arch": ["x64"]
+        },
+        {
+          "target": "dir",
+          "arch": ["x64"]
         }
-      ],
-      "artifactName": "${productName}-${version}-${arch}.${ext}"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "${productName}-${version}-${arch}-setup.${ext}"
+    },
+    "portable": {
+      "artifactName": "${productName}-${version}-${arch}-lite.${ext}"
     },
     "afterPack": "./scripts/afterPack.js"
   }

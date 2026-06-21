@@ -1,0 +1,42 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Xedryk Data Manager-tauri",
+  "version": "1.0.0",
+  "identifier": "com.xedryk.datamanager.tauri",
+  "build": {
+    "beforeBuildCommand": "powershell -ExecutionPolicy Bypass -File scripts/prepare-tauri-assets.ps1",
+    "beforeDevCommand": "powershell -ExecutionPolicy Bypass -File scripts/prepare-tauri-assets.ps1",
+    "frontendDist": "../tauri-dist"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "label": "manager",
+        "title": "Xedryk Data Manager-tauri",
+        "url": "Data_Manager.html",
+        "width": 1280,
+        "height": 820,
+        "minWidth": 980,
+        "minHeight": 680,
+        "decorations": false,
+        "visible": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "nsis",
+    "icon": ["icons/icon.ico"],
+    "windows": {
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper"
+      },
+      "nsis": {
+      }
+    }
+  }
+}

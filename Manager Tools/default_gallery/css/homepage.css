@@ -233,7 +233,11 @@ body {
     position: sticky;
     top: 12px;
     z-index: 100;
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(8px) saturate(180%);
+    -webkit-backdrop-filter: blur(8px) saturate(180%);
+    contain: paint;
+    isolation: isolate;
+    will-change: transform;
 }
 
 .hero-left {
@@ -702,7 +706,10 @@ body[data-theme="light"] .tag.locked-tag {
     cursor: pointer;
     background: rgba(10, 16, 28, 0.7);
     color: var(--muted);
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(8px) saturate(180%);
+    -webkit-backdrop-filter: blur(8px) saturate(180%);
+    contain: paint;
+    isolation: isolate;
     box-shadow: 0 4px 12px rgba(2, 6, 12, 0.4);
     transition: all 0.2s ease;
     font-family: inherit;
@@ -931,7 +938,10 @@ body.blackout-active .modal-backdrop {
     align-items: center;
     justify-content: center;
     padding: 24px;
-    backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px) saturate(150%);
+    -webkit-backdrop-filter: blur(2px) saturate(150%);
+    contain: paint;
+    isolation: isolate;
     overflow: hidden;
 }
 
@@ -1032,7 +1042,10 @@ body[data-theme="light"] .blackout-text {
     background: rgba(10, 16, 28, 0.7);
     border: 1px solid rgba(98, 247, 255, 0.4);
     border-radius: 12px;
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(8px) saturate(180%);
+    -webkit-backdrop-filter: blur(8px) saturate(180%);
+    contain: paint;
+    isolation: isolate;
     box-shadow: 0 4px 20px rgba(98, 247, 255, 0.15);
     transition: all 0.3s ease;
 }
@@ -1139,7 +1152,10 @@ body[data-theme="light"] .blackout-search-btn:hover {
     pointer-events: none;
     transition: opacity 0.25s ease;
     padding: 24px;
-    backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px) saturate(160%);
+    -webkit-backdrop-filter: blur(6px) saturate(160%);
+    contain: paint;
+    isolation: isolate;
 }
 
 body[data-theme="light"] .modal-backdrop {
@@ -3379,7 +3395,10 @@ body[data-theme="light"] .reset-btn-danger:hover {
     justify-content: center;
     padding: 20px;
     z-index: 2000;
-    backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px) saturate(150%);
+    -webkit-backdrop-filter: blur(4px) saturate(150%);
+    contain: paint;
+    isolation: isolate;
 }
 
 body[data-theme="light"] .custom-popup-overlay {
@@ -3559,7 +3578,10 @@ body[data-theme="light"] .custom-popup-btn-danger:hover {
     justify-content: center;
     padding: 20px;
     z-index: 3100;
-    backdrop-filter: blur(7px);
+    backdrop-filter: blur(6px) saturate(160%);
+    -webkit-backdrop-filter: blur(6px) saturate(160%);
+    contain: paint;
+    isolation: isolate;
 }
 
 body[data-theme="light"] .unlock-overlay {
@@ -3815,7 +3837,10 @@ body[data-theme="light"] .unlock-btn-secondary {
     justify-content: center;
     padding: 20px;
     z-index: 3000 !important;
-    backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px) saturate(150%);
+    -webkit-backdrop-filter: blur(4px) saturate(150%);
+    contain: paint;
+    isolation: isolate;
 }
 
 body[data-theme="light"] .confirm-overlay {
@@ -3977,7 +4002,10 @@ body[data-theme="light"] .confirm-btn-secondary:hover {
     align-items: center;
     justify-content: center;
     z-index: 9999;
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(8px) saturate(180%);
+    -webkit-backdrop-filter: blur(8px) saturate(180%);
+    contain: paint;
+    isolation: isolate;
     overflow: hidden;
 }
 
@@ -4089,7 +4117,10 @@ body[data-theme="light"] .reboot-status {
     align-items: center;
     justify-content: center;
     z-index: 10000;
-    backdrop-filter: blur(8px);
+    backdrop-filter: blur(6px) saturate(160%);
+    -webkit-backdrop-filter: blur(6px) saturate(160%);
+    contain: paint;
+    isolation: isolate;
     overflow: hidden;
 }
 
@@ -4335,7 +4366,10 @@ body[data-theme="light"] .age-btn-no:hover {
     align-items: center;
     justify-content: center;
     z-index: 9999;
-    backdrop-filter: blur(8px);
+    backdrop-filter: blur(6px) saturate(160%);
+    -webkit-backdrop-filter: blur(6px) saturate(160%);
+    contain: paint;
+    isolation: isolate;
     padding: 20px;
 }
 
@@ -5228,5 +5262,31 @@ body[data-theme="light"] .stats-reset-btn:hover {
     .stats-footer {
         flex-direction: column;
         gap: 10px;
+    }
+}
+
+/* === GLASSMORPHISM ACCESSIBILITY & FALLBACKS === */
+/* Disable heavy blur when user prefers reduced transparency */
+@media (prefers-reduced-transparency: reduce) {
+    * {
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+    }
+}
+
+/* Also disable when reduced motion is preferred (blur animations are distracting) */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+    }
+}
+
+/* Solid fallback for browsers that don't support backdrop-filter */
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+    [style*="backdrop-filter"],
+    [style*="-webkit-backdrop-filter"] {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
     }
 }

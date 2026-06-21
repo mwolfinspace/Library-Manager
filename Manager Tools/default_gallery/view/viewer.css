@@ -402,7 +402,10 @@ body[data-theme="light"] .tag-link:hover {
     align-items: center;
     justify-content: center;
     gap: 6px;
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(8px) saturate(180%);
+    -webkit-backdrop-filter: blur(8px) saturate(180%);
+    contain: paint;
+    isolation: isolate;
     box-shadow: var(--button-shadow);
     pointer-events: auto;
     text-transform: uppercase;
@@ -550,7 +553,10 @@ body[data-theme="light"] .icon-btn.active {
     justify-content: center;
     cursor: pointer;
     box-shadow: 0 0 10px rgba(88, 242, 201, 0.2);
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(8px) saturate(180%);
+    -webkit-backdrop-filter: blur(8px) saturate(180%);
+    contain: paint;
+    isolation: isolate;
     transition:
         transform 0.15s ease,
         border-color 0.2s ease,
@@ -592,22 +598,25 @@ body[data-theme="light"] .video-audio-btn:hover {
     border-radius: 999px;
     background: rgba(6, 10, 18, 0.35);
     border: 1px solid rgba(88, 242, 201, 0.2);
-    backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px) saturate(180%);
+    -webkit-backdrop-filter: blur(8px) saturate(180%);
+    contain: paint;
+    isolation: isolate;
     color: var(--control-ink);
     z-index: 3;
     box-shadow: 0 0 8px rgba(88, 242, 201, 0.12);
     transition:
         background 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
         border-color 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
-        box-shadow 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
-        backdrop-filter 0.4s ease;
+        box-shadow 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .image-controls:hover {
     background: rgba(6, 10, 18, 0.92);
     border-color: rgba(88, 242, 201, 0.5);
     box-shadow: 0 0 12px rgba(88, 242, 201, 0.3);
-    backdrop-filter: blur(16px);
+    backdrop-filter: blur(12px) saturate(200%);
+    -webkit-backdrop-filter: blur(12px) saturate(200%);
 }
 
 .blackout {
@@ -625,7 +634,10 @@ body[data-theme="light"] .video-audio-btn:hover {
     align-items: center;
     justify-content: center;
     padding: 24px;
-    backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px) saturate(150%);
+    -webkit-backdrop-filter: blur(2px) saturate(150%);
+    contain: paint;
+    isolation: isolate;
     overflow: hidden;
 }
 
@@ -679,9 +691,12 @@ body[data-theme="light"] .blackout-text {
     background: rgba(10, 16, 28, 0.7);
     border: 1px solid rgba(98, 247, 255, 0.4);
     border-radius: 12px;
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(8px) saturate(180%);
+    -webkit-backdrop-filter: blur(8px) saturate(180%);
+    contain: paint;
+    isolation: isolate;
     box-shadow: 0 4px 20px rgba(98, 247, 255, 0.15);
-    transition: all 0.3s ease;
+    transition: opacity 0.3s ease, box-shadow 0.3s ease;
 }
 
 body[data-theme="light"] .blackout-search-container {
@@ -847,7 +862,8 @@ body[data-theme="light"] .image-controls:hover {
     background: rgba(255, 255, 255, 0.96);
     border-color: rgba(58, 93, 181, 0.5);
     box-shadow: 0 0 12px rgba(58, 93, 181, 0.28);
-    backdrop-filter: blur(16px);
+    backdrop-filter: blur(12px) saturate(200%);
+    -webkit-backdrop-filter: blur(12px) saturate(200%);
 }
 
 .image-counter {
@@ -884,9 +900,12 @@ body[data-theme="light"] .image-controls:hover {
     display: flex;
     flex-direction: column;
     gap: 12px;
-    backdrop-filter: blur(12px);
+    backdrop-filter: blur(10px) saturate(180%);
+    -webkit-backdrop-filter: blur(10px) saturate(180%);
+    contain: paint;
+    isolation: isolate;
     pointer-events: auto;
-    transition: all 0.4s ease;
+    transition: opacity 0.4s ease, transform 0.4s ease;
 }
 
 .story-header {
@@ -2179,7 +2198,10 @@ body[data-theme="light"] .shortcuts-category h4 {
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
-    backdrop-filter: blur(12px);
+    backdrop-filter: blur(10px) saturate(180%);
+    -webkit-backdrop-filter: blur(10px) saturate(180%);
+    contain: paint;
+    isolation: isolate;
     box-shadow:
         0 6px 16px rgba(88, 242, 201, 0.2),
         0 0 0 1px rgba(88, 242, 201, 0.3);
@@ -2824,7 +2846,10 @@ body[data-theme="light"] .reset-btn-danger:hover {
     justify-content: center;
     padding: 20px;
     z-index: 2000;
-    backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px) saturate(150%);
+    -webkit-backdrop-filter: blur(4px) saturate(150%);
+    contain: paint;
+    isolation: isolate;
 }
 
 body[data-theme="light"] .confirm-overlay {
@@ -2934,4 +2959,27 @@ body[data-theme="light"] .confirm-btn-danger:hover {
 .confirm-btn-secondary:hover {
     background: var(--btn);
     color: var(--ink);
+}
+
+/* === GLASSMORPHISM ACCESSIBILITY & FALLBACKS === */
+@media (prefers-reduced-transparency: reduce) {
+    * {
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    * {
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+    }
+}
+
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+    [style*="backdrop-filter"],
+    [style*="-webkit-backdrop-filter"] {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+    }
 }

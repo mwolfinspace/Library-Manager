@@ -481,7 +481,8 @@
                     path: filePath,
                     async getFile() {
                         const payload = await electronDesktopApi.readFile(filePath);
-                        const bytes = payload && payload.data ? payload.data : new Uint8Array();
+                        const raw = payload && payload.data ? payload.data : [];
+                        const bytes = Array.isArray(raw) ? new Uint8Array(raw) : raw;
                         return new File([bytes], payload && payload.name ? payload.name : fileName, {
                             type: payload && typeof payload.type === 'string' ? payload.type : '',
                             lastModified: payload && payload.lastModified ? payload.lastModified : Date.now(),
@@ -3276,6 +3277,21 @@
                     sizeLabel.textContent = formatFileSize(externalCoverMedia.size);
                     meta.appendChild(name);
                     meta.appendChild(sizeLabel);
+                } else if (externalCoverMedia.path) {
+                    const sizeLabel = document.createElement('span');
+                    sizeLabel.className = 'image-card-size-pill';
+                    sizeLabel.textContent = '\u2026';
+                    meta.appendChild(name);
+                    meta.appendChild(sizeLabel);
+                    (async () => {
+                        const size = await resolveMediaFileSize(externalCoverMedia.path);
+                        if (size !== null) {
+                            externalCoverMedia.size = size;
+                            sizeLabel.textContent = formatFileSize(size);
+                        } else {
+                            sizeLabel.remove();
+                        }
+                    })();
                 } else {
                     meta.appendChild(name);
                 }
@@ -3386,6 +3402,21 @@
                     sizeLabel.textContent = formatFileSize(item.size);
                     meta.appendChild(name);
                     meta.appendChild(sizeLabel);
+                } else if (item.path) {
+                    const sizeLabel = document.createElement('span');
+                    sizeLabel.className = 'image-card-size-pill';
+                    sizeLabel.textContent = '\u2026';
+                    meta.appendChild(name);
+                    meta.appendChild(sizeLabel);
+                    (async () => {
+                        const size = await resolveMediaFileSize(item.path);
+                        if (size !== null) {
+                            item.size = size;
+                            sizeLabel.textContent = formatFileSize(size);
+                        } else {
+                            sizeLabel.remove();
+                        }
+                    })();
                 } else {
                     meta.appendChild(name);
                 }
@@ -4010,6 +4041,15 @@
                     }
                     if (result.success && result.path) {
                         libraryPath = result.path;
+                        if (result.handle) {
+                            state.rootHandle = hydrateElectronHandle(result.handle);
+                        } else {
+                            state.rootHandle = hydrateElectronHandle({
+                                kind: 'directory',
+                                path: result.path,
+                                name: getDescriptorNameFromPath(result.path, 'directory'),
+                            });
+                        }
                         await window.electronDataManager.saveLibraryPath(libraryPath);
                     }
                 }
@@ -4319,6 +4359,18 @@
             try {
                 const fileHandle = await dirHandle.getFileHandle(segments[segments.length - 1]);
                 return fileHandle.getFile();
+            } catch (error) {
+                return null;
+            }
+        }
+
+        async function resolveMediaFileSize(relativePath) {
+            if (!relativePath || !state.rootHandle) {
+                return null;
+            }
+            try {
+                const file = await getLibraryFileFromRelativePath(relativePath);
+                return file ? file.size : null;
             } catch (error) {
                 return null;
             }

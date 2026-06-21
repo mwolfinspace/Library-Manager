@@ -1,0 +1,47 @@
+{
+  "name": "library-reader",
+  "productName": "Library Reader",
+  "version": "1.0.0",
+  "description": "Offline reader for Xedryk libraries. Drop into any library folder and launch.",
+  "private": true,
+  "main": "main.js",
+  "license": "UNLICENSED",
+  "os": ["win32"],
+  "scripts": {
+    "dist": "electron-builder --win dir"
+  },
+  "devDependencies": {
+    "electron": "^30.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.xedryk.libraryreader",
+    "productName": "Library Reader",
+    "directories": {
+      "buildResources": "build",
+      "output": "dist"
+    },
+    "asar": false,
+    "files": [
+      "main.js",
+      "preload.js",
+      "package.json"
+    ],
+    "win": {
+      "icon": "build/icon.ico",
+      "signAndEditExecutable": false,
+      "executableName": "Library Reader",
+      "target": [
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "artifactName": "${productName}-${version}-x64.${ext}"
+    },
+    "afterPack": "./scripts/afterPack.js",
+    "extraMetadata": {
+      "main": "main.js"
+    }
+  }
+}

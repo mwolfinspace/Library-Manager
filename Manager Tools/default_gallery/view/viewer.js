@@ -167,8 +167,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let cursorY = 0.45;
   const VIDEO_EXTENSIONS = new Set(["mp4", "webm", "ogg", "ogv", "mov", "m4v"]);
   const mediaPreloadCache = new Map();
-  const ENCRYPTION_PREFIX = "XEDRYK_ENC_V1:";
-  const ENCRYPTION_ITERATIONS_FALLBACK = 210000;
+  // ENCRYPTION_PREFIX and ENCRYPTION_ITERATIONS_FALLBACK are now in shared/crypto-utils.js
   const protectedMediaObjectUrls = new Set();
   const PROTECTED_LOCAL_PASSWORDS_KEY = "protectedStorySavedPasswords";
   const PROTECTED_SESSION_PASSWORDS_KEY = "protectedStorySessionPasswords";
@@ -329,118 +328,8 @@ document.addEventListener("DOMContentLoaded", () => {
     "⟁⌬⟁",
   ];
 
-  function stripQueryAndHash(path) {
-    return String(path || "")
-      .split("#")[0]
-      .split("?")[0];
-  }
-
-  function isLikelyWindowsAbsolutePath(path) {
-    return /^[a-zA-Z]:\//.test(path) || /^\/[a-zA-Z]:\//.test(path);
-  }
-
-  function canonicalizeProjectRelativePath(path) {
-    const relative = String(path || "")
-      .replace(/^\/+/, "")
-      .trim();
-    if (!relative) {
-      return "";
-    }
-    const separatorIndex = relative.indexOf("/");
-    const head =
-      separatorIndex >= 0
-        ? relative.slice(0, separatorIndex).toLowerCase()
-        : relative.toLowerCase();
-    const tail = separatorIndex >= 0 ? relative.slice(separatorIndex + 1) : "";
-    if (head === "media-scr" || head === "story" || head === "database") {
-      return tail ? `${head}/${tail}` : head;
-    }
-    return relative;
-  }
-
-  function extractProjectRelativePath(rawPath) {
-    const normalized = String(rawPath || "")
-      .replace(/\\/g, "/")
-      .trim();
-    if (!normalized) {
-      return "";
-    }
-
-    const cleanPath = stripQueryAndHash(normalized);
-    const lowerPath = cleanPath.toLowerCase();
-    const markers = [
-      "/media-scr/",
-      "/story/",
-      "/database/",
-      "media-scr/",
-      "story/",
-      "database/",
-    ];
-    for (const marker of markers) {
-      const markerIndex = lowerPath.lastIndexOf(marker);
-      if (markerIndex >= 0) {
-        const offset = marker.startsWith("/") ? markerIndex + 1 : markerIndex;
-        return canonicalizeProjectRelativePath(cleanPath.slice(offset));
-      }
-    }
-
-    const relativePath = canonicalizeProjectRelativePath(
-      cleanPath.replace(/^\/+/, ""),
-    );
-    if (
-      relativePath.startsWith("media-scr/") ||
-      relativePath.startsWith("story/") ||
-      relativePath.startsWith("database/")
-    ) {
-      return relativePath;
-    }
-
-    return "";
-  }
-
-  function normalizeCatalogPath(rawPath) {
-    if (typeof rawPath !== "string") {
-      return "";
-    }
-    const trimmed = rawPath.trim();
-    if (!trimmed) {
-      return "";
-    }
-    if (/^(?:https?:|blob:|data:)/i.test(trimmed)) {
-      return trimmed;
-    }
-
-    if (/^file:/i.test(trimmed)) {
-      try {
-        const fileUrl = new URL(trimmed);
-        const fromUrl = extractProjectRelativePath(
-          decodeURIComponent(fileUrl.pathname || ""),
-        );
-        if (fromUrl) {
-          return fromUrl;
-        }
-      } catch (error) {
-        // Ignore malformed file URLs and continue with string normalization.
-      }
-      return "";
-    }
-
-    const slashPath = trimmed.replace(/\\/g, "/");
-    const extracted = extractProjectRelativePath(slashPath);
-    if (extracted) {
-      return extracted;
-    }
-
-    if (isLikelyWindowsAbsolutePath(stripQueryAndHash(slashPath))) {
-      return "";
-    }
-
-    if (slashPath.startsWith("/")) {
-      return stripQueryAndHash(slashPath).replace(/^\/+/, "");
-    }
-
-    return slashPath;
-  }
+  // stripQueryAndHash, isLikelyWindowsAbsolutePath, canonicalizeProjectRelativePath,
+  // extractProjectRelativePath, normalizeCatalogPath are now in shared/path-utils.js
 
   function resolvePath(path) {
     const normalizedPath = normalizeCatalogPath(path);
@@ -526,95 +415,8 @@ document.addEventListener("DOMContentLoaded", () => {
     return !!(entry && entry.storyProtected === true);
   }
 
-  function parseEncryptedPayload(rawText) {
-    if (typeof rawText !== "string" || !rawText.startsWith(ENCRYPTION_PREFIX)) {
-      return null;
-    }
-    const jsonText = rawText.slice(ENCRYPTION_PREFIX.length);
-    if (!jsonText.trim()) {
-      return null;
-    }
-    try {
-      const payload = JSON.parse(jsonText);
-      if (
-        !payload ||
-        typeof payload !== "object" ||
-        typeof payload.salt !== "string" ||
-        typeof payload.iv !== "string" ||
-        typeof payload.data !== "string"
-      ) {
-        return null;
-      }
-      return payload;
-    } catch (error) {
-      return null;
-    }
-  }
-
-  function fromBase64(base64Text) {
-    const binary = atob(String(base64Text || ""));
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i += 1) {
-      bytes[i] = binary.charCodeAt(i);
-    }
-    return bytes;
-  }
-
-  function ensureWebCryptoReady() {
-    if (!(window.crypto && window.crypto.subtle)) {
-      throw new Error("Web Crypto API is unavailable in this browser.");
-    }
-  }
-
-  async function deriveEncryptionKey(password, saltBytes, iterations) {
-    ensureWebCryptoReady();
-    const baseKey = await crypto.subtle.importKey(
-      "raw",
-      new TextEncoder().encode(String(password || "")),
-      { name: "PBKDF2" },
-      false,
-      ["deriveKey"],
-    );
-    return crypto.subtle.deriveKey(
-      {
-        name: "PBKDF2",
-        salt: saltBytes,
-        iterations,
-        hash: "SHA-256",
-      },
-      baseKey,
-      { name: "AES-GCM", length: 256 },
-      false,
-      ["decrypt"],
-    );
-  }
-
-  async function decryptPayloadToBytes(rawText, password) {
-    const payload = parseEncryptedPayload(rawText);
-    if (!payload) {
-      throw new Error("Encrypted payload format is invalid.");
-    }
-    const iterations = Number.isFinite(payload.iter)
-      ? payload.iter
-      : parseInt(payload.iter, 10) || ENCRYPTION_ITERATIONS_FALLBACK;
-    const salt = fromBase64(payload.salt);
-    const iv = fromBase64(payload.iv);
-    const encryptedBytes = fromBase64(payload.data);
-    const key = await deriveEncryptionKey(password, salt, iterations);
-    try {
-      const decrypted = await crypto.subtle.decrypt(
-        { name: "AES-GCM", iv },
-        key,
-        encryptedBytes,
-      );
-      return {
-        bytes: new Uint8Array(decrypted),
-        mime: typeof payload.mime === "string" ? payload.mime : "",
-      };
-    } catch (error) {
-      throw new Error("Incorrect story password.");
-    }
-  }
+  // parseEncryptedPayload, fromBase64, ensureWebCryptoReady, deriveEncryptionKey,
+  // decryptPayloadToBytes are now in shared/crypto-utils.js
 
   async function fetchTextWithFallback(resolvedPath, missingMessage) {
     const requestPath =
@@ -1039,76 +841,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return rawItems.map(normalizeMediaItem).filter((item) => item && item.src);
   }
 
-  function normalizeCatalogEntryPaths(entry) {
-    if (!entry || typeof entry !== "object") {
-      return entry;
-    }
-
-    const normalized = { ...entry };
-    if (typeof normalized.story === "string") {
-      normalized.story = normalizeCatalogPath(normalized.story);
-    }
-    if (typeof normalized.cover === "string") {
-      normalized.cover = normalizeCatalogPath(normalized.cover);
-    }
-    if (typeof normalized.video === "string") {
-      normalized.video = normalizeCatalogPath(normalized.video);
-    }
-    if (Array.isArray(normalized.images)) {
-      normalized.images = normalized.images
-        .map((path) =>
-          typeof path === "string" ? normalizeCatalogPath(path) : path,
-        )
-        .filter(Boolean);
-    }
-    if (Array.isArray(normalized.videos)) {
-      normalized.videos = normalized.videos
-        .map((path) =>
-          typeof path === "string" ? normalizeCatalogPath(path) : path,
-        )
-        .filter(Boolean);
-    }
-    if (
-      normalized.coverMedia &&
-      typeof normalized.coverMedia === "object" &&
-      typeof normalized.coverMedia.path === "string"
-    ) {
-      normalized.coverMedia = {
-        ...normalized.coverMedia,
-        path: normalizeCatalogPath(normalized.coverMedia.path),
-      };
-    }
-    if (Array.isArray(normalized.media)) {
-      normalized.media = normalized.media
-        .map((item) => {
-          if (typeof item === "string") {
-            const nextPath = normalizeCatalogPath(item);
-            return nextPath || null;
-          }
-          if (!item || typeof item !== "object") {
-            return null;
-          }
-          const rawSrc = item.src || item.path || item.url || "";
-          const nextPath = normalizeCatalogPath(rawSrc);
-          if (!nextPath) {
-            return null;
-          }
-          return {
-            ...item,
-            src: nextPath,
-          };
-        })
-        .filter(Boolean);
-    }
-    return normalized;
-  }
-
-  function normalizeCatalogEntries(entries) {
-    if (!Array.isArray(entries)) {
-      return [];
-    }
-    return entries.map((entry) => normalizeCatalogEntryPaths(entry));
-  }
+  // normalizeCatalogEntryPaths, normalizeCatalogEntries are now in shared/path-utils.js
 
   function getActiveMediaElement() {
     return activeMediaType === "video" ? els.video : els.photo;
@@ -3157,14 +2890,21 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  let _dragRaf = null;
   window.addEventListener("mousemove", (event) => {
     if (!isDragging) return;
     event.preventDefault();
     translateX = event.pageX - startX;
     translateY = event.pageY - startY;
-    updateTransform();
+    if (!_dragRaf) {
+      _dragRaf = requestAnimationFrame(() => {
+        _dragRaf = null;
+        updateTransform();
+      });
+    }
   });
 
+  let _zoomSaveTimeout = null;
   document.addEventListener(
     "wheel",
     (event) => {
@@ -3197,7 +2937,11 @@ document.addEventListener("DOMContentLoaded", () => {
       translateY -= zoomOriginY * (zoomLevel - oldZoomLevel);
 
       updateTransform();
-      saveZoomState();
+      if (_zoomSaveTimeout) clearTimeout(_zoomSaveTimeout);
+      _zoomSaveTimeout = setTimeout(() => {
+        _zoomSaveTimeout = null;
+        saveZoomState();
+      }, 300);
     },
     { passive: false },
   );

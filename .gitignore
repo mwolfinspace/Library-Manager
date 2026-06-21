@@ -1,3 +1,31 @@
 node_modules/
 release/dist/
 
+# Build outputs
+dist/
+Manager Tools/dist/
+Manager Tools/tauri-dist/
+**/target/
+
+# Binary / archive artifacts
+*.exe
+*.7z
+*.zip
+*.tar.gz
+
+# Backup / conflict files
+*.backup*
+*sync-conflict*
+
+# Duplicate root-level template (managed under Manager Tools/)
+/default_gallery/
+
+# Library Reader build output (separate from source in Manager Tools/library-reader/)
+/Library Reader/
+
+# IDE / OS
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
+

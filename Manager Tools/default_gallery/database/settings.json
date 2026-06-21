@@ -1,50 +1,20 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-02-14T08:28:44.569Z",
+  "lastUpdated": "2026-05-10T08:09:07.745Z",
   "settings": {
     "theme": "dark",
-    "fontFamily": "Quantico",
+    "fontFamily": "'Share Tech Mono', monospace",
     "fontSizes": {
       "base": 14,
       "header": 26,
       "button": 12,
       "card": 13
     },
-    "panelPosition": {
-      "left": "auto",
-      "top": "auto",
-      "width": "400px",
-      "height": "auto"
-    },
-    "filterState": {
-      "filter": "all",
-      "search": "",
-      "layout": "grid",
-      "sort": "default",
-      "sortDirection": "asc"
-    },
     "skipPreferences": {
       "skipAgeVerify": false,
       "skipWelcome": false
     },
-    "keybinds": {
-      "navUp": "w",
-      "navDown": "s",
-      "navLeft": "a",
-      "navRight": "d",
-      "openCard": "enter",
-      "pin": "q",
-      "favorite": "e",
-      "layoutGrid": "1",
-      "layoutList": "2",
-      "layoutCompact": "3",
-      "layoutSpotlight": "4",
-      "settingsTab": ";",
-      "helpTab": "h",
-      "toggleTheme": "l",
-      "blackout": "space",
-      "focusSearch": "/"
-    }
+    "keybinds": {}
   },
   "colors": {
     "dark": {
@@ -53,7 +23,7 @@
       "bg": "#03050b",
       "bg-2": "#0a1220",
       "panel": "#0c1422",
-      "accent": "#61fffc",
+      "accent": "#62f7ff",
       "accent-2": "#8dff7b",
       "card": "#0c1422",
       "shadow": "#02060c",
@@ -78,11 +48,11 @@
     "lineSpacing": 1.6,
     "scrollStep": 40,
     "zoomStep": 0.1,
-    "keyboardMode": "left",
-    "panKeys": false,
+    "keyboardMode": "default",
+    "panKeys": true,
     "rememberZoom": true,
     "rememberViewAll": false,
-    "fontFamily": "'Quantico', sans-serif",
+    "fontFamily": "tech",
     "customFont": "",
     "customBindings": {}
   },
@@ -91,43 +61,18 @@
     "pinned": [],
     "bookmarks": {}
   },
-  "fontFamily": "Quantico",
+  "theme": "dark",
+  "fontFamily": "'Share Tech Mono', monospace",
   "customFont": "",
   "fontSize": 14,
   "headerSize": 26,
   "buttonSize": 12,
   "cardSize": 13,
-  "theme": "dark",
-  "skipAgeVerify": false,
-  "skipWelcome": false,
-  "keybinds": {
-    "navUp": "w",
-    "navDown": "s",
-    "navLeft": "a",
-    "navRight": "d",
-    "openCard": "enter",
-    "pin": "q",
-    "favorite": "e",
-    "layoutGrid": "1",
-    "layoutList": "2",
-    "layoutCompact": "3",
-    "layoutSpotlight": "4",
-    "settingsTab": ";",
-    "helpTab": "h",
-    "toggleTheme": "l",
-    "blackout": "space",
-    "focusSearch": "/"
-  },
-  "lineSpacing": 1.6,
-  "scrollStep": 40,
-  "zoomStep": 0.1,
-  "keyboardMode": "left",
-  "panKeys": false,
-  "rememberZoom": true,
-  "rememberViewAll": false,
-  "customBindings": {},
   "buttonFontSize": 12,
   "cardFontSize": 13,
+  "skipAgeVerify": false,
+  "skipWelcome": false,
+  "keybinds": {},
   "customColors": {
     "dark": {
       "ink": "#e8f1ff",
@@ -135,7 +80,7 @@
       "bg": "#03050b",
       "bg-2": "#0a1220",
       "panel": "#0c1422",
-      "accent": "#61fffc",
+      "accent": "#62f7ff",
       "accent-2": "#8dff7b",
       "card": "#0c1422",
       "shadow": "#02060c",
@@ -153,5 +98,13 @@
       "shadow": "#0c1626",
       "grid": "#0aa6c7"
     }
-  }
+  },
+  "lineSpacing": 1.6,
+  "scrollStep": 40,
+  "zoomStep": 0.1,
+  "keyboardMode": "default",
+  "panKeys": true,
+  "rememberZoom": true,
+  "rememberViewAll": false,
+  "customBindings": {}
 }
