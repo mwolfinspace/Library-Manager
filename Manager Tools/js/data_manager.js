@@ -95,8 +95,10 @@
         const closeAfterSaveToggle = document.getElementById('close-after-save');
         const loadStoryBtn = document.getElementById('load-story-btn');
         const clearFormBtn = document.getElementById('clear-form');
+        const createStoryBtn = document.getElementById('create-story');
         const removeSelectedBtn = document.getElementById('remove-selected');
         const cleanupSelectedBtn = document.getElementById('cleanup-selected');
+        const reindexStoriesBtn = document.getElementById('reindex-stories');
         const deleteFilesCheckbox = document.getElementById('delete-files');
         const dialogOverlay = document.getElementById('dialog-overlay');
         const dialogTitle = document.getElementById('dialog-title');
@@ -6800,6 +6802,84 @@
             }
         }
 
+        async function handleCreateNewStory() {
+            if (!state.rootHandle) {
+                setStatus('Choose a library folder first.');
+                return;
+            }
+
+            await autoSaveCurrentStory();
+
+            const id = generateStoryId();
+            const reportNumber = getNextReportNumber();
+            const title = `Story #${reportNumber}`;
+            const templateText = 'Type your story here.';
+            const now = new Date().toISOString();
+
+            try {
+                const storyDir = await getStoryDir();
+                await writeFile(storyDir, `${id}.md`, templateText);
+
+                const entry = {
+                    id,
+                    reportNumber,
+                    title,
+                    description: '',
+                    tags: [],
+                    cover: '',
+                    coverMedia: null,
+                    coverPosition: '50% 50%',
+                    coverPositions: { grid: '50% 50%', list: '50% 50%', compact: '50% 50%', spotlight: '50% 50%' },
+                    images: [],
+                    story: `story/${id}.md`,
+                    createdAt: now,
+                    updatedAt: now,
+                    displayOrder: state.stories.length,
+                    storyProtected: false,
+                };
+
+                state.stories.push(entry);
+                await writeCatalog(state.stories);
+                await notifyPreviewWindowsReload();
+                renderStoryList();
+                await editStory(id);
+                storyTextInput.value = templateText;
+                initUndoHistory(templateText);
+                setStatus(`Created ${title}.`);
+                showToast(`➕ ${title} created`, 'info');
+            } catch (error) {
+                console.error('Create story error:', error);
+                setStatus(`Create failed: ${error.message}`);
+                showToast(`Create failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function handleReindexStories() {
+            if (!state.rootHandle) {
+                setStatus('Choose a library folder first.');
+                return;
+            }
+
+            try {
+                reindexReportNumbers();
+                await writeCatalog(state.stories);
+                await notifyPreviewWindowsReload();
+                if (state.selectedId) {
+                    const story = state.stories.find(s => s.id === state.selectedId);
+                    if (story && reportNumberInput) {
+                        reportNumberInput.value = story.reportNumber || '';
+                    }
+                }
+                renderStoryList();
+                setStatus('Report numbers reindexed.');
+                showToast('🔃 Report numbers reindexed', 'info');
+            } catch (error) {
+                console.error('Reindex error:', error);
+                setStatus(`Reindex failed: ${error.message}`);
+                showToast(`Reindex failed: ${error.message}`, 'error');
+            }
+        }
+
         async function fixMissingFiles() {
             if (!state.rootHandle) {
                 setStatus('Choose a library folder first.');
@@ -7330,6 +7410,12 @@
             }
         });
         cleanupSelectedBtn.addEventListener('click', cleanupUnusedImages);
+        if (createStoryBtn) {
+            createStoryBtn.addEventListener('click', handleCreateNewStory);
+        }
+        if (reindexStoriesBtn) {
+            reindexStoriesBtn.addEventListener('click', handleReindexStories);
+        }
         const deleteFilesToggle = document.getElementById('delete-files-toggle');
         if (deleteFilesToggle) {
             deleteFilesToggle.addEventListener('click', () => {
@@ -7780,8 +7866,10 @@
             if (pinWindowBtn) pinWindowBtn.innerHTML = getIcon('pin', { width: 18, height: 18 });
             if (helpBtn) helpBtn.innerHTML = getIcon('help', { width: 18, height: 18 });
             if (settingsBtn) settingsBtn.innerHTML = getIcon('settings', { width: 18, height: 18 });
+            if (createStoryBtn) createStoryBtn.innerHTML = getIcon('add', { width: 16, height: 16 });
             if (removeSelectedBtn) removeSelectedBtn.innerHTML = getIcon('trash', { width: 16, height: 16 });
             if (cleanupSelectedBtn) cleanupSelectedBtn.innerHTML = getIcon('clear', { width: 16, height: 16 });
+            if (reindexStoriesBtn) reindexStoriesBtn.innerHTML = getIcon('sort', { width: 16, height: 16 });
             const saveBtn = document.querySelector('button[form="story-form"]:not(.ghost)');
             if (saveBtn) saveBtn.innerHTML = getIcon('cloudSucc', { width: 18, height: 18 }) + ' Save';
             const loadBtn = document.getElementById('load-story-btn');

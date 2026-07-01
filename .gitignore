@@ -23,6 +23,14 @@ Manager Tools/tauri-dist/
 # Library Reader build output (separate from source in Manager Tools/library-reader/)
 /Library Reader/
 
+# User data (library content, not source)
+database/catalog.json
+database/settings.json
+database/fonts.json
+database/catalog.backup.*.json
+story/
+media-scr/
+
 # IDE / OS
 .vscode/
 .idea/
