@@ -1,7 +1,28 @@
 # V2 Migration Plan: Vanilla JS → React + shadcn/ui
 
+> **Checkpoint**: `81b13d4` — Phase 0 complete. Working directory: `Manager Tools/react-ui/`.
+> Next step: **Phase 1** — copy pure logic into `src/lib/`, wrap file I/O into `src/services/`.
+
 ## Goal
 Replace all UI in `Data_Manager.html` + `data_manager.js` with React + shadcn/ui components while keeping **all functionality intact**. File I/O, data logic, cryptography — none of that changes.
+
+---
+
+## Progress
+
+| Phase | Status | Commit | Date |
+|-------|--------|--------|------|
+| 0 — Scaffold Vite + React + shadcn/ui | ✅ Done | `81b13d4` | 2026-07-01 |
+| 1 — Pure logic to `src/lib/` + services | ⏳ Pending | | |
+| 2 — Types + stores + layout shell | ⏳ Pending | | |
+| 3 — Story components (list, form, search, markdown) | ⏳ Pending | | |
+| 4 — Media components (manager, preview, cover upload) | ⏳ Pending | | |
+| 5 — Cover editor (position, presets, preview) | ⏳ Pending | | |
+| 6 — Modals (dialog, help, settings, library builder) | ⏳ Pending | | |
+| 7 — UI primitives (toast, all shadcn components) | ⏳ Pending | | |
+| 8 — Hooks (library, story, media, cover, settings, theme, password) | ⏳ Pending | | |
+| 9 — Integration + cutover (replace old HTML/JS) | ⏳ Pending | | |
+| 10 — Polish (verify all handlers, theming, build scripts) | ⏳ Pending | | |
 
 ---
 
@@ -712,17 +733,22 @@ All ~107 `addEventListener` calls. Each becomes a React `onClick`, `onChange`, `
 
 Each step is one actionable item. We'll work through them sequentially.
 
-### Phase 0: Scaffolding
-- [ ] **0.1** — Create Vite + React + TypeScript project in `Manager Tools/react-ui/`
-- [ ] **0.2** — Install shadcn/ui (Tailwind, PostCSS, component CLI)
-- [ ] **0.3** — Set up CSS variables with shadcn design tokens (light + dark)
-- [ ] **0.4** — Configure `vite.config.ts` for Electron/Tauri compatibility
-- [ ] **0.5** — Add `tsconfig.json` with strict mode
-- [ ] **0.6** — Create `components.json` for shadcn/ui CLI
+### Phase 0: Scaffolding ✅ (`81b13d4`)
+- [x] **0.1** — Create Vite + React + TypeScript project in `Manager Tools/react-ui/`
+- [x] **0.2** — Install shadcn/ui (Tailwind, CSS variables, design tokens)
+- [x] **0.3** — Set up CSS variables with shadcn design tokens (light + dark)
+- [x] **0.4** — Configure `vite.config.ts` for Electron/Tauri compatibility
+  - Added `@tailwindcss/vite` plugin, `@/` path alias
+- [x] **0.5** — Add `tsconfig.json` with strict mode + path mappings
+- [x] **0.6** — Create `components.json` for shadcn/ui
+- [x] **0.7** — Install Radix UI primitives + Lucide icons + utility libs
+- [x] **0.8** — Create shadcn components: Button, Card, Input, Badge, Separator + `cn()` utility
+- [x] **0.9** — Verify `tsc --noEmit` and `vite build` both pass cleanly
+- [x] **0.10** — Commit checkpoint at `81b13d4`
 
 ### Phase 1: Foundation — Copy pure logic + services
-- [ ] **1.1** — Copy all A01–A117 to `src/lib/` files
-- [ ] **1.2** — Wrap all B01–B86 to `src/services/` files
+- [ ] **1.1** — Copy all A01–A117 to `src/lib/` files (pure logic, no changes needed)
+- [ ] **1.2** — Wrap all B01–B86 to `src/services/` files (file I/O, same logic)
 - [ ] **1.3** — Create `src/types/` with TypeScript interfaces
 - [ ] **1.4** — Create `src/stores/app-state.tsx` context
 - [ ] **1.5** — Create `src/stores/toast-store.tsx`
