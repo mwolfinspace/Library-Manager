@@ -554,8 +554,8 @@
             height: 28px;
             border-radius: 6px;
             border: none;
-            background: transparent;
-            color: var(--ink-muted, rgba(230, 243, 255, 0.68));
+            background: var(--accent-alpha-08);
+            color: var(--accent);
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -565,12 +565,17 @@
         }
 
         .font-manager-item-btn:hover {
-            background: var(--accent-alpha-15);
-            color: var(--ink);
+            background: var(--accent-alpha-18);
+            color: var(--accent);
+        }
+
+        .font-manager-item-btn.danger {
+            background: rgba(255, 107, 107, 0.08);
+            color: var(--danger, #ff6b6b);
         }
 
         .font-manager-item-btn.danger:hover {
-            background: rgba(255, 107, 107, 0.15);
+            background: rgba(255, 107, 107, 0.18);
             color: var(--danger, #ff6b6b);
         }
 
@@ -633,8 +638,8 @@
         [data-theme="light"] .font-manager-drop p { color: #666; }
         [data-theme="light"] .font-manager-item-name { color: #1a1a1a; }
         [data-theme="light"] .font-manager-item:hover { background: rgba(0, 0, 0, 0.04); }
-        [data-theme="light"] .font-manager-item-btn { color: #666; }
-        [data-theme="light"] .font-manager-item-btn:hover { background: rgba(0, 0, 0, 0.06); color: #1a1a1a; }
+        [data-theme="light"] .font-manager-item-btn { background: var(--accent-alpha-08); color: var(--accent); }
+        [data-theme="light"] .font-manager-item-btn:hover { background: var(--accent-alpha-15); color: var(--accent); }
         [data-theme="light"] .font-manager-footer { border-top-color: rgba(0, 0, 0, 0.06); }
         [data-theme="light"] .font-manager-count { color: #888; }
         [data-theme="light"] .font-manager-preview { background: #fff; border-color: rgba(0, 0, 0, 0.1); }

@@ -5582,10 +5582,12 @@
                     folderBtn.title = 'Open font folder';
                     folderBtn.innerHTML = getIcon('folder', { width: 14, height: 14 });
                     folderBtn.addEventListener('click', async () => {
-                        if (isElectronDesktopApp() && electronDesktopApi.revealInExplorer && state.rootHandle && state.rootHandle.path) {
-                            const fontDir = (state.rootHandle.path + '\\fonts\\' + font.prefix).replace(/[\\\/]$/, '');
-                            await electronDesktopApi.revealInExplorer(fontDir);
-                        }
+                        try {
+                            if (electronDesktopApi && electronDesktopApi.revealInExplorer && state.rootHandle && state.rootHandle.path) {
+                                const fontDir = (state.rootHandle.path + '\\fonts\\' + font.prefix).replace(/[\\\/]$/, '');
+                                await electronDesktopApi.revealInExplorer(fontDir);
+                            }
+                        } catch (e) { /* ignore */ }
                     });
                     actions.appendChild(folderBtn);
 
