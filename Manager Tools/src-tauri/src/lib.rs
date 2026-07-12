@@ -93,7 +93,8 @@ fn default_page_type() -> String {
 }
 
 fn descriptor(path: PathBuf, kind: &str) -> HandleDescriptor {
-    let name = path
+    let clean = strip_extended_prefix(path);
+    let name = clean
         .file_name()
         .and_then(|value| value.to_str())
         .unwrap_or(kind)
@@ -101,14 +102,16 @@ fn descriptor(path: PathBuf, kind: &str) -> HandleDescriptor {
     HandleDescriptor {
         kind: kind.to_string(),
         name,
-        path: path.to_string_lossy().to_string(),
+        path: clean.to_string_lossy().to_string(),
     }
 }
 
 fn resolve_child(parent: &str, name: &str) -> Result<PathBuf, String> {
-    let parent_path = PathBuf::from(parent)
-        .canonicalize()
-        .map_err(|error| error.to_string())?;
+    let parent_path = strip_extended_prefix(
+        PathBuf::from(parent)
+            .canonicalize()
+            .map_err(|error| error.to_string())?,
+    );
     let child = parent_path.join(name);
     let normalized = child.components().collect::<PathBuf>();
     if !normalized.starts_with(&parent_path) {
@@ -131,10 +134,21 @@ fn normalize_relative_segments(relative_path: &str) -> Result<PathBuf, String> {
     Ok(normalized)
 }
 
+fn strip_extended_prefix(path: PathBuf) -> PathBuf {
+    let s = path.to_string_lossy().to_string();
+    if let Some(stripped) = s.strip_prefix(r"\\?\") {
+        PathBuf::from(stripped)
+    } else {
+        path
+    }
+}
+
 fn resolve_library_file_path(root_path: &str, relative_path: &str) -> Result<PathBuf, String> {
-    let root = PathBuf::from(root_path)
-        .canonicalize()
-        .map_err(|error| error.to_string())?;
+    let root = strip_extended_prefix(
+        PathBuf::from(root_path)
+            .canonicalize()
+            .map_err(|error| error.to_string())?,
+    );
     let target = root.join(normalize_relative_segments(relative_path)?);
     let normalized = target.components().collect::<PathBuf>();
     if !normalized.starts_with(&root) {
@@ -474,9 +488,11 @@ fn get_preview_window_data() -> Option<Value> {
 
 #[tauri::command]
 fn build_new_library(payload: BuildLibraryPayload) -> Result<Value, String> {
-    let parent = PathBuf::from(payload.parent_path.trim())
-        .canonicalize()
-        .map_err(|error| error.to_string())?;
+    let parent = strip_extended_prefix(
+        PathBuf::from(payload.parent_path.trim())
+            .canonicalize()
+            .map_err(|error| error.to_string())?,
+    );
     let folder_name = sanitize_entry_name(&payload.folder_name);
     let library_name = payload.library_name.trim().to_string();
     if folder_name.is_empty() || library_name.is_empty() {

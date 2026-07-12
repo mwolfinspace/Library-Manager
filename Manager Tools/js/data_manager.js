@@ -7616,6 +7616,14 @@
                     return;
                 }
 
+                if (state.rootHandle.path && electronDesktopApi && electronDesktopApi.revealInExplorer) {
+                    const result = await electronDesktopApi.revealInExplorer(state.rootHandle.path);
+                    if (!result.success) {
+                        showToast(`Cannot open folder: ${result.error || 'Unknown error'}`, 'error');
+                    }
+                    return;
+                }
+
                 let libraryUrl = state.currentLibraryUrl;
                 if (!libraryUrl) {
                     libraryUrl = localStorage.getItem(RECENT_LIBRARY_URL_KEY);
@@ -7632,7 +7640,7 @@
                     return;
                 }
 
-                const folderPath = new URL(libraryUrl).pathname.replace(/\\/g, '/').replace(/\/$/, '');
+                const folderPath = new URL(libraryUrl).pathname.replace(/^\/([A-Z]:)/i, '$1').replace(/\\/g, '/').replace(/\/$/, '');
                 if (isElectronDesktopApp() && window.electronDataManager.revealInExplorer) {
                     const result = await window.electronDataManager.revealInExplorer(folderPath);
                     if (!result.success) {
