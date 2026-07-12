@@ -17,31 +17,64 @@
             </div>
         </div>
     </div>
+    <div class="scan-overlay" id="scan-overlay" hidden>
+        <div class="scan-modal">
+            <div class="scan-header">
+                <div class="scan-spinner"></div>
+                <strong id="scan-title">Loading Library...</strong>
+            </div>
+            <p class="scan-status" id="scan-status">Preparing...</p>
+            <div class="scan-progress-track">
+                <div class="scan-progress-bar" id="scan-progress-bar"></div>
+            </div>
+            <p class="scan-file" id="scan-file"></p>
+        </div>
+    </div>
+    <div class="font-manager-overlay" id="font-manager-overlay" hidden>
+        <div class="font-manager-modal">
+            <div class="font-manager-header">
+                <strong>Font Manager</strong>
+                <button class="ghost" id="font-manager-close" type="button">Close</button>
+            </div>
+            <div class="font-manager-drop" id="font-manager-drop">
+                <p>Drop font files or folders here</p>
+                <p class="font-manager-drop-hint">.woff, .woff2, .ttf, .otf</p>
+                <button class="ghost" id="font-manager-browse" type="button">Browse Files</button>
+                <input type="file" id="font-manager-input" multiple accept=".woff,.woff2,.ttf,.otf" style="position:absolute;width:0;height:0;opacity:0;pointer-events:none;">
+            </div>
+            <div class="font-manager-list" id="font-manager-list">
+                <p class="font-manager-empty">No fonts in library yet.</p>
+            </div>
+            <div class="font-manager-footer">
+                <span class="font-manager-count" id="font-manager-count"></span>
+                <button class="ghost" id="font-manager-refresh" type="button">Refresh</button>
+            </div>
+        </div>
+    </div>
     <div class="app-titlebar" id="app-titlebar" hidden>
         <div class="app-titlebar-drag">
             <img class="app-titlebar-logo" src="" alt="Logo" id="app-titlebar-logo">
             <strong id="app-titlebar-text">Data Manager</strong>
         </div>
         <div class="app-titlebar-tools" id="app-titlebar-tools">
-            <button class="titlebar-btn" id="choose-folder" type="button" title="Choose Library Folder"></button>
+            <button class="titlebar-btn" id="choose-folder" type="button" title="Open Library Folder"></button>
+            <button class="titlebar-btn" id="eject-library" type="button" title="Close Library" hidden></button>
             <button class="titlebar-btn" id="build-library" type="button" title="Build New Library"></button>
             <button class="titlebar-btn" id="open-recent" type="button" title="Open Recent"></button>
             <div class="titlebar-divider"></div>
-            <button class="titlebar-btn" id="scan-library" type="button" title="Scan Files"></button>
-            <button class="titlebar-btn" id="reload-catalog" type="button" title="Reload Catalog"></button>
-            <button class="titlebar-btn" id="update-fonts" type="button" title="Update Fonts"></button>
-            <button class="titlebar-btn" id="fix-missing" type="button" title="Fix Missing Files"></button>
+            <button class="titlebar-btn" id="scan-library" type="button" title="Scan & Reload Library"></button>
+            <div class="titlebar-divider"></div>
+            <button class="titlebar-btn" id="font-manager" type="button" title="Font Manager"></button>
             <div class="titlebar-divider"></div>
             <button class="titlebar-btn" id="open-homepage" type="button" title="Open Homepage"></button>
+            <button class="titlebar-btn" id="open-story" type="button" title="Open Current Story" hidden></button>
             <button class="titlebar-btn" id="reveal-library" type="button" title="Reveal Library Folder"></button>
             <div class="titlebar-divider"></div>
-            <label class="ios-toggle" title="Auto Scan on Folder Open">
-                <input type="checkbox" id="auto-scan">
-                <span class="ios-toggle-track"><span class="ios-toggle-thumb"></span></span>
-            </label>
             <button class="titlebar-btn" id="theme-toggle" type="button" title="Toggle Light/Dark Theme"></button>
             <button class="titlebar-btn" id="accent-color-btn" type="button" title="Pick Accent Color"><span class="accent-color-indicator"></span></button>
-            <input type="color" id="accent-color-input" value="#3ef0c1" style="position:absolute;width:0;height:0;opacity:0;pointer-events:none;">
+            <div class="accent-picker-tooltip" id="accent-picker-tooltip">
+                <div class="accent-picker-grid" id="accent-picker-grid"></div>
+            </div>
             <button class="titlebar-btn" id="pin-window" type="button" title="Always on Top"></button>
             <div class="titlebar-divider"></div>
             <button class="titlebar-btn" id="help-btn" type="button" title="Help"></button>
@@ -50,7 +83,9 @@
         </div>
         <div class="app-titlebar-actions">
             <button class="app-window-btn" id="window-minimize" type="button" title="Minimize" aria-label="Minimize"></button>
+            <div class="titlebar-actions-gap"></div>
             <button class="app-window-btn" id="window-maximize" type="button" title="Maximize" aria-label="Maximize"><span id="window-maximize-glyph">&#9723;</span></button>
+            <div class="titlebar-actions-gap"></div>
             <button class="app-window-btn close" id="window-close" type="button" title="Close" aria-label="Close"></button>
         </div>
     </div>
@@ -189,8 +224,6 @@
 
     <div class="status-bar">
         <span id="status-bar-text">Ready.</span>
-        <span id="status-bar-recent">Recent folder: none &bull; Recent story: none</span>
-        <span id="status-bar-library">Library: none</span>
     </div>
 
     <!-- Toast Notification Container -->

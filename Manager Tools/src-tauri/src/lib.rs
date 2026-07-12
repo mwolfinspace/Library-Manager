@@ -295,6 +295,20 @@ fn path_exists(target_path: String) -> bool {
 }
 
 #[tauri::command]
+fn read_text_file(file_path: String) -> Result<String, String> {
+    fs::read_to_string(&file_path).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn read_json_file_content(file_path: String) -> Result<Value, String> {
+    let content = fs::read_to_string(&file_path).map_err(|error| error.to_string())?;
+    if content.trim().is_empty() {
+        return Err("File is empty.".to_string());
+    }
+    serde_json::from_str(&content).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
 fn read_file(file_path: String) -> Result<FilePayload, String> {
     let path = PathBuf::from(file_path);
     let data = fs::read(&path).map_err(|error| error.to_string())?;
@@ -676,6 +690,8 @@ pub fn run() {
             show_directory_picker,
             show_open_file_picker,
             path_exists,
+            read_text_file,
+            read_json_file_content,
             read_file,
             write_file,
             get_directory_handle,

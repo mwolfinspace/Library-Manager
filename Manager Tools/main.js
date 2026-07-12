@@ -8,6 +8,18 @@ const { exec } = require('node:child_process');
 app.setName('Xedryk Data Manager');
 app.setAppUserModelId('com.xedryk.datamanager');
 
+app.commandLine.appendSwitch('disable-frame-rate-limit');
+app.commandLine.appendSwitch('ignore-gpu-blocklist');
+app.commandLine.appendSwitch('enable-gpu-rasterization');
+app.commandLine.appendSwitch('enable-accelerated-2d-canvas');
+app.commandLine.appendSwitch('enable-webgl');
+app.commandLine.appendSwitch('enable-zero-copy');
+app.commandLine.appendSwitch('use-gl', 'angle');
+app.commandLine.appendSwitch('use-angle', 'd3d11');
+app.commandLine.appendSwitch('enable-features', [
+  'Vulkan,DefaultANGLEVulkan,VulkanFromANGLE',
+].join(','));
+
 const IS_WINDOWS = process.platform === 'win32';
 const APP_ID = 'com.xedryk.datamanager';
 
@@ -453,7 +465,7 @@ function createManagerWindow() {
     roundedCorners: true,
     transparent: true,
     autoHideMenuBar: true,
-    backgroundColor: '#00000000',
+    backgroundColor: '#f3f3f3',
     title: 'Xedryk Data Manager',
     icon: iconPath,
     webPreferences: {
@@ -461,6 +473,7 @@ function createManagerWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
+      backgroundThrottling: false,
     },
   });
 
@@ -482,7 +495,7 @@ function createPreviewWindow(title, windowData = {}) {
     minHeight: 640,
     frame: false,
     autoHideMenuBar: true,
-    backgroundColor: '#050912',
+    backgroundColor: '#f3f3f3',
     title,
     webPreferences: {
       preload: PRELOAD_PATH,

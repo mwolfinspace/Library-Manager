@@ -1,11 +1,11 @@
         const chooseFolderBtn = document.getElementById('choose-folder');
+        const ejectLibraryBtn = document.getElementById('eject-library');
         const buildLibraryBtn = document.getElementById('build-library');
         const openRecentBtn = document.getElementById('open-recent');
         const scanLibraryBtn = document.getElementById('scan-library');
-        const reloadCatalogBtn = document.getElementById('reload-catalog');
-        const updateFontsBtn = document.getElementById('update-fonts');
-        const fixMissingBtn = document.getElementById('fix-missing');
+        const fontManagerBtn = document.getElementById('font-manager');
         const openHomepageBtn = document.getElementById('open-homepage');
+        const openStoryBtn = document.getElementById('open-story');
         const revealLibraryBtn = document.getElementById('reveal-library');
         const helpBtn = document.getElementById('help-btn');
         const helpModal = document.getElementById('help-modal');
@@ -22,12 +22,16 @@
         const libraryBuilderCloseBtn = document.getElementById('library-builder-close');
         const libraryBuilderCancelBtn = document.getElementById('library-builder-cancel');
         const libraryBuilderSubmitBtn = document.getElementById('library-builder-submit');
-        const autoScanToggle = document.getElementById('auto-scan');
+        const fontManagerOverlay = document.getElementById('font-manager-overlay');
+        const fontManagerClose = document.getElementById('font-manager-close');
+        const fontManagerDrop = document.getElementById('font-manager-drop');
+        const fontManagerBrowse = document.getElementById('font-manager-browse');
+        const fontManagerInput = document.getElementById('font-manager-input');
+        const fontManagerList = document.getElementById('font-manager-list');
+        const fontManagerCount = document.getElementById('font-manager-count');
+        const fontManagerRefresh = document.getElementById('font-manager-refresh');
         const statusEl = document.getElementById('status');
-        const recentInfoEl = document.getElementById('recent-info');
         const statusBarText = document.getElementById('status-bar-text');
-        const statusBarRecent = document.getElementById('status-bar-recent');
-        const statusBarLibrary = document.getElementById('status-bar-library');
         const appTitlebar = document.getElementById('app-titlebar');
         const appTitlebarText = document.getElementById('app-titlebar-text');
         const windowMinimizeBtn = document.getElementById('window-minimize');
@@ -390,6 +394,18 @@
                 applyElectronWindowState(state);
             } catch (error) {
                 applyElectronWindowState();
+            }
+
+            if (typeof electronDesktopApi.startDragging === 'function') {
+                const dragArea = document.querySelector('.app-titlebar-drag');
+                if (dragArea) {
+                    dragArea.addEventListener('mousedown', (e) => {
+                        if (e.button !== 0) return;
+                        if (e.target.closest('button, input, label, a')) return;
+                        e.preventDefault();
+                        electronDesktopApi.startDragging().catch(() => {});
+                    });
+                }
             }
         }
 
@@ -1478,8 +1494,46 @@
                 statusEl.textContent = message;
             }
             if (statusBarText) {
-                statusBarText.textContent = message;
+                statusBarText.dataset.baseMessage = message;
             }
+            renderLibraryStatsBar();
+        }
+
+        const scanOverlay = document.getElementById('scan-overlay');
+        const scanTitle = document.getElementById('scan-title');
+        const scanStatus = document.getElementById('scan-status');
+        const scanProgressBar = document.getElementById('scan-progress-bar');
+        const scanFile = document.getElementById('scan-file');
+        let scanModalActive = false;
+
+        function showScanModal(title, statusText) {
+            if (!scanOverlay) return;
+            scanModalActive = true;
+            scanOverlay.hidden = false;
+            if (scanTitle) scanTitle.textContent = title || 'Loading Library...';
+            if (scanStatus) scanStatus.textContent = statusText || 'Preparing...';
+            if (scanProgressBar) scanProgressBar.style.width = '0%';
+            if (scanFile) scanFile.textContent = '';
+        }
+
+        function updateScanModal(progress, statusText, fileName) {
+            if (!scanOverlay || !scanModalActive) return;
+            if (scanProgressBar) scanProgressBar.style.width = Math.min(100, Math.max(0, progress)) + '%';
+            if (statusText && scanStatus) scanStatus.textContent = statusText;
+            if (scanFile !== undefined && scanFile) scanFile.textContent = fileName || '';
+        }
+
+        function hideScanModal() {
+            if (!scanOverlay) return;
+            scanModalActive = false;
+            scanOverlay.hidden = true;
+            if (scanProgressBar) scanProgressBar.style.width = '100%';
+        }
+
+        function getFileNameFromPath(path) {
+            if (!path) return '';
+            const parts = path.replace(/\\/g, '/').split('/');
+            return parts[parts.length - 1] || '';
         }
 
         // Toast Notification System
@@ -2058,22 +2112,30 @@
 
         function buildLibraryStatsText() {
             if (!state.rootHandle) {
-                return 'Library: none';
+                return '';
             }
             if (libraryStats.loading) {
-                return `Library ${state.rootHandle.name}: calculating stats...`;
+                return `\u{1F4C1} ${state.rootHandle.name} \u2022 calculating stats...`;
             }
             if (!libraryStats.ready) {
-                return `Library ${state.rootHandle.name}: stats unavailable`;
+                return `\u{1F4C1} ${state.rootHandle.name} \u2022 stats unavailable`;
             }
-            return `Library ${state.rootHandle.name} | Size: ${formatByteSize(libraryStats.totalBytes)} | Photos: ${libraryStats.photoCount} | GIFs: ${libraryStats.gifCount} | Videos: ${libraryStats.videoCount}`;
+            const parts = [`\u{1F4C1} ${state.rootHandle.name}`];
+            parts.push(`\u{1F4D6} ${state.stories.length} stories`);
+            if (libraryStats.photoCount > 0) parts.push(`\u{1F5BC}\uFE0F ${libraryStats.photoCount} photos`);
+            if (libraryStats.gifCount > 0) parts.push(`\u{1F4F8} ${libraryStats.gifCount} GIFs`);
+            if (libraryStats.videoCount > 0) parts.push(`\u{1F3AC} ${libraryStats.videoCount} videos`);
+            parts.push(`\u{1F4BE} ${formatByteSize(libraryStats.totalBytes)}`);
+            return parts.join(' \u2022 ');
         }
 
         function renderLibraryStatsBar() {
-            if (!statusBarLibrary) {
+            if (!statusBarText) {
                 return;
             }
-            statusBarLibrary.textContent = buildLibraryStatsText();
+            const currentMessage = statusBarText.dataset.baseMessage || 'Ready.';
+            const statsText = buildLibraryStatsText();
+            statusBarText.textContent = statsText ? `${currentMessage} \u2014 ${statsText}` : currentMessage;
         }
 
         async function collectLibraryStats(rootHandle) {
@@ -2176,18 +2238,6 @@
 
         function updateRecentInfo() {
             const folder = localStorage.getItem(RECENT_FOLDER_KEY);
-            const storyTitle = localStorage.getItem(RECENT_STORY_TITLE_KEY);
-            const folderTime = localStorage.getItem(RECENT_FOLDER_TIME_KEY);
-            const timeText = folderTime ? ` • ${new Date(folderTime).toLocaleString()}` : '';
-
-            const folderText = folder ? `Recent folder: ${folder}${timeText}` : 'Recent folder: none';
-            const storyText = storyTitle ? `Recent story: ${storyTitle}` : 'Recent story: none';
-            if (recentInfoEl) {
-                recentInfoEl.textContent = `${folderText} • ${storyText}`;
-            }
-            if (statusBarRecent) {
-                statusBarRecent.textContent = `${folderText} • ${storyText}`;
-            }
             if (openRecentBtn) {
                 openRecentBtn.disabled = !folder;
             }
@@ -4082,11 +4132,7 @@
                 }
 
                 await saveRecentFolder(state.rootHandle);
-                if (autoScanToggle && autoScanToggle.checked) {
-                    await scanLibrary();
-                } else {
-                    await loadLibrary();
-                }
+                await loadLibrary();
             } catch (error) {
                 setStatus('Folder selection cancelled.');
             }
@@ -4110,6 +4156,11 @@
 
         async function readJsonFile(dirHandle, fileName) {
             try {
+                if (isElectronDesktopApp() && dirHandle && dirHandle.path && electronDesktopApi && typeof electronDesktopApi.readJsonFile === 'function') {
+                    const sep = dirHandle.path.includes('/') ? '/' : '\\';
+                    const fullPath = dirHandle.path + sep + fileName;
+                    return await electronDesktopApi.readJsonFile(fullPath);
+                }
                 const fileHandle = await dirHandle.getFileHandle(fileName);
                 const file = await fileHandle.getFile();
                 const text = await file.text();
@@ -4124,6 +4175,11 @@
 
         async function readTextFile(dirHandle, fileName) {
             try {
+                if (isElectronDesktopApp() && dirHandle && dirHandle.path && electronDesktopApi && typeof electronDesktopApi.readTextFile === 'function') {
+                    const sep = dirHandle.path.includes('/') ? '/' : '\\';
+                    const fullPath = dirHandle.path + sep + fileName;
+                    return await electronDesktopApi.readTextFile(fullPath);
+                }
                 const fileHandle = await dirHandle.getFileHandle(fileName);
                 const file = await fileHandle.getFile();
                 return file.text();
@@ -4134,6 +4190,11 @@
 
         async function fileExists(dirHandle, fileName) {
             try {
+                if (isElectronDesktopApp() && dirHandle && dirHandle.path && electronDesktopApi && typeof electronDesktopApi.pathExists === 'function') {
+                    const sep = dirHandle.path.includes('/') ? '/' : '\\';
+                    const fullPath = dirHandle.path + sep + fileName;
+                    return await electronDesktopApi.pathExists(fullPath);
+                }
                 await dirHandle.getFileHandle(fileName);
                 return true;
             } catch (error) {
@@ -5280,9 +5341,12 @@
             await getImageDir();
 
             const databaseDir = await getDatabaseDir();
-            const catalog = await readJsonFile(databaseDir, 'catalog.json');
-            if (!catalog) {
-                await writeCatalog([]);
+            const catalogExists = await fileExists(databaseDir, 'catalog.json');
+            if (!catalogExists) {
+                const catalog = await readJsonFile(databaseDir, 'catalog.json');
+                if (!catalog) {
+                    await writeCatalog([]);
+                }
             }
 
             const settings = await readJsonFile(databaseDir, 'settings.json');
@@ -5452,6 +5516,264 @@
             }
         }
 
+        let fontPreviewEl = null;
+
+        function openFontManager() {
+            if (!state.rootHandle) {
+                showToast('Open a library first.', 'warning');
+                return;
+            }
+            if (fontManagerOverlay) {
+                fontManagerOverlay.hidden = false;
+                loadFontManagerList();
+                setupFontManagerDragDrop();
+            }
+        }
+
+        function closeFontManager() {
+            if (fontManagerOverlay) fontManagerOverlay.hidden = true;
+            removeFontPreview();
+        }
+
+        async function loadFontManagerList() {
+            if (!fontManagerList || !state.rootHandle) return;
+            fontManagerList.innerHTML = '';
+            try {
+                const fontsDir = await getFontsDir();
+                const validExtensions = ['.woff', '.woff2', '.ttf', '.otf'];
+                const fontFiles = [];
+
+                const collectFonts = async (dirHandle, prefix) => {
+                    for await (const [name, handle] of dirHandle.entries()) {
+                        if (handle.kind === 'directory') {
+                            await collectFonts(handle, `${prefix}${name}/`);
+                        } else if (handle.kind === 'file') {
+                            const ext = name.slice(name.lastIndexOf('.')).toLowerCase();
+                            if (validExtensions.includes(ext)) {
+                                fontFiles.push({ name, prefix, handle });
+                            }
+                        }
+                    }
+                };
+
+                await collectFonts(fontsDir, '');
+
+                if (fontFiles.length === 0) {
+                    fontManagerList.innerHTML = '<p class="font-manager-empty">No fonts in library yet. Drop font files above or click Browse.</p>';
+                    if (fontManagerCount) fontManagerCount.textContent = '0 fonts';
+                    return;
+                }
+
+                for (const font of fontFiles) {
+                    const item = document.createElement('div');
+                    item.className = 'font-manager-item';
+
+                    const nameSpan = document.createElement('span');
+                    nameSpan.className = 'font-manager-item-name';
+                    nameSpan.textContent = font.prefix + font.name;
+                    nameSpan.title = font.prefix + font.name;
+                    item.appendChild(nameSpan);
+
+                    const actions = document.createElement('div');
+                    actions.className = 'font-manager-item-actions';
+
+                    const previewBtn = document.createElement('button');
+                    previewBtn.className = 'font-manager-item-btn';
+                    previewBtn.title = 'Preview font';
+                    previewBtn.innerHTML = '&#128065;';
+                    previewBtn.addEventListener('mouseenter', (e) => showFontPreview(font, e));
+                    previewBtn.addEventListener('mouseleave', () => removeFontPreview());
+                    actions.appendChild(previewBtn);
+
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'font-manager-item-btn danger';
+                    deleteBtn.title = 'Remove font';
+                    deleteBtn.innerHTML = '&#128465;';
+                    deleteBtn.addEventListener('click', async () => {
+                        const confirmed = await themedConfirm(`Remove font "${font.name}" from the library?`, {
+                            title: 'Remove Font',
+                            type: 'warning',
+                            confirmText: 'Remove',
+                            cancelText: 'Cancel',
+                            dangerConfirm: true,
+                        });
+                        if (!confirmed) return;
+                        try {
+                            await fontsDir.removeEntry(font.name, { recursive: true });
+                            showToast(`Removed font: ${font.name}`, 'success');
+                            await updateFonts();
+                            await loadFontManagerList();
+                        } catch (error) {
+                            showToast(`Failed to remove font: ${error.message}`, 'error');
+                        }
+                    });
+                    actions.appendChild(deleteBtn);
+
+                    item.appendChild(actions);
+                    fontManagerList.appendChild(item);
+                }
+
+                if (fontManagerCount) fontManagerCount.textContent = `${fontFiles.length} font file(s)`;
+            } catch (error) {
+                fontManagerList.innerHTML = `<p class="font-manager-empty">Error listing fonts: ${error.message}</p>`;
+            }
+        }
+
+        async function showFontPreview(font, event) {
+            removeFontPreview();
+            try {
+                const fontsDir = await getFontsDir();
+                const fileHandle = await fontsDir.getFileHandle(font.name);
+                const file = await fileHandle.getFile();
+                const buffer = await file.arrayBuffer();
+                const ext = font.name.slice(font.name.lastIndexOf('.')).toLowerCase();
+                const formatMap = { '.woff': 'woff', '.woff2': 'woff2', '.ttf': 'truetype', '.otf': 'opentype' };
+                const format = formatMap[ext] || 'truetype';
+                const familyName = `preview-${Date.now()}`;
+                const fontFace = new FontFace(familyName, buffer, { style: 'normal', weight: '400' });
+                await fontFace.load();
+                document.fonts.add(fontFace);
+
+                fontPreviewEl = document.createElement('div');
+                fontPreviewEl.className = 'font-manager-preview';
+                fontPreviewEl.style.left = (event.clientX + 16) + 'px';
+                fontPreviewEl.style.top = (event.clientY - 20) + 'px';
+                const textEl = document.createElement('div');
+                textEl.className = 'font-manager-preview-text';
+                textEl.style.fontFamily = `'${familyName}', sans-serif`;
+                textEl.textContent = 'The Quick Brown Fox Jumps Over The Lazy Dog';
+                fontPreviewEl.appendChild(textEl);
+                const labelEl = document.createElement('div');
+                labelEl.className = 'font-manager-preview-label';
+                labelEl.textContent = font.name;
+                fontPreviewEl.appendChild(labelEl);
+                document.body.appendChild(fontPreviewEl);
+            } catch (error) {
+                // Silently fail preview
+            }
+        }
+
+        function removeFontPreview() {
+            if (fontPreviewEl && fontPreviewEl.parentNode) {
+                fontPreviewEl.remove();
+            }
+            fontPreviewEl = null;
+        }
+
+        let fontManagerDragSetup = false;
+
+        function setupFontManagerDragDrop() {
+            if (fontManagerDragSetup) return;
+            fontManagerDragSetup = true;
+
+            if (fontManagerDrop) {
+                fontManagerDrop.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    fontManagerDrop.classList.add('drag-over');
+                });
+                fontManagerDrop.addEventListener('dragleave', () => {
+                    fontManagerDrop.classList.remove('drag-over');
+                });
+                fontManagerDrop.addEventListener('drop', async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    fontManagerDrop.classList.remove('drag-over');
+                    const items = e.dataTransfer.items;
+                    if (items) {
+                        const files = [];
+                        for (const item of items) {
+                            if (item.kind === 'file') {
+                                const entry = item.webkitGetAsEntry ? item.webkitGetAsEntry() : null;
+                                if (entry) {
+                                    await collectDroppedEntries(entry, files);
+                                } else {
+                                    const file = item.getAsFile();
+                                    if (file) files.push(file);
+                                }
+                            }
+                        }
+                        await importFontFiles(files);
+                    }
+                });
+            }
+
+            if (fontManagerBrowse) {
+                fontManagerBrowse.addEventListener('click', () => {
+                    if (fontManagerInput) fontManagerInput.click();
+                });
+            }
+
+            if (fontManagerInput) {
+                fontManagerInput.addEventListener('change', async () => {
+                    const files = Array.from(fontManagerInput.files || []);
+                    await importFontFiles(files);
+                    fontManagerInput.value = '';
+                });
+            }
+
+            if (fontManagerClose) {
+                fontManagerClose.addEventListener('click', closeFontManager);
+            }
+
+            if (fontManagerRefresh) {
+                fontManagerRefresh.addEventListener('click', async () => {
+                    await updateFonts();
+                    await loadFontManagerList();
+                    showToast('Font library refreshed.', 'success');
+                });
+            }
+        }
+
+        async function collectDroppedEntries(entry, files) {
+            if (entry.isFile) {
+                const file = await new Promise(resolve => entry.file(resolve));
+                if (file) files.push(file);
+            } else if (entry.isDirectory) {
+                const reader = entry.createReader();
+                const readBatch = () => {
+                    reader.readEntries(async (entries) => {
+                        if (entries.length === 0) return;
+                        for (const child of entries) {
+                            await collectDroppedEntries(child, files);
+                        }
+                        readBatch();
+                    });
+                };
+                readBatch();
+            }
+        }
+
+        async function importFontFiles(files) {
+            if (!state.rootHandle || files.length === 0) return;
+            const validExtensions = ['.woff', '.woff2', '.ttf', '.otf'];
+            const fontsDir = await getFontsDir();
+            let imported = 0;
+
+            for (const file of files) {
+                const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
+                if (!validExtensions.includes(ext)) continue;
+                try {
+                    const buffer = await file.arrayBuffer();
+                    const fileHandle = await fontsDir.getFileHandle(file.name, { create: true });
+                    const writable = await fileHandle.createWritable();
+                    await writable.write(buffer);
+                    await writable.close();
+                    imported++;
+                } catch (error) {
+                    console.error(`Failed to import font ${file.name}:`, error);
+                }
+            }
+
+            if (imported > 0) {
+                showToast(`Imported ${imported} font file(s).`, 'success');
+                await updateFonts();
+                await loadFontManagerList();
+            } else {
+                showToast('No valid font files found to import.', 'warning');
+            }
+        }
+
 
         async function loadLibrary() {
             if (!state.rootHandle) {
@@ -5459,34 +5781,57 @@
                 return;
             }
 
-            clearLibraryPreviewCaches();
-            const databaseDir = await getDatabaseDir();
-            const catalog = await readJsonFile(databaseDir, 'catalog.json');
-            state.stories = normalizeCatalog(catalog);
-            selectedStoryIds.clear();
-            sortStories();
-            reindexReportNumbers();
+            showScanModal('Loading Library...', 'Reading catalog...');
+            try {
+                updateScanModal(10, 'Reading catalog...', 'catalog.json');
 
-            if (!state.currentLibraryUrl) {
-                const libraryUrl = normalizeLibraryBaseUrl(new URL('./', window.location.href).href);
-                if (libraryUrl) {
-                    state.currentLibraryUrl = libraryUrl;
-                    localStorage.setItem(RECENT_LIBRARY_URL_KEY, libraryUrl);
+                clearLibraryPreviewCaches();
+                const databaseDir = await getDatabaseDir();
+                const catalog = await readJsonFile(databaseDir, 'catalog.json');
+                state.stories = normalizeCatalog(catalog);
+                selectedStoryIds.clear();
+                sortStories();
+                reindexReportNumbers();
+
+                updateScanModal(40, 'Reading settings...', 'settings.json');
+
+                if (!state.currentLibraryUrl) {
+                    const libraryUrl = normalizeLibraryBaseUrl(new URL('./', window.location.href).href);
+                    if (libraryUrl) {
+                        state.currentLibraryUrl = libraryUrl;
+                        localStorage.setItem(RECENT_LIBRARY_URL_KEY, libraryUrl);
+                    }
                 }
-            }
 
-            const settingsData = await readJsonFile(databaseDir, 'settings.json');
-            if (settingsData) {
-                syncSettingsToLocalStorage(settingsData);
+                const settingsData = await readJsonFile(databaseDir, 'settings.json');
+                if (settingsData) {
+                    syncSettingsToLocalStorage(settingsData);
+                }
+
+                updateScanModal(60, 'Loading password vault...', 'vault.json');
+                await loadStoryPasswordVault({ createIfMissing: true });
+                await pruneSavedStoryPasswords(state.stories.map(story => story.id));
+
+                updateScanModal(85, 'Rendering story list...', `${state.stories.length} stories`);
+                renderStoryList();
+                renderImageManager();
+
+                updateScanModal(95, 'Loading library stats...', '');
+                void refreshLibraryStats();
+
+                const count = state.stories.length;
+                updateScanModal(100, `Loaded ${count} stories.`, '');
+                setStatus(`Loaded ${count} stories from ${state.rootHandle.name}.`);
+                if (ejectLibraryBtn) ejectLibraryBtn.hidden = false;
+                if (openStoryBtn && count > 0) openStoryBtn.hidden = false;
+                await saveRecentFolder(state.rootHandle);
+                await restoreCurrentWorkflowState();
+            } catch (error) {
+                console.error('loadLibrary failed:', error);
+                setStatus(`Loading failed: ${error.message || error}`);
+            } finally {
+                hideScanModal();
             }
-            await loadStoryPasswordVault({ createIfMissing: true });
-            await pruneSavedStoryPasswords(state.stories.map(story => story.id));
-            renderStoryList();
-            renderImageManager();
-            void refreshLibraryStats();
-            setStatus(`Loaded ${state.stories.length} stories from ${state.rootHandle.name}.`);
-            await saveRecentFolder(state.rootHandle);
-            await restoreCurrentWorkflowState();
         }
 
         async function scanLibrary() {
@@ -5495,11 +5840,19 @@
                 return;
             }
 
+            showScanModal('Scanning Library...', 'Preparing scan...');
+            try {
+            updateScanModal(2, 'Preparing directories...', '');
+
             clearLibraryPreviewCaches();
             const databaseDir = await getDatabaseDir();
             const storyDir = await getStoryDir();
             const imageDir = await getImageDir();
+
+            updateScanModal(5, 'Loading password vault...', '');
             await loadStoryPasswordVault({ createIfMissing: true });
+
+            updateScanModal(8, 'Reading existing catalog...', 'catalog.json');
             const existingCatalog = normalizeCatalog(await readJsonFile(databaseDir, 'catalog.json'));
             const existingMap = new Map(existingCatalog.map(entry => [entry.id, entry]));
             const hasExistingOrder = hasDisplayOrder(existingCatalog);
@@ -5509,10 +5862,12 @@
                 failed: 0,
             };
 
+            updateScanModal(12, 'Cleaning temporary files...', 'media-scr/');
             for await (const [name, handle] of imageDir.entries()) {
                 if (handle.kind !== 'file' || !/__tmp_/i.test(name)) {
                     continue;
                 }
+                updateScanModal(12, 'Cleaning temporary files...', name);
                 let fileSize = -1;
                 try {
                     const file = await handle.getFile();
@@ -5536,8 +5891,14 @@
             const imageMap = new Map();
             const coverMediaMap = new Map();
 
+            updateScanModal(18, 'Scanning media files...', 'media-scr/');
+            let mediaFileCount = 0;
             for await (const [name, handle] of imageDir.entries()) {
                 if (handle.kind !== 'file') continue;
+                mediaFileCount++;
+                if (mediaFileCount % 20 === 0) {
+                    updateScanModal(18 + Math.min(20, mediaFileCount * 0.2), `Scanning media files... (${mediaFileCount})`, name);
+                }
                 const lower = name.toLowerCase();
                 const ext = lower.slice(lower.lastIndexOf('.'));
 
@@ -5571,11 +5932,16 @@
             let nextReportNumber = existingCatalog.reduce((acc, story) => Math.max(acc, story.reportNumber || 0), 0) + 1;
             const rebuilt = [];
 
+            updateScanModal(40, 'Scanning story files...', 'story/');
+            let storyFileCount = 0;
             for await (const [name, handle] of storyDir.entries()) {
                 if (handle.kind !== 'file' || !name.toLowerCase().endsWith('.md')) {
                     continue;
                 }
+                storyFileCount++;
                 const id = name.slice(0, -3);
+                updateScanModal(40 + Math.min(40, storyFileCount * 2), `Reading story ${storyFileCount}...`, name);
+
                 const existing = existingMap.get(id);
                 const reportNumber = existing?.reportNumber || nextReportNumber++;
                 const title = existing?.title || `The Report #${reportNumber}`;
@@ -5625,19 +5991,32 @@
                 });
             }
 
+            updateScanModal(82, 'Writing catalog...', 'catalog.json');
             state.stories = rebuilt;
             sortStories();
             await pruneSavedStoryPasswords(rebuilt.map(story => story.id));
             await writeCatalog(state.stories);
+
+            updateScanModal(92, 'Reloading preview windows...', '');
             await notifyPreviewWindowsReload();
+
+            updateScanModal(95, 'Rendering story list...', `${state.stories.length} stories`);
             renderStoryList();
             renderImageManager();
             void refreshLibraryStats();
             const cleanupSummary = tempCleanup.removed > 0 || tempCleanup.failed > 0
                 ? ` Removed ${tempCleanup.removed} empty temp file(s)${tempCleanup.failed > 0 ? `, failed ${tempCleanup.failed}` : ''}.`
                 : '';
+            updateScanModal(100, `Scanned ${state.stories.length} stories.`, '');
             setStatus(`Scanned library and rebuilt ${state.stories.length} stories.${cleanupSummary}`);
             await saveRecentFolder(state.rootHandle);
+            } catch (error) {
+                console.error('scanLibrary failed:', error);
+                setStatus(`Scan failed: ${error.message || error}`);
+                showToast(`Scan failed: ${error.message || error}`, 'error');
+            } finally {
+                hideScanModal();
+            }
         }
 
         async function writeCatalog(catalog) {
@@ -5905,7 +6284,7 @@
         async function handleCardClick(storyId, event) {
             // Don't trigger edit if clicking on checkbox or drag zone
             const target = event.target;
-            if (target.closest('.story-select-toggle') || target.closest('.story-drag-zone')) {
+            if (target.closest('.story-select-toggle') || target.closest('.story-reorder-controls')) {
                 return;
             }
             
@@ -6034,43 +6413,60 @@
                     info.appendChild(tagList);
                 }
 
-                // Drag zone - full height on the right
-                const dragZone = document.createElement('div');
-                dragZone.className = 'story-drag-zone';
+                // Reorder controls - up/down arrows + order number
+                const reorderControls = document.createElement('div');
+                reorderControls.className = 'story-reorder-controls';
 
-                const dragHandle = document.createElement('button');
-                dragHandle.type = 'button';
-                dragHandle.className = 'drag-handle';
-                dragHandle.title = isSearchActive ? 'Clear search to reorder' : 'Drag to reorder';
-                dragHandle.draggable = !isSearchActive;
-                if (isSearchActive) {
-                    dragHandle.setAttribute('aria-disabled', 'true');
-                }
-                dragHandle.addEventListener('click', (event) => {
+                const upBtn = document.createElement('button');
+                upBtn.type = 'button';
+                upBtn.className = 'reorder-btn reorder-up';
+                upBtn.title = 'Move up';
+                upBtn.textContent = '\u25B2';
+                upBtn.addEventListener('click', (event) => {
                     event.stopPropagation();
+                    void moveStory(story.id, -1);
                 });
-                if (!isSearchActive) {
-                    dragHandle.addEventListener('dragstart', event => {
-                        storyDragId = story.id;
-                        card.classList.add('dragging');
-                        dragHandle.classList.add('dragging');
-                        event.dataTransfer.effectAllowed = 'move';
-                        event.dataTransfer.setData('text/plain', story.id);
-                        updateStoryDropPlaceholder(event.clientY);
-                    });
-                    dragHandle.addEventListener('dragend', () => {
-                        storyDragId = null;
-                        card.classList.remove('dragging');
-                        dragHandle.classList.remove('dragging');
-                        clearStoryDropPlaceholder();
-                    });
-                }
 
-                dragZone.appendChild(dragHandle);
+                const orderInput = document.createElement('input');
+                orderInput.type = 'number';
+                orderInput.className = 'reorder-input';
+                orderInput.min = 1;
+                orderInput.max = state.stories.length;
+                const currentIdx = state.stories.findIndex(s => s.id === story.id);
+                orderInput.value = currentIdx >= 0 ? currentIdx + 1 : 1;
+                orderInput.title = `Order position (${currentIdx + 1} of ${state.stories.length})`;
+                orderInput.addEventListener('click', (event) => { event.stopPropagation(); });
+                orderInput.addEventListener('change', (event) => {
+                    event.stopPropagation();
+                    const target = parseInt(orderInput.value, 10);
+                    if (Number.isFinite(target) && target >= 1) {
+                        void moveStoryToPosition(story.id, target - 1);
+                    }
+                });
+                orderInput.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        orderInput.blur();
+                    }
+                });
+
+                const downBtn = document.createElement('button');
+                downBtn.type = 'button';
+                downBtn.className = 'reorder-btn reorder-down';
+                downBtn.title = 'Move down';
+                downBtn.textContent = '\u25BC';
+                downBtn.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    void moveStory(story.id, 1);
+                });
+
+                reorderControls.appendChild(upBtn);
+                reorderControls.appendChild(orderInput);
+                reorderControls.appendChild(downBtn);
 
                 card.appendChild(selectToggle);
                 card.appendChild(info);
-                card.appendChild(dragZone);
+                card.appendChild(reorderControls);
                 storyListEl.appendChild(card);
             });
         }
@@ -6091,6 +6487,38 @@
                 return;
             }
 
+            applyDisplayOrder();
+            reindexReportNumbers();
+            await writeCatalog(state.stories);
+            await notifyPreviewWindowsReload();
+            renderStoryList();
+            setStatus('Story order updated.');
+        }
+
+        async function moveStory(id, direction) {
+            if (!state.rootHandle) return;
+            const idx = state.stories.findIndex(s => s.id === id);
+            if (idx < 0) return;
+            const targetIdx = idx + direction;
+            if (targetIdx < 0 || targetIdx >= state.stories.length) return;
+            const [moved] = state.stories.splice(idx, 1);
+            state.stories.splice(targetIdx, 0, moved);
+            applyDisplayOrder();
+            reindexReportNumbers();
+            await writeCatalog(state.stories);
+            await notifyPreviewWindowsReload();
+            renderStoryList();
+            setStatus('Story order updated.');
+        }
+
+        async function moveStoryToPosition(id, targetIndex) {
+            if (!state.rootHandle) return;
+            const fromIndex = state.stories.findIndex(s => s.id === id);
+            if (fromIndex < 0) return;
+            const clamped = Math.max(0, Math.min(state.stories.length - 1, targetIndex));
+            if (clamped === fromIndex) return;
+            const [moved] = state.stories.splice(fromIndex, 1);
+            state.stories.splice(clamped, 0, moved);
             applyDisplayOrder();
             reindexReportNumbers();
             await writeCatalog(state.stories);
@@ -6494,7 +6922,10 @@
                 await notifyPreviewWindowsReload();
 
                 setStatus(`Saved ${title}.`);
-                await loadLibrary();
+                selectedStoryIds.clear();
+                renderStoryList();
+                renderImageManager();
+                void refreshLibraryStats();
                 saveRecentStory(entry);
                 activeStoryPassword = storyCrypto.encryptEnabled ? storyCrypto.encryptPassword : '';
                 resetForm();
@@ -7114,10 +7545,6 @@
             }
         }
 
-        if (autoScanToggle) {
-            autoScanToggle.checked = loadAutoScanSetting();
-            autoScanToggle.addEventListener('change', () => saveAutoScanSetting(autoScanToggle.checked));
-        }
         if (closeAfterSaveToggle) {
             closeAfterSaveToggle.checked = true;
             closeAfterSaveToggle.disabled = true;
@@ -7130,6 +7557,30 @@
                 showToast(`📂 Opened library: ${state.rootHandle.name}`, 'success');
             }
         });
+        if (ejectLibraryBtn) {
+            ejectLibraryBtn.addEventListener('click', async () => {
+                if (!state.rootHandle) return;
+                const confirmed = await themedConfirm(`Close library "${state.rootHandle.name}"? Any unsaved changes will be lost.`, {
+                    title: 'Close Library',
+                    type: 'warning',
+                    confirmText: 'Close',
+                    cancelText: 'Keep Open',
+                });
+                if (!confirmed) return;
+                autoSaveCurrentStory().catch(() => {});
+                state.rootHandle = null;
+                state.stories = [];
+                state.currentLibraryUrl = '';
+                selectedStoryIds.clear();
+                renderStoryList();
+                renderImageManager();
+                refreshLibraryStats();
+                ejectLibraryBtn.hidden = true;
+                if (openStoryBtn) openStoryBtn.hidden = true;
+                setStatus('Library closed.');
+                showToast('📂 Library closed.', 'info');
+            });
+        }
         if (buildLibraryBtn) {
             buildLibraryBtn.addEventListener('click', openLibraryBuilder);
         }
@@ -7138,6 +7589,15 @@
             openHomepageBtn.addEventListener('click', event => {
                 if (event.shiftKey) {
                     void promptForLibraryBaseUrl();
+                    return;
+                }
+                void openHomepageFromSelectedLibrary();
+            });
+        }
+        if (openStoryBtn) {
+            openStoryBtn.addEventListener('click', async () => {
+                if (!state.selectedEntry) {
+                    showToast('Select a story first.', 'warning');
                     return;
                 }
                 void openHomepageFromSelectedLibrary();
@@ -7177,19 +7637,20 @@
                 }
             });
         }
-        scanLibraryBtn.addEventListener('click', async () => {
-            await scanLibrary();
-            showToast(`🔄 Scanned library: ${state.stories.length} stories found`, 'info');
-        });
-        if (reloadCatalogBtn) {
-            reloadCatalogBtn.addEventListener('click', loadLibrary);
+        if (scanLibraryBtn) {
+            scanLibraryBtn.addEventListener('click', async () => {
+                if (!state.rootHandle) {
+                    setStatus('Choose a library folder first.');
+                    return;
+                }
+                await scanLibrary();
+                await updateFonts();
+                showToast(`🔄 Library reloaded: ${state.stories.length} stories`, 'info');
+            });
         }
-
-        if (updateFontsBtn) {
-            updateFontsBtn.addEventListener('click', updateFonts);
+        if (fontManagerBtn) {
+            fontManagerBtn.addEventListener('click', () => openFontManager());
         }
-
-        fixMissingBtn.addEventListener('click', fixMissingFiles);
 
         const themeToggleBtn = document.getElementById('theme-toggle');
         if (themeToggleBtn && isElectronDesktopApp()) {
@@ -7229,25 +7690,132 @@
         }
 
         const accentColorBtn = document.getElementById('accent-color-btn');
-        const accentColorInput = document.getElementById('accent-color-input');
-        if (accentColorBtn && accentColorInput) {
+        const accentPickerTooltip = document.getElementById('accent-picker-tooltip');
+        const accentPickerGrid = document.getElementById('accent-picker-grid');
+        const ACCENT_PRESETS = [
+            '#3ef0c1', '#0078d4', '#8b5cf6', '#ec4899', '#ef4444', '#f97316',
+            '#eab308', '#22c55e', '#06b6d4', '#6366f1', '#f43f5e', '#f59e0b',
+        ];
+
+        function hexToRgb(hex) {
+            const h = hex.replace('#', '');
+            return {
+                r: parseInt(h.substring(0, 2), 16),
+                g: parseInt(h.substring(2, 4), 16),
+                b: parseInt(h.substring(4, 6), 16),
+            };
+        }
+
+        function rgbToHsl(r, g, b) {
+            r /= 255; g /= 255; b /= 255;
+            const max = Math.max(r, g, b), min = Math.min(r, g, b);
+            let h, s, l = (max + min) / 2;
+            if (max === min) { h = s = 0; } else {
+                const d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                switch (max) {
+                    case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+                    case g: h = ((b - r) / d + 2) / 6; break;
+                    case b: h = ((r - g) / d + 4) / 6; break;
+                }
+            }
+            return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
+        }
+
+        function hslToHex(h, s, l) {
+            s /= 100; l /= 100;
+            const a = s * Math.min(l, 1 - l);
+            const f = n => { const k = (n + h / 30) % 12; return l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1); };
+            const toHex = x => Math.round(x * 255).toString(16).padStart(2, '0');
+            return `#${toHex(f(0))}${toHex(f(8))}${toHex(f(4))}`;
+        }
+
+        function darkenHex(hex, amount) {
+            const { r, g, b } = hexToRgb(hex);
+            const hsl = rgbToHsl(r, g, b);
+            return hslToHex(hsl.h, hsl.s, Math.max(0, hsl.l - amount));
+        }
+
+        function setAccentColor(hex) {
+            const { r, g, b } = hexToRgb(hex);
+            const root = document.documentElement;
+            const body = document.body;
+            const sp = (k, v) => { root.style.setProperty(k, v); body.style.setProperty(k, v); };
+            sp('--accent', hex);
+            sp('--accent-2', darkenHex(hex, 18));
+            const alphaVals = [6, 8, 10, 12, 14, 15, 18, 20, 22, 25, 26, 28, 30, 35, 38, 40, 50, 55, 60, 70, 80, 90, 95];
+            alphaVals.forEach(a => {
+                sp(`--accent-alpha-${a}`, `rgba(${r}, ${g}, ${b}, ${a / 100})`);
+            });
+            sp('--btn-primary-bg', `rgba(${r}, ${g}, ${b}, 0.88)`);
+            sp('--btn-primary-bg-hover', `rgba(${r}, ${g}, ${b}, 0.94)`);
+            sp('--btn-primary-shadow', `0 2px 8px rgba(${r}, ${g}, ${b}, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.3) inset`);
+            sp('--btn-primary-shadow-hover', `0 4px 16px rgba(${r}, ${g}, ${b}, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.4) inset`);
+            sp('--btn-glass-bg', `rgba(${r}, ${g}, ${b}, 0.08)`);
+            sp('--btn-glass-bg-hover', `rgba(${r}, ${g}, ${b}, 0.12)`);
+            sp('--btn-glass-bg-active', `rgba(${r}, ${g}, ${b}, 0.16)`);
+            sp('--btn-glass-border', `rgba(${r}, ${g}, ${b}, 0.22)`);
+            sp('--btn-glass-border-hover', `rgba(${r}, ${g}, ${b}, 0.32)`);
+            sp('--glass-border-accent', `rgba(${r}, ${g}, ${b}, 0.18)`);
+            sp('--highlight', `rgba(${r}, ${g}, ${b}, 0.08)`);
+            sp('--highlight-2', `rgba(${r}, ${g}, ${b}, 0.08)`);
+            sp('--border', `rgba(${r}, ${g}, ${b}, 0.08)`);
+            sp('--border-strong', `rgba(${r}, ${g}, ${b}, 0.14)`);
+            sp('--surface-hover', `rgba(${r}, ${g}, ${b}, 0.06)`);
+            sp('--surface-active', `rgba(${r}, ${g}, ${b}, 0.10)`);
+            const a2 = darkenHex(hex, 18);
+            const { r: r2, g: g2, b: b2 } = hexToRgb(a2);
+            [10, 15, 30, 35, 50, 60, 90].forEach(a => {
+                sp(`--accent-2-alpha-${a}`, `rgba(${r2}, ${g2}, ${b2}, ${a / 100})`);
+            });
+            sp('--bg-gradient', `linear-gradient(180deg, rgba(${r}, ${g}, ${b}, 0.04) 0%, rgba(${r2}, ${g2}, ${b2}, 0.02) 50%, #f3f3f3 100%)`);
+            sp('--link', hex);
+            localStorage.setItem(ACCENT_COLOR_KEY, hex);
+            if (accentPickerGrid) {
+                accentPickerGrid.querySelectorAll('.accent-preset-swatch').forEach(sw => {
+                    sw.classList.toggle('active', sw.dataset.color === hex);
+                });
+            }
+            if (accentColorBtn) {
+                const indicator = accentColorBtn.querySelector('.accent-color-indicator');
+                if (indicator) {
+                    indicator.style.background = hex;
+                    indicator.style.boxShadow = `0 0 6px ${hex}`;
+                }
+            }
+        }
+
+        if (accentPickerGrid) {
+            ACCENT_PRESETS.forEach(color => {
+                const swatch = document.createElement('button');
+                swatch.type = 'button';
+                swatch.className = 'accent-preset-swatch';
+                swatch.dataset.color = color;
+                swatch.style.background = color;
+                swatch.title = color;
+                swatch.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    setAccentColor(color);
+                });
+                accentPickerGrid.appendChild(swatch);
+            });
+        }
+
+        if (accentColorBtn && accentPickerTooltip) {
             const savedAccent = localStorage.getItem(ACCENT_COLOR_KEY);
             if (savedAccent) {
-                document.documentElement.style.setProperty('--accent', savedAccent);
-                accentColorInput.value = savedAccent;
+                setAccentColor(savedAccent);
+            } else {
+                setAccentColor(ACCENT_PRESETS[0]);
             }
-            accentColorBtn.addEventListener('click', () => {
-                accentColorInput.click();
+            accentColorBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                accentPickerTooltip.classList.toggle('is-open');
             });
-            accentColorInput.addEventListener('input', (e) => {
-                const color = e.target.value;
-                document.documentElement.style.setProperty('--accent', color);
-                localStorage.setItem(ACCENT_COLOR_KEY, color);
-            });
-            accentColorInput.addEventListener('change', (e) => {
-                const color = e.target.value;
-                document.documentElement.style.setProperty('--accent', color);
-                localStorage.setItem(ACCENT_COLOR_KEY, color);
+            document.addEventListener('click', (e) => {
+                if (!accentPickerTooltip.contains(e.target) && e.target !== accentColorBtn && !accentColorBtn.contains(e.target)) {
+                    accentPickerTooltip.classList.remove('is-open');
+                }
             });
         }
 
@@ -7731,30 +8299,6 @@
                 }
             });
         }
-
-        if (storyListEl) {
-            storyListEl.addEventListener('dragover', event => {
-                if (!storyDragId) {
-                    return;
-                }
-                event.preventDefault();
-                if (event.dataTransfer) {
-                    event.dataTransfer.dropEffect = 'move';
-                }
-                updateStoryDropPlaceholder(event.clientY);
-            });
-            storyListEl.addEventListener('drop', async event => {
-                if (!storyDragId) {
-                    return;
-                }
-                event.preventDefault();
-                const dragId = storyDragId;
-                const targetIndex = Number.isFinite(storyDropIndex) ? storyDropIndex : state.stories.length;
-                storyDragId = null;
-                clearStoryDropPlaceholder();
-                await reorderStoryToIndex(dragId, targetIndex);
-            });
-        }
         if (clearCoverMediaBtn) {
             clearCoverMediaBtn.addEventListener('click', () => {
                 externalCoverMedia = null;
@@ -7854,13 +8398,13 @@
             if (windowMinimizeBtn) windowMinimizeBtn.innerHTML = getIcon('minimize', { width: 16, height: 16 });
             if (windowCloseBtn) windowCloseBtn.innerHTML = getIcon('closeRound', { width: 16, height: 16 });
             if (chooseFolderBtn) chooseFolderBtn.innerHTML = getIcon('folder', { width: 18, height: 18 });
+            if (ejectLibraryBtn) ejectLibraryBtn.innerHTML = getIcon('close', { width: 18, height: 18 });
             if (buildLibraryBtn) buildLibraryBtn.innerHTML = getIcon('board', { width: 18, height: 18 });
             if (openRecentBtn) openRecentBtn.innerHTML = getIcon('inbox', { width: 18, height: 18 });
             if (scanLibraryBtn) scanLibraryBtn.innerHTML = getIcon('refresh', { width: 18, height: 18 });
-            if (reloadCatalogBtn) reloadCatalogBtn.innerHTML = getIcon('history', { width: 18, height: 18 });
-            if (updateFontsBtn) updateFontsBtn.innerHTML = getIcon('font', { width: 18, height: 18 });
-            if (fixMissingBtn) fixMissingBtn.innerHTML = getIcon('settings', { width: 18, height: 18 });
+            if (fontManagerBtn) fontManagerBtn.innerHTML = getIcon('font', { width: 18, height: 18 });
             if (openHomepageBtn) openHomepageBtn.innerHTML = getIcon('globalGraph', { width: 18, height: 18 });
+            if (openStoryBtn) openStoryBtn.innerHTML = getIcon('cloudSucc', { width: 18, height: 18 });
             if (revealLibraryBtn) revealLibraryBtn.innerHTML = getIcon('eye', { width: 18, height: 18 });
             if (themeToggleBtn) themeToggleBtn.innerHTML = getIcon('theme', { width: 18, height: 18 });
             if (pinWindowBtn) pinWindowBtn.innerHTML = getIcon('pin', { width: 18, height: 18 });
@@ -7908,8 +8452,8 @@
             if (openRecentBtn) {
                 openRecentBtn.disabled = true;
             }
-            if (fixMissingBtn) {
-                fixMissingBtn.disabled = true;
+            if (scanLibraryBtn) {
+                scanLibraryBtn.disabled = true;
             }
         }
 

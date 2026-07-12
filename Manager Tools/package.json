@@ -1,7 +1,7 @@
 {
   "name": "xedryk-data-manager",
   "productName": "Xedryk Data Manager",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Windows-only Electron shell for Xedryk's Lab System Data Manager.",
   "private": true,
   "main": "main.js",
@@ -16,6 +16,7 @@
     "dist:portable": "electron-builder --win portable"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2.11.4",
     "electron": "^42.0.0",
     "electron-builder": "^26.0.0"
   },
@@ -51,15 +52,21 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         },
         {
           "target": "portable",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         },
         {
           "target": "dir",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ]
     },

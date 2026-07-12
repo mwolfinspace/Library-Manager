@@ -46,6 +46,12 @@
         readFile(filePath) {
             return call('read_file', { filePath });
         },
+        readTextFile(filePath) {
+            return call('read_text_file', { filePath });
+        },
+        readJsonFile(filePath) {
+            return call('read_json_file_content', { filePath });
+        },
         async writeFile(filePath, data) {
             if (typeof data === 'string') {
                 return call('write_file', { filePath, data });
@@ -137,6 +143,15 @@
         },
         getAlwaysOnTop() {
             return call('get_always_on_top');
+        },
+        startDragging() {
+            const win = tauri.window && typeof tauri.window.getCurrentWindow === 'function'
+                ? tauri.window.getCurrentWindow()
+                : null;
+            if (win && typeof win.startDragging === 'function') {
+                return win.startDragging();
+            }
+            return Promise.reject(new Error('startDragging not available'));
         },
         getPreviewWindowData() {
             return call('get_preview_window_data');
