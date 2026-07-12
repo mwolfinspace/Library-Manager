@@ -5577,13 +5577,17 @@
                     const actions = document.createElement('div');
                     actions.className = 'font-manager-item-actions';
 
-                    const previewBtn = document.createElement('button');
-                    previewBtn.className = 'font-manager-item-btn';
-                    previewBtn.title = 'Preview font';
-                    previewBtn.innerHTML = '&#128065;';
-                    previewBtn.addEventListener('mouseenter', (e) => showFontPreview(font, e));
-                    previewBtn.addEventListener('mouseleave', () => removeFontPreview());
-                    actions.appendChild(previewBtn);
+                    const folderBtn = document.createElement('button');
+                    folderBtn.className = 'font-manager-item-btn';
+                    folderBtn.title = 'Open font folder';
+                    folderBtn.innerHTML = getIcon('folder', { width: 14, height: 14 });
+                    folderBtn.addEventListener('click', async () => {
+                        if (isElectronDesktopApp() && electronDesktopApi.revealInExplorer && state.rootHandle && state.rootHandle.path) {
+                            const fontDir = (state.rootHandle.path + '\\fonts\\' + font.prefix).replace(/[\\\/]$/, '');
+                            await electronDesktopApi.revealInExplorer(fontDir);
+                        }
+                    });
+                    actions.appendChild(folderBtn);
 
                     const deleteBtn = document.createElement('button');
                     deleteBtn.className = 'font-manager-item-btn danger';
