@@ -26,6 +26,37 @@ const APP_ID = 'com.xedryk.datamanager';
 const previewWindows = new Set();
 let appTray = null;
 let managerWindow = null;
+let splashWindow = null;
+
+const SPLASH_HTML = `<!DOCTYPE html><html><head><style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#1a1a2e;display:flex;align-items:center;justify-content:center;height:100vh;font-family:'Segoe UI',sans-serif;overflow:hidden;user-select:none}
+wrap{display:flex;flex-direction:column;align-items:center;gap:12px}
+.logo{width:64px;height:64px;background:url("file:///__ICON__") center/contain no-repeat;filter:drop-shadow(0 2px 8px rgba(100,140,255,.3))}
+.name{font-size:13px;font-weight:600;color:rgba(255,255,255,.85);letter-spacing:.5px}
+.bar{width:140px;height:2px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden}
+.fill{height:100%;background:linear-gradient(90deg,#667eea,#764ba2);border-radius:2px;width:0;animation:load 1.8s ease-in-out infinite}
+@keyframes load{0%{width:0;margin-left:0}50%{width:70%}100%{width:0;margin-left:100%}}
+</style></head><body>
+<div class="wrap"><div class="logo"></div><div class="name">Xedryk Data Manager</div><div class="bar"><div class="fill"></div></div></div>
+</body></html>`;
+
+function createSplashWindow() {
+  const iconPath = getAppResourcePath('app.ico');
+  const html = SPLASH_HTML.replace('__ICON__', iconPath.replace(/\\/g, '/'));
+  splashWindow = new BrowserWindow({
+    width: 300,
+    height: 220,
+    frame: false,
+    resizable: false,
+    skipTaskbar: true,
+    alwaysOnTop: true,
+    backgroundColor: '#1a1a2e',
+    webPreferences: { contextIsolation: true, nodeIntegration: false },
+  });
+  splashWindow.setMenuBarVisibility(false);
+  splashWindow.loadURL(`data:text/html,${encodeURIComponent(html)}`);
+}
 
 const DEFAULT_SETTINGS = {
   autoRun: false,
@@ -464,6 +495,7 @@ function createManagerWindow() {
     frame: false,
     roundedCorners: true,
     transparent: true,
+    show: false,
     autoHideMenuBar: true,
     backgroundColor: '#f3f3f3',
     title: 'Xedryk Data Manager',
@@ -481,6 +513,14 @@ function createManagerWindow() {
   managerWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   attachWindowStateEvents(managerWindow);
   managerWindow.loadFile(MANAGER_HTML_PATH);
+
+  managerWindow.once('ready-to-show', () => {
+    managerWindow.show();
+    if (splashWindow && !splashWindow.isDestroyed()) {
+      splashWindow.close();
+      splashWindow = null;
+    }
+  });
 
   managerWindow.on('closed', () => {
     managerWindow = null;
@@ -963,11 +1003,16 @@ async function boot() {
     return;
   }
 
+  createSplashWindow();
   const settings = await loadSettings();
   registerIpcHandlers();
   createManagerWindow();
 
+  const prevAutoRun = currentSettings.autoRun;
   await applySettings(settings);
+  if (settings.autoRun !== undefined && settings.autoRun !== prevAutoRun) {
+    setAutoRun(!!settings.autoRun);
+  }
 
   const startMinimizedArg = process.argv.includes('--start-minimized');
   const shouldStartMinimized = startMinimizedArg || startedMinimized;

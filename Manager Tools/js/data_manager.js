@@ -7606,7 +7606,7 @@
                     showToast('Select a story first.', 'warning');
                     return;
                 }
-                void openHomepageFromSelectedLibrary();
+                void openStoryPreviewInSelectedLibrary(state.selectedEntry.id);
             });
         }
         if (revealLibraryBtn) {
@@ -8499,7 +8499,7 @@
             releaseAllMediaUrls();
             clearLibraryPreviewCaches();
         });
-        tryUseRecentHandle(true);
+        setTimeout(() => tryUseRecentHandle(true), 0);
 
         const loadingScreen = document.getElementById('app-loading-screen');
         if (loadingScreen) {

@@ -3,19 +3,55 @@ use include_dir::{include_dir, Dir};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::{
+    ffi::OsStr,
     fs,
+    os::windows::ffi::OsStrExt,
+    os::windows::process::CommandExt,
     path::{Component, Path, PathBuf},
-    process::Command,
-    sync::Mutex,
+    ptr,
+    sync::{LazyLock, Mutex},
     time::SystemTime,
 };
 use tauri::{Emitter, Manager, WebviewUrl, WebviewWindowBuilder, Window};
+use tauri::webview::PageLoadEvent;
 
 static DEFAULT_GALLERY: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/../default_gallery");
 static EMOJI_FONT: &[u8] =
     include_bytes!("../../default_gallery/fonts/emoji/Segoe.UI.Emoji.with.Twemoji.Flags.ttf");
 static APP_ICO: &[u8] = include_bytes!("../../app.ico");
 static LOGO_PNG: &[u8] = include_bytes!("../../build/logo.png");
+
+static CACHED_EMOJI_FONT_URL: LazyLock<String> = LazyLock::new(|| {
+    format!(
+        "data:font/truetype;base64,{}",
+        base64::engine::general_purpose::STANDARD.encode(EMOJI_FONT)
+    )
+});
+static CACHED_LOGO_URL: LazyLock<String> = LazyLock::new(|| {
+    if !LOGO_PNG.is_empty() {
+        format!(
+            "data:image/png;base64,{}",
+            base64::engine::general_purpose::STANDARD.encode(LOGO_PNG)
+        )
+    } else {
+        format!(
+            "data:image/x-icon;base64,{}",
+            base64::engine::general_purpose::STANDARD.encode(APP_ICO)
+        )
+    }
+});
+
+const SPLASH_HTML: &str = r#"<!DOCTYPE html><html><head><style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#1a1a2e;display:flex;align-items:center;justify-content:center;height:100vh;font-family:'Segoe UI',sans-serif;overflow:hidden;user-select:none}
+.w{display:flex;flex-direction:column;align-items:center;gap:12px}
+.n{font-size:13px;font-weight:600;color:rgba(255,255,255,.85);letter-spacing:.5px}
+.b{width:140px;height:2px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden}
+.f{height:100%;background:linear-gradient(90deg,#667eea,#764ba2);border-radius:2px;width:0;animation:l 1.8s ease-in-out infinite}
+@keyframes l{0%{width:0;margin-left:0}50%{width:70%}100%{width:0;margin-left:100%}}
+</style></head><body>
+<div class="w"><div class="n">Xedryk Data Manager</div><div class="b"><div class="f"></div></div></div>
+</body></html>"#;
 
 #[derive(Default)]
 struct AppState {
@@ -66,9 +102,9 @@ struct OpenLibraryPayload {
     #[serde(default)]
     relative_path: String,
     #[serde(default = "default_preview_label")]
-    label: String,
+    _label: String,
     #[serde(default = "default_page_type")]
-    page_type: String,
+    _page_type: String,
     #[serde(default)]
     query: Value,
 }
@@ -90,6 +126,43 @@ fn default_preview_label() -> String {
 
 fn default_page_type() -> String {
     "homepage".to_string()
+}
+
+#[cfg(target_os = "windows")]
+extern "system" {
+    fn ShellExecuteW(
+        hwnd: isize,
+        lp_operation: *const u16,
+        lp_file: *const u16,
+        lp_parameters: *const u16,
+        lp_directory: *const u16,
+        n_show_cmd: i32,
+    ) -> isize;
+}
+
+fn open_file_silent(path: &Path) -> Result<(), String> {
+    let wide_path: Vec<u16> = OsStr::new(path)
+        .encode_wide()
+        .chain(std::iter::once(0))
+        .collect();
+    let wide_verb: Vec<u16> = "open\0".encode_utf16().collect();
+    unsafe {
+        let result = ShellExecuteW(0, wide_verb.as_ptr(), wide_path.as_ptr(), ptr::null(), ptr::null(), 1);
+        if result as i32 > 32 {
+            Ok(())
+        } else {
+            Err(format!("ShellExecuteW failed with code {}", result))
+        }
+    }
+}
+
+fn open_url_with_shell(url: &str) -> Result<(), String> {
+    std::process::Command::new("cmd")
+        .args(["/c", "start", "", url])
+        .creation_flags(0x08000000)
+        .output()
+        .map_err(|error| error.to_string())?;
+    Ok(())
 }
 
 fn descriptor(path: PathBuf, kind: &str) -> HandleDescriptor {
@@ -419,47 +492,60 @@ fn list_directory(directory_path: String) -> Result<Vec<HandleDescriptor>, Strin
 }
 
 #[tauri::command]
-fn open_library_page(app: tauri::AppHandle, payload: OpenLibraryPayload) -> Result<bool, String> {
-    let absolute = resolve_library_file_path(&payload.root_path, &payload.relative_path)?;
-    let mut file_url = tauri::Url::from_file_path(&absolute)
-        .map_err(|_| "Invalid library page path.".to_string())?;
-    if let Some(query) = payload.query.as_str() {
-        file_url.set_query(Some(query.trim_start_matches('?')));
-    } else if let Some(query) = payload.query.as_object() {
-        let mut params = url::form_urlencoded::Serializer::new(String::new());
-        for (key, value) in query {
-            if !value.is_null() {
-                params.append_pair(key, value.as_str().unwrap_or(&value.to_string()));
+fn url_encode_path_component(component: &str) -> String {
+    let mut encoded = String::with_capacity(component.len() * 3);
+    for byte in component.bytes() {
+        match byte {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' | b'/' => {
+                encoded.push(byte as char);
             }
-        }
-        let encoded = params.finish();
-        if !encoded.is_empty() {
-            file_url.set_query(Some(&encoded));
+            b' ' => encoded.push_str("%20"),
+            _ => encoded.push_str(&format!("%{:02X}", byte)),
         }
     }
-    let url = WebviewUrl::External(file_url);
-    let label = format!(
-        "preview-{}-{}",
-        payload.page_type,
-        app.webview_windows().len() + 1
-    );
-    let mut builder = WebviewWindowBuilder::new(&app, label, url)
-        .title(&payload.label)
-        .decorations(false)
-        .inner_size(1180.0, 780.0);
-    if payload.query.is_object() {
-        builder = builder.initialization_script(&format!(
-            "window.__XEDRYK_PREVIEW_DATA__ = {};",
-            json!({
-                "rootPath": payload.root_path,
-                "relativePath": payload.relative_path,
-                "pageType": payload.page_type,
-                "query": payload.query
+    encoded
+}
+
+fn url_encode_value(value: &str) -> String {
+    let mut encoded = String::with_capacity(value.len() * 3);
+    for byte in value.bytes() {
+        match byte {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
+                encoded.push(byte as char);
+            }
+            b' ' => encoded.push_str("%20"),
+            _ => encoded.push_str(&format!("%{:02X}", byte)),
+        }
+    }
+    encoded
+}
+
+#[tauri::command]
+fn open_library_page(_app: tauri::AppHandle, payload: OpenLibraryPayload) -> Result<bool, String> {
+    let absolute = resolve_library_file_path(&payload.root_path, &payload.relative_path)?;
+    if !absolute.exists() {
+        return Err(format!("File not found: {}", absolute.display()));
+    }
+    let clean_path = strip_extended_prefix(absolute);
+    let path_str = clean_path.to_string_lossy().replace('\\', "/");
+    let mut url = format!("file:///{}", url_encode_path_component(&path_str));
+    if let Some(obj) = payload.query.as_object() {
+        let params: Vec<String> = obj
+            .iter()
+            .map(|(k, v)| {
+                let val = match v {
+                    Value::String(s) => url_encode_value(s),
+                    _ => url_encode_value(&v.to_string()),
+                };
+                format!("{}={}", url_encode_value(k), val)
             })
-        ));
+            .collect();
+        if !params.is_empty() {
+            url.push('?');
+            url.push_str(&params.join("&"));
+        }
     }
-    let window = builder.build().map_err(|error| error.to_string())?;
-    window.show().map_err(|error| error.to_string())?;
+    open_url_with_shell(&url)?;
     Ok(true)
 }
 
@@ -551,19 +637,18 @@ fn get_app_path(app: tauri::AppHandle) -> Result<String, String> {
 
 #[tauri::command]
 fn get_emoji_font_url() -> String {
-    format!(
-        "data:font/truetype;base64,{}",
-        base64::engine::general_purpose::STANDARD.encode(EMOJI_FONT)
-    )
+    CACHED_EMOJI_FONT_URL.clone()
 }
 
 #[tauri::command]
 fn reveal_in_explorer(folder_path: String) -> Value {
-    let path = PathBuf::from(folder_path);
-    let result = Command::new("explorer").arg(path).spawn();
-    match result {
+    let path = PathBuf::from(&folder_path);
+    if !path.exists() {
+        return json!({ "success": false, "error": "Path does not exist" });
+    }
+    match open_file_silent(&path) {
         Ok(_) => json!({ "success": true }),
-        Err(error) => json!({ "success": false, "error": error.to_string() }),
+        Err(error) => json!({ "success": false, "error": error }),
     }
 }
 
@@ -687,16 +772,7 @@ fn get_system_fonts() -> Vec<&'static str> {
 
 #[tauri::command]
 fn get_logo_path() -> String {
-    if !LOGO_PNG.is_empty() {
-        return format!(
-            "data:image/png;base64,{}",
-            base64::engine::general_purpose::STANDARD.encode(LOGO_PNG)
-        );
-    }
-    format!(
-        "data:image/x-icon;base64,{}",
-        base64::engine::general_purpose::STANDARD.encode(APP_ICO)
-    )
+    CACHED_LOGO_URL.clone()
 }
 
 pub fn run() {
@@ -733,6 +809,51 @@ pub fn run() {
             get_system_fonts,
             get_logo_path
         ])
+        .setup(|app| {
+            let splash = WebviewWindowBuilder::new(
+                app,
+                "splash",
+                WebviewUrl::App(PathBuf::from("splash.html")),
+            )
+            .title("")
+            .inner_size(300.0, 200.0)
+            .decorations(false)
+            .resizable(false)
+            .center()
+            .build()?;
+            splash.set_skip_taskbar(true)?;
+            let splash_eval = SPLASH_HTML.replace(
+                "</head>",
+                "<script>document.title='splash';</script></head>",
+            );
+            splash.eval(&format!(
+                "document.open();document.write({});document.close();",
+                serde_json::to_string(&splash_eval).unwrap_or_default()
+            ))?;
+
+            let _ = WebviewWindowBuilder::new(
+                app,
+                "manager",
+                WebviewUrl::App(PathBuf::from("Data_Manager.html")),
+            )
+            .title("Xedryk Data Manager-tauri")
+            .inner_size(1280.0, 820.0)
+            .min_inner_size(980.0, 680.0)
+            .decorations(false)
+            .visible(false)
+            .on_page_load(|webview, payload| {
+                if matches!(payload.event(), PageLoadEvent::Finished) {
+                    let _ = webview.show();
+                    let _ = webview.set_focus();
+                    if let Some(s) = webview.app_handle().get_webview_window("splash") {
+                        let _ = s.destroy();
+                    }
+                }
+            })
+            .build()?;
+
+            Ok(())
+        })
         .run(tauri::generate_context!())
         .expect("error while running Xedryk Data Manager Tauri app");
 }

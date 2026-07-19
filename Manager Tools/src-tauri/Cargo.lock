@@ -4522,7 +4522,7 @@ dependencies = [
 
 [[package]]
 name = "xedryk-data-manager-tauri"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "base64 0.22.1",
  "include_dir",
@@ -4533,8 +4533,6 @@ dependencies = [
  "tauri",
  "tauri-build",
  "thiserror 2.0.18",
- "url",
- "walkdir",
 ]
 
 [[package]]
